@@ -350,6 +350,8 @@ function rcmail_message_contactphoto($attrib)
     else {
         $photo_img = $placeholder ? $placeholder : 'program/resources/blank.gif';
     }
-
+    
+    $RCMAIL->output->add_script('$("<img />").error(function() { $("#contactphoto").children().remove() }).attr("src", "' . $photo_img . '");', 'foot');
+    
     return html::img(array('src' => $photo_img) + $attrib);
 }

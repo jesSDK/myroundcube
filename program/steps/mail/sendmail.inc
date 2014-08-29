@@ -534,9 +534,9 @@ if (!$savedraft) {
     }
 
     // set replied/forwarded flag
-    if ($COMPOSE['reply_uid'])
+    if ($COMPOSE['reply_uid'] && $RCMAIL->storage->check_permflag('ANSWERED'))
         $RCMAIL->storage->set_flag($COMPOSE['reply_uid'], 'ANSWERED', $COMPOSE['mailbox']);
-    else if ($COMPOSE['forward_uid'])
+    else if ($COMPOSE['forward_uid'] && $RCMAIL->storage->check_permflag('FORWARDED'))
         $RCMAIL->storage->set_flag($COMPOSE['forward_uid'], 'FORWARDED', $COMPOSE['mailbox']);
 }
 

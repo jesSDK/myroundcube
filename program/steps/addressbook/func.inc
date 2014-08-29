@@ -804,6 +804,9 @@ function rcmail_contact_photo($attrib)
         $ff_value = '-del-'; // will disable delete-photo action
 
     $img = html::img(array('src' => $photo_img, 'border' => 1, 'alt' => ''));
+    
+    $RCMAIL->output->add_script('$("<img />").error(function() { $("#contactpic").children().attr("src", "skins/' . $RCMAIL->config->get('skin', 'larry') . '/images/contactpic.png") }).attr("src", "' . $photo_img . '");', 'foot');
+    
     $content = html::div($attrib, $img);
 
     if ($CONTACT_COLTYPES['photo'] && ($RCMAIL->action == 'edit' || $RCMAIL->action == 'add')) {

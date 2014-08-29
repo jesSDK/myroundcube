@@ -7394,6 +7394,12 @@ function rcube_webmail()
     params._last = Math.floor(this.env.lastrefresh.getTime() / 1000);
     this.env.lastrefresh = new Date();
 
+    ret = this.triggerEvent('actionbefore', {params:params, action:'refresh'});
+    
+    if(ret){
+      params = ret;
+    }
+
     // plugins should bind to 'requestrefresh' event to add own params
     this.http_post('refresh', params, lock);
   };
