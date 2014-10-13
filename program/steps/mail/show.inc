@@ -80,7 +80,7 @@ if ($uid) {
 
     // set configuration
     $RCMAIL->set_env_config(array('delete_junk', 'flag_for_deletion', 'read_when_deleted',
-        'skip_deleted', 'display_next', 'compose_extwin', 'forward_attachment'));
+        'skip_deleted', 'display_next', 'forward_attachment'));
 
     // set special folders
     foreach (array('drafts', 'trash', 'junk') as $mbox) {
@@ -344,14 +344,14 @@ function rcmail_message_contactphoto($attrib)
             '_task'   => 'addressbook',
             '_action' => 'photo',
             '_email'  => $MESSAGE->sender['mailto'],
-            '_alt'    => $placeholder
+            '_alt'    => $placeholder,
         ));
+
+        $attrib['onerror'] = "this.src = '" . ($placeholder ? $placeholder : 'program/resources/blank.gif') . "'";
     }
     else {
         $photo_img = $placeholder ? $placeholder : 'program/resources/blank.gif';
     }
-    
-    $RCMAIL->output->add_script('$("<img />").error(function() { $("#contactphoto").children().remove() }).attr("src", "' . $photo_img . '");', 'foot');
-    
+
     return html::img(array('src' => $photo_img) + $attrib);
 }

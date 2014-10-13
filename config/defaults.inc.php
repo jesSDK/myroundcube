@@ -123,6 +123,27 @@ $config['default_port'] = 143;
 // best server supported one)
 $config['imap_auth_type'] = null;
 
+// IMAP socket context options
+// See http://php.net/manual/en/context.ssl.php
+// The example below enables server certificate validation
+//$config['imap_conn_options'] = array(
+//  'ssl'         => array(
+//     'verify_peer'  => true,
+//     'verify_depth' => 3,
+//     'cafile'       => '/etc/openssl/certs/ca.crt',
+//   ),
+// );
+$config['imap_conn_options'] = null;
+
+// IMAP connection timeout, in seconds. Default: 0 (use default_socket_timeout)
+$config['imap_timeout'] = 0;
+
+// Optional IMAP authentication identifier to be used as authorization proxy
+$config['imap_auth_cid'] = null;
+
+// Optional IMAP authentication password to be used for imap_auth_cid
+$config['imap_auth_pw'] = null;
+
 // If you know your imap's folder delimiter, you can specify it here.
 // Otherwise it will be determined automatically
 $config['imap_delimiter'] = null;
@@ -159,15 +180,6 @@ $config['imap_force_ns'] = false;
 // For example UW-IMAP server has broken ESEARCH.
 // Note: Because the list is cached, re-login is required after change.
 $config['imap_disabled_caps'] = array();
-
-// IMAP connection timeout, in seconds. Default: 0 (use default_socket_timeout)
-$config['imap_timeout'] = 0;
-
-// Optional IMAP authentication identifier to be used as authorization proxy
-$config['imap_auth_cid'] = null;
-
-// Optional IMAP authentication password to be used for imap_auth_cid
-$config['imap_auth_pw'] = null;
 
 // Type of IMAP indexes cache. Supported values: 'db', 'apc' and 'memcache'.
 $config['imap_cache'] = null;
@@ -244,12 +256,13 @@ $config['smtp_timeout'] = 0;
 // requires 'smtp_timeout' to be non zero.
 // $config['smtp_conn_options'] = array(
 //   'ssl'         => array(
-//     'verify_peer'     => true,
-//     'verify_depth     => 3,
-//     'cafile'          => '/etc/openssl/certs/ca.crt',
+//     'verify_peer'  => true,
+//     'verify_depth' => 3,
+//     'cafile'       => '/etc/openssl/certs/ca.crt',
 //   ),
 // );
 $config['smtp_conn_options'] = null;
+
 
 // ----------------------------------
 // LDAP
@@ -627,6 +640,10 @@ $config['spellcheck_ignore_syms'] = false;
 // Use this char/string to separate recipients when composing a new message
 $config['recipients_separator'] = ',';
 
+// Number of lines at the end of a message considered to contain the signature.
+// Increase this value if signatures are not properly detected and colored
+$config['sig_max_lines'] = 15;
+
 // don't let users set pagesize to more than this value if set
 $config['max_pagesize'] = 200;
 
@@ -970,9 +987,12 @@ $config['check_all_folders'] = false;
 // If true, after message delete/move, the next message will be displayed
 $config['display_next'] = true;
 
-// 0 - Do not expand threads 
-// 1 - Expand all threads automatically 
-// 2 - Expand only threads with unread messages 
+// Default messages listing mode. One of 'threads' or 'list'.
+$config['default_list_mode'] = 'list';
+
+// 0 - Do not expand threads
+// 1 - Expand all threads automatically
+// 2 - Expand only threads with unread messages
 $config['autoexpand_threads'] = 0;
 
 // When replying:

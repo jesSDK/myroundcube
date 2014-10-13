@@ -110,7 +110,7 @@ class rcube_vcard
     public function load($vcard, $charset = RCUBE_CHARSET, $detect = false)
     {
         self::$values_decoded = false;
-        $this->raw = self::vcard_decode($vcard);
+        $this->raw = self::vcard_decode(self::cleanup($vcard));
 
         // resolve charset parameters
         if ($charset == null) {
@@ -135,10 +135,7 @@ class rcube_vcard
         $this->firstname    = $this->raw['N'][0][1];
         $this->middlename   = $this->raw['N'][0][2];
         $this->nickname     = $this->raw['NICKNAME'][0][0];
-        for ($i = 0; $i < 3; $i++) {
-          $this->organization = $this->raw['ORG'][0][$i];
-          if ($this->organization) break;
-        }
+        $this->organization = $this->raw['ORG'][0][0];
         $this->business     = ($this->raw['X-ABSHOWAS'][0][0] == 'COMPANY') || (join('', (array)$this->raw['N'][0]) == '' && !empty($this->organization));
 
         foreach ((array)$this->raw['EMAIL'] as $i => $raw_email) {
@@ -499,7 +496,7 @@ class rcube_vcard
 
             if (preg_match('/^END:VCARD$/i', $line)) {
                 // parse vcard
-                $obj = new rcube_vcard(self::cleanup($vcard_block), $charset, true, self::$fieldmap);
+                $obj = new rcube_vcard($vcard_block, $charset, true, self::$fieldmap);
                 // FN and N is required by vCard format (RFC 2426)
                 // on import we can be less restrictive, let's addressbook decide
                 if (!empty($obj->displayname) || !empty($obj->surname) || !empty($obj->firstname) || !empty($obj->email)) {
@@ -528,7 +525,7 @@ class rcube_vcard
     {
         // convert Apple X-ABRELATEDNAMES into X-* fields for better compatibility
         $vcard = preg_replace_callback(
-            '/item(\d+)\.(X-ABRELATEDNAMES)([^:]*?):(.*?)item\1.X-ABLabel:(?:_\$!<)?([\w-() ]*)(?:>!\$_)?./si',
+            '/item(\d+)\.(X-ABRELATEDNAMES)([^:]*?):(.*?)item\1.X-ABLabel:(?:_\$!<)?([\w-() ]*)(?:>!\$_)?./s',
             array('self', 'x_abrelatednames_callback'),
             $vcard);
 

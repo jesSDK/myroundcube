@@ -187,6 +187,11 @@ function rcube_webmail()
     if (this.env.permaurl)
       this.enable_command('permaurl', 'extwin', true);
 
+    // initialize html editor
+    if (this.env.html_editor_init && window.rcmail_editor_init) {
+      rcmail_editor_init(this.env.html_editor_init);
+    }
+
     switch (this.task) {
 
       case 'mail':
@@ -980,7 +985,7 @@ function rcube_webmail()
         if (this.task == 'mail') {
           url._mbox = this.env.mailbox;
           if (props)
-             url._to = props;
+            url._to = props;
           // also send search request so we can go back to search result after message is sent
           if (this.env.search_request)
             url._search = this.env.search_request;
@@ -1008,8 +1013,12 @@ function rcube_webmail()
             break;
           }
         }
-        else if (props)
+        else if (props && typeof props == 'string') {
           url._to = props;
+        }
+        else if (props && typeof props == 'object') {
+          $.extend(url, props);
+        }
 
         this.open_compose_step(url);
         break;
@@ -2287,7 +2296,7 @@ function rcube_webmail()
   // expand all threads with unread children
   this.expand_unread = function()
   {
-    var r, tbody = this.gui_objects.messagelist.tBodies[0],
+    var r, tbody = this.message_list.tbody,
       new_row = tbody.firstChild;
 
     while (new_row) {
@@ -3162,9 +3171,7 @@ function rcube_webmail()
     }
 
     // check for locally stored compose data
-    if (window.localStorage) {
-      this.compose_restore_dialog(0, html_mode)
-    }
+    this.compose_restore_dialog(0, html_mode)
 
     if (input_to.val() == '')
       input_to.focus();
@@ -3782,15 +3789,16 @@ function rcube_webmail()
       }
     });
 
-    if (window.localStorage && !empty) {
+    if (!empty) {
       var index = this.local_storage_get_item('compose.index', []),
         key = this.env.compose_id;
 
-        if ($.inArray(key, index) < 0) {
-          index.push(key);
-        }
-        this.local_storage_set_item('compose.' + key, formdata, true);
-        this.local_storage_set_item('compose.index', index);
+      if ($.inArray(key, index) < 0) {
+        index.push(key);
+      }
+
+      this.local_storage_set_item('compose.' + key, formdata, true);
+      this.local_storage_set_item('compose.index', index);
     }
   };
 
@@ -3829,28 +3837,25 @@ function rcube_webmail()
   // remove stored compose data from localStorage
   this.remove_compose_data = function(key)
   {
-    if (window.localStorage) {
-      var index = this.local_storage_get_item('compose.index', []);
+    var index = this.local_storage_get_item('compose.index', []);
 
-      if ($.inArray(key, index) >= 0) {
-        this.local_storage_remove_item('compose.' + key);
-        this.local_storage_set_item('compose.index', $.grep(index, function(val,i) { return val != key; }));
-      }
+    if ($.inArray(key, index) >= 0) {
+      this.local_storage_remove_item('compose.' + key);
+      this.local_storage_set_item('compose.index', $.grep(index, function(val,i) { return val != key; }));
     }
   };
 
   // clear all stored compose data of this user
   this.clear_compose_data = function()
   {
-    if (window.localStorage) {
-      var index = this.local_storage_get_item('compose.index', []);
+    var i, index = this.local_storage_get_item('compose.index', []);
 
-      for (var i=0; i < index.length; i++) {
-        this.local_storage_remove_item('compose.' + index[i]);
-      }
-      this.local_storage_remove_item('compose.index');
+    for (i=0; i < index.length; i++) {
+      this.local_storage_remove_item('compose.' + index[i]);
     }
-  }
+
+    this.local_storage_remove_item('compose.index');
+  };
 
 
   this.change_identity = function(obj, show_sig)
@@ -3861,6 +3866,16 @@ function rcube_webmail()
     if (!show_sig)
       show_sig = this.env.show_sig;
 
+    var id = obj.options[obj.selectedIndex].value;
+
+    // enable manual signature insert
+    if (this.env.signatures && this.env.signatures[id]) {
+      this.enable_command('insert-sig', true);
+      this.env.compose_commands.push('insert-sig');
+    }
+    else
+      this.enable_command('insert-sig', false);
+
     // first function execution
     if (!this.env.identities_initialized) {
       this.env.identities_initialized = true;
@@ -3870,21 +3885,19 @@ function rcube_webmail()
         return;
     }
 
-    var i, rx, cursor_pos, p = -1,
-      id = obj.options[obj.selectedIndex].value,
+    var cursor_pos, p = -1,
       input_message = $("[name='_message']"),
       message = input_message.val(),
       is_html = ($("input[name='_is_html']").val() == '1'),
       sig = this.env.identity,
       delim = this.env.recipients_separator,
-      rx_delim = RegExp.escape(delim),
-      headers = ['replyto', 'bcc'];
+      rx_delim = RegExp.escape(delim);
 
     // update reply-to/bcc fields with addresses defined in identities
-    for (i in headers) {
-      var key = headers[i],
-        old_val = sig && this.env.identities[sig] ? this.env.identities[sig][key] : '',
-        new_val = id && this.env.identities[id] ? this.env.identities[id][key] : '',
+    $.each(['replyto', 'bcc'], function() {
+      var rx, key = this,
+        old_val = sig && ref.env.identities[sig] ? ref.env.identities[sig][key] : '',
+        new_val = id && ref.env.identities[id] ? ref.env.identities[id][key] : '',
         input = $('[name="_'+key+'"]'), input_val = input.val();
 
       // remove old address(es)
@@ -3911,15 +3924,7 @@ function rcube_webmail()
 
       if (old_val || new_val)
         input.val(input_val).change();
-    }
-
-    // enable manual signature insert
-    if (this.env.signatures && this.env.signatures[id]) {
-      this.enable_command('insert-sig', true);
-      this.env.compose_commands.push('insert-sig');
-    }
-    else
-      this.enable_command('insert-sig', false);
+    });
 
     if (!is_html) {
       // remove the 'old' signature
@@ -4689,6 +4694,7 @@ function rcube_webmail()
   this.list_contacts = function(src, group, page)
   {
     var win, folder, url = {},
+      refresh = src === undefined && group === undefined && page === undefined,
       target = window;
 
     if (!src)
@@ -4701,7 +4707,7 @@ function rcube_webmail()
       page = this.env.current_page = 1;
       this.reset_qsearch();
     }
-    else if (group != this.env.group)
+    else if (!refresh && group != this.env.group)
       page = this.env.current_page = 1;
 
     if (this.env.search_id)
@@ -4837,6 +4843,9 @@ function rcube_webmail()
     if (action && (cid || action=='add') && !this.drag_active) {
       if (this.env.group)
         url._gid = this.env.group;
+
+      if (this.env.search_request)
+        url._search = this.env.search_request;
 
       url._action = action;
       url._source = this.env.source;
@@ -7394,12 +7403,6 @@ function rcube_webmail()
     params._last = Math.floor(this.env.lastrefresh.getTime() / 1000);
     this.env.lastrefresh = new Date();
 
-    ret = this.triggerEvent('actionbefore', {params:params, action:'refresh'});
-    
-    if(ret){
-      params = ret;
-    }
-
     // plugins should bind to 'requestrefresh' event to add own params
     this.http_post('refresh', params, lock);
   };
@@ -7724,23 +7727,43 @@ function rcube_webmail()
   // wrapper for localStorage.getItem(key)
   this.local_storage_get_item = function(key, deflt, encrypted)
   {
+    var item;
 
     // TODO: add encryption
-    var item = localStorage.getItem(this.get_local_storage_prefix() + key);
+    try {
+      item = localStorage.getItem(this.get_local_storage_prefix() + key);
+    }
+    catch (e) { }
+
     return item !== null ? JSON.parse(item) : (deflt || null);
   };
 
   // wrapper for localStorage.setItem(key, data)
   this.local_storage_set_item = function(key, data, encrypted)
   {
-    // TODO: add encryption
-    return localStorage.setItem(this.get_local_storage_prefix() + key, JSON.stringify(data));
+    // try/catch to handle no localStorage support, but also error
+    // in Safari-in-private-browsing-mode where localStorage exists
+    // but can't be used (#1489996)
+    try {
+      // TODO: add encryption
+      localStorage.setItem(this.get_local_storage_prefix() + key, JSON.stringify(data));
+      return true;
+    }
+    catch (e) {
+      return false;
+    }
   };
 
   // wrapper for localStorage.removeItem(key)
   this.local_storage_remove_item = function(key)
   {
-    return localStorage.removeItem(this.get_local_storage_prefix() + key);
+    try {
+      localStorage.removeItem(this.get_local_storage_prefix() + key);
+      return true;
+    }
+    catch (e) {
+      return false;
+    }
   };
 
 }  // end object rcube_webmail

@@ -467,15 +467,11 @@ if (preg_match('/[^\x00-\x7F]/', $MAIL_MIME->getTXTBody())) {
     $transfer_encoding = $RCMAIL->config->get('force_7bit') ? 'quoted-printable' : '8bit';
 }
 else {
-    $text_charset      = '';
+    $text_charset      = 'US-ASCII';
     $transfer_encoding = '7bit';
 }
 
 if ($flowed) {
-    if (!$text_charset) {
-        $text_charset = 'US-ASCII';
-    }
-
     $text_charset .= ";\r\n format=flowed";
 }
 
@@ -534,9 +530,9 @@ if (!$savedraft) {
     }
 
     // set replied/forwarded flag
-    if ($COMPOSE['reply_uid'] && $RCMAIL->storage->check_permflag('ANSWERED'))
+    if ($COMPOSE['reply_uid'])
         $RCMAIL->storage->set_flag($COMPOSE['reply_uid'], 'ANSWERED', $COMPOSE['mailbox']);
-    else if ($COMPOSE['forward_uid'] && $RCMAIL->storage->check_permflag('FORWARDED'))
+    else if ($COMPOSE['forward_uid'])
         $RCMAIL->storage->set_flag($COMPOSE['forward_uid'], 'FORWARDED', $COMPOSE['mailbox']);
 }
 

@@ -920,21 +920,15 @@ class rcube_db
      *
      * @return string Translated table name
      */
-     public function table_name($table)
-     {
-         static $rcube;
+    public function table_name($table)
+    {
+        // add prefix to the table name if configured
+        if (($prefix = $this->options['table_prefix']) && strpos($table, $prefix) !== 0) {
+            return $prefix . $table;
+        }
 
-         if (!$rcube) {
-             $rcube = rcube::get_instance();
-         }
-
-         // add prefix to the table name if configured
-         if (($prefix = $rcube->config->get('db_prefix')) && strpos($table, $prefix) !== 0) {
-             return $prefix . $table;
-         }
-
-         return $table;
-     }
+        return $table;
+    }
 
     /**
      * Set class option value
