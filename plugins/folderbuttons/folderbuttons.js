@@ -1,0 +1,1 @@
+function collapseall(){$(".treetoggle.expanded").trigger("click")}function expandall(){$(".treetoggle.collapsed").trigger("click")};

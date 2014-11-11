@@ -1,0 +1,120 @@
+<roundcube:object name="doctype" value="html5" />
+<html>
+<head>
+  <title><roundcube:object name="pagetitle" /></title>
+  <roundcube:include file="/includes/links.html" />  
+</head>
+<body>
+  <!-- settings -->
+  <div id="js_settings" style="display:none;">
+    <span id="control_bar_fudge">10</span>
+    <!-- left, right, center, fixed -->
+    <span id="control_bar_position">left</span>
+    <span id="filter_bar_fudge">50</span>
+    <span id="filter_bar_fudge_top">32</span>
+    <span id="filter_bar_fudge_left">-20</span>
+    <!-- variable, fixed -->
+    <span id="filter_bar_position">variable</span>
+  </div>
+  <!-- settings -->
+  <roundcube:include file="/includes/header.html" />
+  <roundcube:include file="/includes/taskbar.html" />
+  <roundcube:include skin_path="plugins/calendar/skins/larry" file="/templates/dialog.html" />
+  <div id="planner_controls_container">
+    <ul id="planner_controls">
+      <table cellspacing="0" cellpadding="0">
+        <tr>
+          <td><li><a href="#" id="new" title="<roundcube:label name="planner.new" />">+</a></li></td>
+          <td><li><a href="#" id="today" class="ddate" title="<roundcube:label name="planner.show_today" />"><roundcube:label name="planner.today" /></a></li></td>
+          <td><li><a href="#" id="tomorrow" class="ddate" title="<roundcube:label name="planner.show_tomorrow" />">&gt;</a></li></td>
+          <td><li><a href="#" id="all" title="<roundcube:label name="planner.show_all" />">...</a></li></td>
+          <td><li><a href="#" id="filter" title="<roundcube:label name="planner.filter" />" style="">&nbsp;&nbsp;&nbsp;</a></li></td>
+          <td width="80%" nowrap>
+            <li><roundcube:label name="planner.view" /><span>:&nbsp;</span>
+              <select id="controls" title="<roundcube:label name="planner.select_view" />">
+                <option value="all"><roundcube:label name="planner.all" /></option>
+                <option value="starred" class="nobirthday"><roundcube:label name="planner.starred" /></option>
+                <option value="overdue"><roundcube:label name="planner.overdue" /></option>
+                <option value="today" selected="selected"><roundcube:label name="planner.today" /></option>
+                <option value="tomorrow"><roundcube:label name="planner.tomorrow" /></option>
+                <option value="week"><roundcube:label name="planner.week" /></option>
+                <option value="done" class="nobirthday"><roundcube:label name="planner.done" /></option>
+                <option value="deleted" class="nobirthday"><roundcube:label name="planner.deleted" /></option>
+              </select>
+            </li>
+          </td>
+          <td><li><a href="#" id="help" title="<roundcube:label name="planner.help" />">?</a></li></td>
+        </tr>
+      </table>
+    </ul>
+    <div id="planner_help">
+      <iframe id="planner_help_iframe" src="./plugins/planner/localization/help/help.php?_hl=<roundcube:var name="session:language" />&_skin=<roundcube:var name="config:skin" />" frameborder="0" width="100%" height="100%"></iframe>
+    </div>
+  </div>
+  <div id="filter_selector">
+    <ul>
+      <li>&raquo;&nbsp;<a href="#" id="fall" class="flink"><roundcube:label name="planner.nofilter" /></a></li>
+      <li>&raquo;&nbsp;<a href="#" id="ftodos" class="flink"><roundcube:label name="planner.todos" /></a></li>
+      <li>&raquo;&nbsp;<a href="#" id="fplans" class="flink"><roundcube:label name="planner.plans" /></a></li>
+      <li id="lbirthdays">&raquo;&nbsp;<a href="#" id="fbirthdays" class="flink"><roundcube:label name="planner.birthdays" /></a></li>
+    </ul>
+  </div>
+  <div id="planner_items"></div>
+  <div id="filter_bar">
+    <a id="fnone" href="#" title="<roundcube:label name="planner.removefilter" />"><span><u><roundcube:label name="planner.filter" /></u></span>:&nbsp;<span id="dfilter"><roundcube:label name="planner.nofilter" /></span>&nbsp;<span class="count" id="items_count">0</span></a>
+    <span>&nbsp;&nbsp;</span>
+    <span class="count" id="birthdays_count">0</span>&nbsp;<span id="bdlabel"><roundcube:label name="planner.birthdays" /></span>&nbsp;<input id="cbirthdays" type="checkbox" checked="checked" title="<roundcube:label name="planner.birthdays_no" />" />
+  </div>
+  <div id="expunge_bar">
+    <a id="expunge" href="#" title="<roundcube:label name="planner.expunge_deleted" />"><u><roundcube:label name="planner.expunge" /></u></a>
+  </div>
+  <div id="control_bar"> 
+    <span>
+      <a href="#" class="lcontrol" id="call"><roundcube:label name="planner.all" /></a>&nbsp;
+    </span>
+    <span class="count" id="all_count">0</span>
+    <span>&nbsp;</span>
+    <span class="nobirthday">
+      <a href="#" class="lcontrol" id="cstarred"><roundcube:label name="planner.starred" /></a>&nbsp;
+    </span>
+    <span class="count nobirthday" id="starred_count">0</span>
+    <span class="nobirthday">&nbsp;</span>
+    <span>
+      <a href="#" class="lcontrol" id="coverdue"><roundcube:label name="planner.overdue" /></a>&nbsp;
+    </span>
+    <span class="count" id="overdue_count">0</span>
+    <span>&nbsp;</span>
+    <span>
+      <a href="#" class="lcontrol ddate" id="ctoday"><roundcube:label name="planner.today" /></a>&nbsp;
+    </span>
+    <span class="count" id="today_count">0</span>
+    <span>&nbsp;</span>
+    <span>
+      <a href="#" class="lcontrol ddate" id="ctomorrow"><roundcube:label name="planner.tomorrow" /></a>&nbsp;
+    </span>
+    <span class="count" id="tomorrow_count">0</span>
+    <span>&nbsp;</span>
+    <span>
+      <a href="#" class="lcontrol ddate" id="cweek"><roundcube:label name="planner.week" /></a>&nbsp;
+    </span>
+    <span class="count" id="week_count">0</span>
+    <span class="nobirthday">&nbsp;</span>
+    <span class="nobirthday">
+      <a href="#" class="lcontrol" id="cdone"><roundcube:label name="planner.done" /></a>&nbsp;
+    </span>
+    <span class="count nobirthday" id="done_count">0</span>
+    <span class="nobirthday">&nbsp;</span>
+    <span class="nobirthday">
+      <a href="#" class="lcontrol" id="cdeleted"><roundcube:label name="planner.deleted" /></a>&nbsp;
+    </span>
+    <span class="count nobirthday" id="deleted_count">0</span>
+  </div>
+  <div id="overlay"></div>
+  <div id="planner_drag_container">
+    <ul id="planner_drag_list">
+  </ul>
+  </div>
+  <roundcube:object name="message" id="message" class="plannerstatusbar" />
+  <roundcube:include file="/includes/footer.html" />
+</body>
+</html>

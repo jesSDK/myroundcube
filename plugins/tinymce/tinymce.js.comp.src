@@ -1,0 +1,8 @@
+$(document).ready(function(){
+  $('.editfield').keypress(function(){
+    if($('#kbDesk').attr('style')){
+      $('#virtualKeyboard').remove();
+      adjust_css(false, 'winxp');
+    }
+  });
+});

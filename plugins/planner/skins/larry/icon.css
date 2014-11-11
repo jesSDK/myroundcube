@@ -1,0 +1,11 @@
+/*
+ * Roundcube Planner
+ */
+
+#taskbar a.button-planner {
+  background: url(images/planner.png) 10px 11px no-repeat;
+}
+
+#taskbar a.button-planner:hover span.button-inner{
+  background: url(images/planner.png) 4px -45px no-repeat;
+}

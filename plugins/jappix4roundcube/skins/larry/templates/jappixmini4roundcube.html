@@ -1,0 +1,29 @@
+﻿<roundcube:object name="doctype" value="html5" />
+<html>
+<head>
+<title><roundcube:object name="pagetitle" /></title>
+<roundcube:include file="/includes/links.html" />
+<script type="text/javascript">
+var jappixminiframe = true;
+var rc_task = '<roundcube:var name="request:_origtask" />';
+var rc_action = '<roundcube:var name="request:_origaction" />';
+var rc_query = false;
+</script>
+</head>
+<body style="margin:0px;padding:0px;overflow:hidden;height:100%">
+<div style="position: absolute;top:0;bottom:0;left:0;right:0;overflow:hidden" id="jappixcontainer">
+<iframe id="jappixminiframe" src="./?_task=<roundcube:var name="request:_origtask" />&_action=<roundcube:var name="request:_origaction" />" frameborder="0" height="100%" width="100%" scrolling="no"></iframe>
+</div>
+<script type="text/javascript">
+$(window).resize(function(){
+  var qs = frames[0].location.search + '';
+  if(!rc_query){
+    rc_query = true;
+    $('iframe').remove();
+    $('#jappixcontainer').append('<iframe src="./' + qs + '" frameborder="0" height="100%" width="100%" scrolling="no"></iframe>');
+  }
+  window.setTimeout("rc_query = false", 100);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+VERSION                COMMENT
+-------------------------------------------------------------------------------
+1.0                    - Initial release
+1.1                    - Implemented hmail_db driver
+1.2                    - Roundcube 1.0 compatibility

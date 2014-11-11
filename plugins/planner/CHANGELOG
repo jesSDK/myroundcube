@@ -1,0 +1,15 @@
+VERSION                COMMENT
+-------------------------------------------------------------------------------------------------
+2.9.2                  - Separated jQuery timpicker code
+2.9.3                  - Code improvement
+2.9.4                  - Roundcube 0.9 compatibility
+2.9.5 - 3.0.1          - Roundcube 0.9 minimalmode implementation
+3.0.2 - 3.0.6          - GUI fixes (f.e. Safari datetimepicker issue)
+3.0.7                  - GUI improvements
+3.0.8 - 3.0.10         - Drag & drop fixes
+3.0.11                 - Jappix4Roundcube adjustments
+3.0.12                 - Implemented mysqladmin support
+3.0.13                 - Roundcube 1.0 compatibility
+3.0.14 - 3.0.17        - Fix move button
+3.0.18 - 3.0.19        - Remove redundant code (compressor)
+3.0.20                 - Added MSSQL support (third party contribution (https://asphostpage.com/)

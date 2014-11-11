@@ -1,0 +1,8 @@
+VERSION                COMMENT
+---------------------------------------------------------------------------------
+2.0                    - Implemented database versioning
+2.0.1                  - Bug fix: Plugin was not loaded if Plugin Manager Admin
+                                  database structure was already adjusted
+                                  (old releases) but system table was not updated
+3.0 - 3.0.1            - Roundcube 1.0 compatibility
+3.0.2                  - MSSQL support

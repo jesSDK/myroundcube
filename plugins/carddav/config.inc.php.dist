@@ -1,0 +1,186 @@
+<?php
+
+/**  @ http://myroundcube.com/myroundcube-plugins/carddav-plugin/configuration **/
+
+// Automatic addressbook database table name
+      /*
+      This array defines the automatic address book database table name. Generally,
+      you do not need to change it.
+      */
+$config['db_table_collected_contacts'] = 'collected_contacts';
+
+
+// Enable automatic Contacts collection
+      /*
+      When this option is set to 'true' (enabled), the plugin collects each address a
+      user sends an email to and records it in an address book, making it available
+      for later use or auto-completion.
+      Enable 'true' or disable 'false'.
+      */
+$config['use_auto_abook'] = true;
+
+// Enable auto-completion from automatic collected contacts by default
+      /*
+      Define whether automatic collected contacts should be used for auto-completion
+      by default.
+      Enable 'true' or disable 'false'.
+      */
+$config['use_auto_abook_for_completion'] = true;
+
+// Show empty address books from Roundcube database
+      /*
+      Configuration option to show 'true' or hide 'false' roundcube database address books
+      (even if they are empty) in all accounts by default. With carddav/carddav_plus plugins
+      there are two local address books [Personal(local) and Collected(local)]. When offering
+      CardDAV services support, administrators may want to show Personal(local) and Collected
+      (local) address books to allow users to migrate (copy) their contacts from the local
+      roundcube database. By default, when using CardDAV backend services for contacts, these
+      two address books will be hidden if they happen to be empty.
+      @ http://myroundcube.com/carddav-plugin/configuration#show_empty_database_addressbooks
+      */
+$config['show_empty_database_addressbooks'] = false;
+
+// Collection Exclusions
+      /*
+      Don't collect contacts matching specific RegEx patterns.
+      */
+$config['auto_abook_exclude_names'] = array(
+  '/via MyRoundcube plugins/i',
+);
+$config['auto_abook_exclude_emails'] = array(
+  '/ml\-node/i',
+);
+
+// Disable sharing
+      /*
+      Disallow users to access sharing section.
+      */
+$config['carddav_disallow_sharing'] = false;
+
+// CardDAV database tables
+      /*
+      CardDAV database tables definition. This is a structural configuration that shouldn't be
+      changed at all unless you really need to do so for very specific reasons.
+      */
+$config['db_table_carddav_server'] = 'carddav_server';
+$config['db_table_carddav_contacts'] = 'carddav_contacts';
+$config['db_table_carddav_contactgroups'] = 'carddav_contactgroups';
+$config['db_table_carddav_contactgroupmembers'] = 'carddav_contactgroupmembers';
+
+/* CardDAV database tables sequences (PostgreSQL) */
+$config['db_sequence_carddav_server'] = 'carddav_server_carddav_server_id_seq';
+$config['db_sequence_carddav_contacts'] = 'carddav_contacts_carddav_contact_id_seq';
+$config['db_sequence_carddav_contactgroups'] = 'carddav_contactgroups_contactgroup_id_seq';
+
+// Debug 
+      /*
+      Configuration option to enable 'true' or disable 'false' carddav debug (extended logging).
+      */
+$config['carddav_debug'] = false;
+
+// Protect CardDAV Defaults
+      /*
+      Allow users to edit any CardDAV related options. User cannot add, modify or delete any
+      defaults when 'carddav_protect' is enabled.
+      Enable 'true' or disable 'false'.
+      @ http://myroundcube.com/myroundcube-plugins/carddav-plugin/configuration#carddav_protect
+      */
+$config['carddav_protect'] = false;
+
+// Maxaximum number of CardDAV resources
+      /*
+      The maximum number of CardDAV resources users are allowed to connect to. You must define
+      the 'max_carddavs' property value high enough to accommodate default address books plus
+      additional ones to be added by users later in webmail. This configuration option limits the
+      maximum CardDAV resources permitted in the installation. It is a hard limit cap to the amount
+      of resources users can have or connect at any given time. The more resources allowed, the
+      higher the load on your server.
+      Note that in the default configuration, 'max_carddavs' value is set to '5'. Which means that if
+      the administrator configured 5 default carddav address books in the initial configuration
+      (e.g: Collected, Personal, Work, Family, Friends), users won't be able to add additional carddav
+      resources since the 'max_carddavs' limit has been reached. Therefore, a higher limit might be needed.
+      With 'max_carddavs' set to a value such as 8, following the example above, users will be able to
+      add 3 additional carddav resources in addition to the 5 initial carddavs preconfigured by the
+      administrator e.g.: Collected, Personal, Work, Family, Friends, user_defined1, user_defined2,
+      user_defined3.
+      */
+$config['max_carddavs'] = 5;
+
+// CardDAV Syncronization
+      /*
+      CardDAV automatic syncronization every (x) minutes. (x = numerical value) 
+      Default: 5 minutes
+      Set to 0 (zero) to have CardDAV resources always synchronized on remote refresh.
+      */
+$config['sync_carddavs_interval'] = 5;
+
+// Password Syncronization
+      /*
+      Configuration option to specify the host where carddav passwords must be kept synchronized with
+      roundcube IMAP passwords. Our sabredav plugin uses this configuration array to keep SabreDAV framework
+      accounts passwords synchronized with roundcube IMAP passwords. This allows seamless integration
+      between roundcube users' accounts and SabreDAV framework accounts.
+      */
+$config['carddav_synced_passwords'] = array(
+  'dav.mydomain.tld',
+);
+
+// Default CardDAV addressbooks
+      /*
+      Configuration option to define default address books. By default, the configuration offers Work,
+      Personal, Family and Collected. They are completely optional and can be modified as needed.
+      Use $config['carddav_protect'] to prevent users from deleting default resources. When editing
+      these default address books, make sure to also update sabredav plugin configuration accordingly
+      if using sabredav in your installation.
+      @ http://myroundcube.com/myroundcube-plugins/show-configuration?_plugin=sabredav
+      
+      placeholders: %u  = $_SESSiON['username'],
+                    %su = local part of $_SESSION['username'],
+                    %p  = $_SESSION['password']
+      */
+$config['def_carddavs'] = array(
+  'Work' => array(
+                   'user' => '%u',
+                   'pass' => '%p',
+                   'url' => 'http://dav.mydomain.tld/addressbooks/%u/work',
+                   'readonly' => false,
+                 ),
+  'Personal' => array(
+                   'user' => '%u',
+                   'pass' => '%p',
+                   'url' => 'http://dav.mydomain.tld/addressbooks/%u/personal',
+                   'readonly' => false,
+                 ),
+  'Family' => array(
+                   'user' => '%u',
+                   'pass' => '%p',
+                   'url' => 'http://dav.mydomain.tld/addressbooks/%u/family',
+                   'readonly' => false,
+                 ),
+  'Collected' => array(
+                   'user' => '%u',
+                   'pass' => '%p',
+                   'url' => 'http://dav.mydomain.tld/addressbooks/%u/collected',
+                   'readonly' => false,
+                 ),
+);
+
+// HINT
+      /*
+      By default %u is replaced by rcmail::get_instance()->user->data['username'] (eq. to $_SESSION['username']).
+      If that does not fit your needs, this is the right place to replace %u by whatever you need.
+      Here follows an example on how to strip off the domain part of the user:
+        
+      if(function_exists('get_input_value')){
+      $user = explode('@', get_input_value('_user', RCUBE_INPUT_POST), 2);
+      $user = $user[0];
+      foreach($config['def_carddavs'] as $key => $props){
+        if($config['def_carddavs'][$key]['user'] == '%u'){
+          $config['def_carddavs'][$key]['user'] = $user;
+          $config['def_carddavs'][$key]['url'] = str_replace('%u', $user, $config['def_carddavs'][$key]['url']);
+          }
+        }
+      }
+*/
+
+?>

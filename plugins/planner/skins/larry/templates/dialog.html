@@ -1,0 +1,56 @@
+  <!-- jqueryui dialog settings -->
+  <div id="dialog_settings" style="display:none;">
+    <span id="dialog_modal">false</span>
+    <span id="dialog_width">540</span>
+    <span id="dialog_height">450</span>
+    <span id="dialog_zIndex">50003</span>
+  </div>
+  <!-- end jqueryui dialog settings -->
+  <div id="planner_dialog">
+    <div id="planner_input">
+      <input id="planner_raw" type="text" autocomplete="off" />
+      <input id="planner_mode" type="hidden" value="new" />
+      <input id="planner_id" type="hidden" value="" />
+      <input id="planner_datetime" type="hidden" value="" />
+      <input id="planner_text" type="hidden" value="" />
+      <input id="planner_created" type="hidden" value="" />
+      <div id="planner_autocomplete"><a href="#" id="planner_autocomplete_content"></a></div>
+      <br /><br />
+      <div id="planner_datetimepicker"></div>
+      <div id="planner_preview">
+        <br />
+        <fieldset>
+          <legend><roundcube:label name="planner.preview" /></legend>
+          <ul>
+            <li>
+              <a id="planner_preview_star" href="#" class="pnostar" title="<roundcube:label name="planner.toggle" />"></a>
+              <a id="planner_preview_done" href="#" title="<roundcube:label name="planner.remove_flag" />"></a>
+              <span id="planner_preview_date" class="date"></span>
+              <span id="planner_preview_time" class="time"></span>
+              <span id="planner_preview_text" class="pnodate"></span>
+            </li>
+          </ul>
+        </fieldset>
+      </div>
+      <div id="planner_flags">
+        <fieldset>
+          <legend><roundcube:label name="planner.flags" /></legend>
+          <label for="planner_starred"><roundcube:label name="planner.starred" /></label>&nbsp;<input id="planner_starred" type="checkbox" />
+          <label for="planner_done"><roundcube:label name="planner.done" /></label>&nbsp;<input id="planner_done" type="checkbox" />
+          <label for="planner_deleted"><roundcube:label name="planner.deleted" /></label>&nbsp;<input id="planner_deleted" type="checkbox" />
+        </fieldset>
+      </div>
+      <div id="planner_formats">
+        <fieldset>
+          <legend><roundcube:label name="planner.datetimehints" /></legend>
+          <ul>
+            <li><a href="#" class="hint"><span class="longdatetime"></span></a></li>
+            <li><a href="#" class="hint"><span class="shortdatetime"></span></a></li>
+            <li><a href="#" class="hint"><span class="ltoday"><roundcube:label name="planner.today" /></span> <span class="longtime"</span></a></li>
+            <li><a href="#" class="hint"><span class="ltomorrow"><roundcube:label name="planner.tomorrow" /></span> <span class="shorttime"</span></a></li>
+            <li><a href="#" class="hint"><span calss="lplus">+5</span> <span class="longtime"</span></a></li>
+          </ul>
+        </fieldset>
+      </div>
+    </div>
+  </div>

@@ -1,0 +1,26 @@
+<?php
+
+/** @ http://myroundcube.com/myroundcube-plugins/archivefolder-plugin **/
+
+//Show archive button in mailbox list
+$config['archive_show_button'] = true;
+
+// Specify the default 'Archive' folder name
+      /*
+      To prevent users from overwriting this folder, add 'archive_mbox' to
+      the 'dont_override' configuration directive.
+      @ http://myroundcube.com/myroundcube-plugins/archivefolder-plugin#disable-overwriting
+      */
+$config['archive_mbox'] = 'Archive';
+
+// Create default folder on login
+      /*
+      NOTE:
+      -----
+      To create the 'Archive' folder by default, configure ./config/config.inc.php as follows:
+      
+      $config['default_folders'] = array('INBOX', 'Archive', 'Drafts', 'Sent', 'Junk', 'Trash');
+      $config['create_default_folders'] = true;
+      @ http://myroundcube.com/myroundcube-plugins/archivefolder-plugin#auto-create 
+      */
+?>

@@ -1,0 +1,7 @@
+carddav
+=======
+
+Since v4.x contact fields are limited to (name, firstname, surname, middlename, email, photo).
+To support all available fields carddav_plus is required.
+
+Since v3.x carddav_plus plugin is required for advanced features (f.e. automated Addressbook).

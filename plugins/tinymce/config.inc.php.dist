@@ -1,0 +1,21 @@
+<?php
+
+/* TinyMCE gzip compression */
+$config['tinymce_gzip'] = true;
+
+/* TinyMCE plugins */
+$config['tinymce_plugins_compose'] = 'if(typeof config == "undefined"){config = a};' .
+  '"Jsvk,paste,emotions,inlinepopups,media,nonbreaking,table,searchreplace,visualchars,directionality,tabfocus"' .
+  ' + (config.spellcheck ? ",spellchecker" : "")';
+$config['tinymce_plugins_identity'] = "'paste,tabfocus,inlinepopups,emotions'";
+
+/* TinyMCE button rows */
+$config['tinymce_buttons_compose_row1'] = "'bold,italic,underline,|,justifyleft,justifycenter,justifyright," .
+  "justifyfull,|,bullist,numlist,outdent,indent,ltr,rtl,blockquote,|,forecolor,backcolor,fontselect,fontsizeselect'";
+$config['tinymce_buttons_compose_row2'] = "if(typeof config == 'undefined'){config = a};'Jsvk,|,link,unlink," .
+  "table,|,emotions,charmap,image,media,|,code,search' + (config.spellcheck ? ',spellchecker' : '') + ',undo,redo'";
+$config['tinymce_buttons_identity_row1'] = "'bold,italic,underline,strikethrough,justifyleft,justifycenter," .
+  "justifyright,justifyfull,separator,outdent,indent,hr,link,unlink,code,forecolor'";
+$config['tinymce_buttons_identity_row2'] = "'fontselect,fontsizeselect,|,emotions,charmap,image'";
+
+?>

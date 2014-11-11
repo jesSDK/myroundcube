@@ -1,0 +1,32 @@
+#sections-table #rcmrowmh_preferences td.section {
+  background: url(highlight.png) 10px 4px no-repeat;
+}
+
+#sections-table #rcmrowmh_preferences.selected td.section{
+  background: url(highlight.png) 10px -21px no-repeat;
+}
+
+table.propform td.title {
+  padding: 0 20 0 0;
+}
+
+select {
+  height: 24px;
+  font-size: 10pt;
+  border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  border: 1px solid #ababab;
+}
+
+.mh_first {
+	display: none;
+}
+
+.mh_matches {
+  font-size: 10pt;
+}
+
+.footerleft {
+  padding: 0 12px 10px 25px;
+}

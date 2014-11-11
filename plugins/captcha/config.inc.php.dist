@@ -1,0 +1,38 @@
+<?php
+
+/** @ http://myroundcube.com/myroundcube-plugins/captcha-plugin **/
+
+// Captcha challenge to enter authenticated state
+     /*
+      This configuration array is used to enforce captcha challenge during login. It is
+      disabled 'false' by default. Captcha Challenging users on every login could be
+      somewhat annoying and not very user-friendly. Set to 'true' to enable captcha in 
+      the login page.
+      */
+$config['captcha_auth'] = false;
+
+// Unauthenticated state challenge
+     /*
+      This configuration option is intended for admins who offer unauthenticated tasks that
+      do not have built-in captcha support.
+
+      This array must contain pages where captcha should be forced before entering the page.
+      This means that a challenge page with the captcha challenge is displayed BEFORE users
+      can enter the page. MyRoundcube 'contactus', 'pwtools' and 'register' plugins have
+      captcha support built-in (captcha plugin must be enabled in the installation), hence
+      it is not necessary to have an extra captcha challenge in front of the 'Contact Us',
+      'Register' or 'Password Reminder' pages and an empty array is suitable as follow:
+      
+         $config['captcha_page'] = array();
+      */
+$config['captcha_page'] = array("contactus.contactus", "pwtools.recpw", "register.register");
+
+// Textual Captcha
+     /*
+      Clicking the captcha image offers additional ways to read it as text. There are two
+      configuration options available 'riddle' or 'entity_encoded'. We consider 'riddle' to be
+      harder for bots to figure out hence it is set as default.
+      */
+$config['captcha_onclick'] = 'riddle';
+
+?>

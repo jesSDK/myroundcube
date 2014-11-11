@@ -1,0 +1,1 @@
+UPDATE 'system' SET value='initial|20130903|20131110|20140406|20140410|20140411' WHERE name='myrc_carddav';

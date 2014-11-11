@@ -1,0 +1,7 @@
+VERSION                COMMENT
+-----------------------------------------------------------------------------------------------------------------
+2.9.1                  - It's time for a Changelog
+2.9.2 - 2.9.3          - Roundcube 1.0 compatibility
+2.9.4                  - contextmenu v2 adjustments
+2.9.5                  - Better compatibility with identities_imap (Archive folder)
+2.9.6                  - Show "Archive" button by default
