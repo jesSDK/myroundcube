@@ -112,3 +112,4 @@ VERSION                COMMENT
 7.2                    - New calendar plugin compatibility
                        - Remove ability to delete calendar collections. It is too dangerous to allow users
                          to remove entire collections. This feature will be included into a future "privacy" plugin.
+7.2.1                  - Fix https://code.google.com/p/myroundcube/issues/detail?id=749

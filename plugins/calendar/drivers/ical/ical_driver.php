@@ -69,6 +69,12 @@ class ical_driver extends database_driver
         $this->cal = $cal;
         $this->rc = $cal->rc;
         $db = $this->rc->get_dbh();
+        
+        if(class_exists('calendar_plus'))
+        {
+            $this->freebusy = true;
+        }
+
         $this->db_calendars = $this->rc->config->get('db_table_calendars', $db->table_name($this->db_calendars));
         $this->db_calendars_ical_props = $this->rc->config->get('db_table_calendars_ical_props', $db->table_name($this->db_calendars_ical_props));
         $this->db_events = $this->rc->config->get('db_table_events', $db->table_name($this->db_events));
@@ -332,6 +338,42 @@ class ical_driver extends database_driver
     }
 
     /**
+     * Add default (pre-installation provisioned) calendar. If calendars from 
+     * same url exist, insertion does not take place.  
+     *
+     * @param array $props
+     *    caldav_url: Absolute URL to calendar server collection
+     *    caldav_user: Username
+     *    caldav_pass: Password
+     *    name: Calendar name
+     *    color: Events color
+     *    showalarms: Display alarms
+     *    tasks: Handle tasks
+     *    freebusy: Allow freebusy requests
+     * @return bool false on creation error, true otherwise
+     *    
+     */
+    public function insert_default_calendar($props) {
+        if ($props['driver'] == 'ical') {
+            $removed = $this->rc->config->get('calendar_icals_removed', array());
+            if (!isset($removed[slashify($props['ical_url'])])) {
+                $found = false;
+                foreach ($this->list_calendars() as $cal) {
+                    $ical_info = $this->_get_ical_props($cal['id'], self::OBJ_TYPE_ICAL);
+                    if (stripos($ical_info['url'], self::_encode_url($props['ical_url'])) === 0) {
+                        $found = true;
+                    }
+                }
+                if (!$found) {
+                    return $this->create_calendar($props);
+                }
+            }
+        }
+        return true;
+    }
+
+
+    /**
      * Callback function to produce driver-specific calendar create/edit form
      *
      * @param string Request action 'form-edit|form-new'
@@ -345,6 +387,36 @@ class ical_driver extends database_driver
         $cal_id = $calendar["id"];
         $props = $this->_get_ical_props($cal_id, self::OBJ_TYPE_ICAL);
 
+        if($this->freebusy)
+        {
+            $enabled = $this->calendars[$cal_id]['freebusy'];
+            $input_freebusy = new html_checkbox(array(
+                "name" => "freebusy",
+                "title" => $this->cal->gettext("allowfreebusy"),
+                "id" => "chbox_freebusy",
+                "value" => 1,
+            ));
+        
+            $formfields['freebusy'] = array(
+              "label" => $this->cal->gettext('freebusy'),
+              "value" => $input_freebusy->show($enabled?1:0),
+              "id" => "freebusy",
+            );
+        }
+        
+        $enabled = $this->calendars[$cal_id]['tasks'];
+        $input_tasks = new html_checkbox(array(
+            "name" => "tasks",
+            "id" => "chbox_tasks",
+            "value" => 1,
+        ));
+        
+        $formfields["tasks"] = array(
+            "label" => $this->cal->gettext("tasks"),
+            "value" => $input_tasks->show($enabled?1:0),
+            "id" => "tasks",
+        );
+        
         $input_ical_url = new html_inputfield(array(
             "name" => "ical_url",
             "id" => "ical_url",
@@ -467,8 +539,17 @@ class ical_driver extends database_driver
      */
     public function remove_calendar($prop)
     {
-        if (parent::remove_calendar($prop)) {
-            $this->_remove_ical_props($prop["id"], self::OBJ_TYPE_ICAL);
+        $removed = $this->_get_ical_props($prop['id'], self::OBJ_TYPE_ICAL);
+        
+        if(is_array($removed))
+        {
+            $removed = slashify($removed['url']);
+            $removed = array_merge($this->rc->config->get('calendar_icals_removed', array()), array($removed => time()));
+            $this->rc->user->save_prefs(array('calendar_icals_removed' => $removed));
+        }
+        
+        if (parent::remove_calendar($prop, $ical)) {
+            $this->_remove_ical_props($prop['id'], self::OBJ_TYPE_ICAL);
             return true;
         }
 
@@ -621,4 +702,86 @@ class ical_driver extends database_driver
         // handled by database driver (don't return duplicates)
         return array();
     }
+    
+  /**
+   * Fetch free/busy information from a person within the given range
+   *
+   * @param string  E-mail address of attendee
+   * @param integer Requested period start date/time as unix timestamp
+   * @param integer Requested period end date/time as unix timestamp
+   *
+   * @return array  List of busy timeslots within the requested range
+   */
+  public function get_freebusy_list($email, $start, $end)
+  {
+    if($this->cache_slots_args == serialize(func_get_args())) {
+      return $this->cache_slots;
+    }
+    $slots = array();
+    $calendars = array();
+    
+    if ($email != $this->rc->user->data['username']) {
+      $sql = "SELECT user_id FROM " . $this->db_users . " WHERE username = ? AND mail_host = ?";
+      $result = $this->rc->db->limitquery($sql, 0, 1, $email, $this->rc->config->get('default_host', 'localhost'));
+      if ($result) {
+        $user = $this->rc->db->fetch_assoc($result);
+        $user_id = $user['user_id'];
+        $sql = "SELECT calendar_id FROM " . $this->db_calendars . " WHERE user_id = ? AND freebusy = ?";
+        $result = $this->rc->db->query($sql, $user_id, 1);
+        while ($result && $calendar = $this->rc->db->fetch_assoc($result)) {
+          if ($props = $this->_get_google_xml_props($calendar['calendar_id'])) {
+            $calendar['id'] = $calendar['calendar_id'];
+            unset($calendar['calendar_id']);
+            $calendars[] = $calendar;
+           }
+        }
+      }
+    }
+    else {
+      $user_id = $this->rc->user->ID;
+      $calendars = (array) $this->list_calendars(); 
+      foreach ($calendars as $idx => $calendar) {
+        if (!$calendar['freebusy']) {
+          unset($calendars[$idx]);
+        }
+      }
+    }
+
+    if ($user_id) {
+      $s = new DateTime(date(self::DB_DATE_FORMAT, $start), $this->server_timezone);
+      $start = $s->format(self::DB_DATE_FORMAT);
+      $e = new DateTime(date(self::DB_DATE_FORMAT, $end), $this->server_timezone);
+      $end = $e->format(self::DB_DATE_FORMAT);
+
+      foreach ($calendars as $calendar) {
+        $sql = "SELECT start, end FROM " . $this->db_events . " WHERE start <= ? AND end >= ? AND calendar_id = ? AND sensitivity = ?";
+        $result = $this->rc->db->query($sql, $start, $end, $calendar['calendar_id'], 0);
+        while ($result && $slot = $this->rc->db->fetch_assoc($result)) {
+          $busy_start = new DateTime($slot['start'], $this->server_timezone);
+          $busy_start = $busy_start->format('U');
+          $busy_end = new DateTime($slot['end'], $this->server_timezone);
+          $busy_end = $busy_end->format('U');
+          $slots[] = array(
+            $busy_start,
+            $busy_end,
+            2,
+          );
+        }
+      }
+    }
+    
+    if ($user_id && empty($slots)) {
+      $slots[] = array(
+        $start,
+        $end,
+        1,
+      );
+    }
+      
+    $this->cache_slots_args = serialize(func_get_args());
+
+    $this->cache_slots = $slots;
+      
+    return $this->cache_slots;
+  }
 }

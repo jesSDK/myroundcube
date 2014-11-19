@@ -157,7 +157,7 @@ class calendar_core extends rcube_plugin // Mod by Rosali
       }
 
       // loading preinstalled calendars
-      $preinstalled_calendars = $this->rc->config->get('calendar_preinstalled_calendars', FALSE);
+      $preinstalled_calendars = $this->rc->config->get('calendar_preinstalled_calendars', false);
       if ($preinstalled_calendars && is_array($preinstalled_calendars) && !isset($_SESSION['preinstalled_calendars'])) { // Mod by Rosali (check for preinstalled calendars only once per session)
       
           // expanding both caldav url and user with RC (imap) username
@@ -168,8 +168,9 @@ class calendar_core extends rcube_plugin // Mod by Rosali
         
           foreach ($this->get_drivers() as $driver_name => $driver) {
               foreach ($preinstalled_calendars as $cal) {
-                  if ($driver_name == $cal['driver']) {
-                      if (!$driver->insert_default_calendar($cal)) {
+                  if (method_exists($driver, 'insert_default_calendar')) {
+                      $success = $driver->insert_default_calendar($cal);
+                      if (!$success) {
                           $error_msg = 'Unable to add default calendars' . ($driver && $driver->last_error ? ': ' . $driver->last_error :'');
                           $this->rc->output->show_message($error_msg, 'error');
                       }
@@ -1936,7 +1937,6 @@ class calendar_core extends rcube_plugin // Mod by Rosali
         }
       }
     }
-
     if(sizeof($fblist) == 0) return false;
     else return $fblist;
   }
@@ -1971,12 +1971,12 @@ class calendar_core extends rcube_plugin // Mod by Rosali
 
     if (is_array($fblist)) {
       $status = 'FREE';
-
       foreach ($fblist as $slot) {
         list($from, $to, $type) = $slot;
         if ($from < $end && $to > $start) {
           $status = isset($type) && $fbtypemap[$type] ? $fbtypemap[$type] : 'BUSY';
-          break;
+          if ($status != 'FREE') // Mod by Rosali (don't exit if a driver reports free, because another one could report busy)
+            break;
         }
       }
     }
@@ -2041,9 +2041,8 @@ class calendar_core extends rcube_plugin // Mod by Rosali
           }
         }
       }
-
       $slots[$s] = $status;
-      $times[$s] = intval($dt->format($strformat));
+      $times[$s] = $dt->format($strformat); // Mod by Rosali (remove intval)
       $t = $t_end;
     }
 
@@ -2464,7 +2463,29 @@ class calendar_core extends rcube_plugin // Mod by Rosali
         $cal_id = $calendar['id'];
       }
 
-      $driver = $this->get_driver_by_cal($cal_id);
+      if ($cal_id < 0) {
+        foreach ($this->get_calendars() as $cal_id => $calendar) {
+          $cal_id = $calendar['id'];
+          $driver = $this->get_driver_by_cal($cal_id);
+          $old_event = $driver->get_event($events[0]['uid']);
+          if (is_array($old_event)) {
+            $cal_id = $old_event['calendar'];
+            break;
+          }
+        }
+      }
+
+      // Begin mod by Rosali (try to find the corresponding calendar)
+      if (is_numeric($cal_id)) {
+        $driver = $this->get_driver_by_cal($cal_id);
+      }
+      else {
+        $error_msg = $this->gettext('nowritecalendarfound');
+        $this->rc->output->command('display_message', $error_msg, 'error');
+        $this->rc->output->send();
+        return false;
+      }
+      // End mod by Rosali
       
       // Begin mod by Rosali (handle tasks)
       $create_method = 'new_event';

@@ -1,12 +1,15 @@
 <?php
-/**
- * CardDAV
- *
- * @version 7.2 - 13.09.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.googlecode.com
- *
- **/
+# 
+# This file is part of MyRoundcube "carddav" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2014 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 
 /**
  * Based on:
@@ -41,8 +44,8 @@ class carddav extends rcube_plugin {
   static private $plugin = 'carddav';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a onclick="alert(\'Roundcube Core Patches are recommended in order to avoid unnecessary sessions and to correct wrong German localization labels.\')" href="#pmu_Roundcube_Core_Patches"><font color="red">IMPORTANT</font></a><br /><a href="http://trac.roundcube.net/ticket/1489935" target="_blank">Related Roundcube Ticket #1</a><br /><a href="http://trac.roundcube.net/ticket/1489993" target="_blank">Related Roundcube Ticket #2</a><br /><a href="http://myroundcube.com/myroundcube-plugins/carddav-plugin" target="_blank">Documentation</a><br /><a href="http://myroundcube.com/myroundcube-plugins/thunderbird-carddav" target="_blank">Desktop Client Configuration</a>';
-  static private $version = '7.2';
-  static private $date = '13-09-2014';
+  static private $version = '7.2.2';
+  static private $date = '17-11-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'extra' => '<span style="color: #ff0000;">IMPORTANT</span> &#8211;&nbsp;<div style="display: inline">Plugin requires Roundcube core files patches</div>',
@@ -173,6 +176,10 @@ class carddav extends rcube_plugin {
         $this->register_action('plugin.carddav-readonly-save', array($this, 'carddav_readonly_save'));
         $this->register_action('plugin.carddav-idx-save', array($this, 'carddav_idx_save'));
         $this->register_action('plugin.carddav-server-delete', array($this, 'carddav_server_delete'));
+        if(get_input_value('_section', RCUBE_INPUT_GPC) == 'addressbookcarddavs'){
+          $this->include_script('carddav_settings.js');
+          $this->include_script('jquery.base64.js');
+        }
         $this->register_action('plugin.carddav_uninstall', array($this, 'uninstall'));
         $this->add_hook('addressbooks_list', array($this, 'get_automatic_addressbook_source'));
         $this->add_hook('addressbooks_list', array($this, 'get_carddav_addressbook_sources'));
@@ -181,8 +188,6 @@ class carddav extends rcube_plugin {
         $this->add_hook('preferences_save', array($this, 'save_prefs'));
         $this->add_hook('preferences_sections_list', array($this, 'carddav_link'));
         $this->add_hook('preferences_list', array($this, 'carddav_settings'));
-        $this->include_script('carddav_settings.js');
-        $this->include_script('jquery.base64.js');
         $sources = $rcmail->config->get('autocomplete_addressbooks', array('sql'));
         $servers = $this->get_carddav_server();
         foreach($servers as $server){

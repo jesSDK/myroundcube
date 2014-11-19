@@ -1,0 +1,8 @@
+VERSION             COMMENT
+--------------------------------------------------------------------------------------------------------------------
+19.0                - Beta release of Kolab based calendar
+19.0.1              - Freebusy support for CalDAV and database drivers
+19.0.2              - Added option to create default database and iCal calendars
+                    - Implemented freebusy support for iCal driver
+19.0.3              - Fix an issue in CalDAV driver autodiscover method to avoid creation of dups
+19.0.4              - Suppress error log on authentication failure

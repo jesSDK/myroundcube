@@ -18,8 +18,8 @@ class calendar extends calendar_core
   static private $plugin = 'calendar';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = 'This plugin is a fork of <a href="https://git.kolab.org/roundcubemail-plugins-kolab/tree/plugins/calendar" target="_new">Kolab calendar (core)</a> and <a href="https://gitlab.awesome-it.de/kolab/roundcube-plugins/tree/feature_caldav" target="_new">Awesome Information technology CalDAV/iCal drivers implementation</a>.<br /><a href="http://myroundcube.com/myroundcube-plugins/calendar-beta-plugin" target="_blank">Documentation</a>';
-  static private $version = '19.0';
-  static private $date = '10-11-2014';
+  static private $version = '19.0.4';
+  static private $date = '19-11-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'extra' => '<span style="color: #ff0000;">IMPORTANT</span> &#8211;&nbsp;<div style="display: inline">Plugin requires Roundcube core files patches</span></div>',
@@ -62,6 +62,7 @@ class calendar extends calendar_core
   );
   static private $db_version = array(
     'initial',
+    '20141113',
   );
   static private $sqladmin = array('db_dsnw', 'calendars');
 

@@ -37,14 +37,23 @@ require_once (dirname(__FILE__).'/../../../libgpl/encryption.php');
 
 class caldav_driver extends database_driver
 {
-    const OBJ_TYPE_VCAL = "vcal";
-    const OBJ_TYPE_VEVENT = "vevent";
+    const OBJ_TYPE_VCAL = 'vcal';
+    const OBJ_TYPE_VEVENT = 'vevent';
+    
+    const FREEBUSY_UNKNOWN = 0;
+    const FREEBUSY_FREE = 1;
+    const FREEBUSY_BUSY = 2;
+    const FREEBUSY_TENTATIVE = 3;
+    const FREEBUSY_OOF = 4;
     
     private $db_calendars = 'calendars';
     private $db_calendars_caldav_props = 'calendars_caldav_props';
     private $db_events = 'vevent';
     private $db_events_caldav_props = 'vevent_caldav_props';
     private $db_attachments = 'vevent_attachments';
+    
+    private $cache_slots_args;
+    private $cache_slots = array();
 
     private $cal;
     private $tasks;
@@ -75,7 +84,6 @@ class caldav_driver extends database_driver
     public function __construct($cal)
     {
         $this->cal = $cal;
-
         $this->rc = $cal->rc;
 
         $db = $this->rc->get_dbh();
@@ -86,6 +94,11 @@ class caldav_driver extends database_driver
         $this->db_attachments = $this->rc->config->get('db_table_attachments', $db->table_name($this->db_attachments));
 
         $this->crypt_key = $this->rc->config->get("calendar_crypt_key", "%E`c{2;<J2F^4_&._BxfQ<5Pf3qv!m{e");
+        
+        if(class_exists('calendar_plus'))
+        {
+            $this->freebusy = true;
+        }
 
         parent::__construct($cal);
 
@@ -406,7 +419,8 @@ class caldav_driver extends database_driver
 
     /**
      * Add default (pre-installation provisioned) calendar. If calendars from 
-     * same url exist, insertion does not take place.  
+     * same url exist, insertion does not take place. Same for previously
+     * deleted calendars
      *
      * @param array $props
      *    caldav_url: Absolute URL to calendar server collection
@@ -414,21 +428,25 @@ class caldav_driver extends database_driver
      *    caldav_pass: Password
      *    name: Calendar name
      *    color: Events color
-     *    showAlarms:
+     *    showalarms: Display alarms
+     *    tasks: Handle tasks
+     *    freebusy: Allow freebusy requests
      * @return bool false on creation error, true otherwise
      *    
      */
     public function insert_default_calendar($props) {
-        $found = false;
-        foreach ($this->list_calendars() as $cal) {
-            $vcal_info = $this->_get_caldav_props($cal['id'], self::OBJ_TYPE_VCAL);
-            if (stripos($vcal_info['url'], self::_encode_url($props['caldav_url'])) === 0) {
-                $found = true;
+        if ($props['driver'] == 'caldav') {
+            $found = false;
+            foreach ($this->list_calendars() as $cal) {
+                $vcal_info = $this->_get_caldav_props($cal['id'], self::OBJ_TYPE_VCAL);
+                if (stripos($vcal_info['url'], self::_encode_url($props['caldav_url'])) === 0) {
+                    $found = true;
+                }
+            }
+            if (!$found) {
+                return $this->create_calendar($props);
             }
         }
-        if (!$found) {
-            return $this->create_calendar($props);
-        } 
         return true;
     }
 
@@ -443,20 +461,37 @@ class caldav_driver extends database_driver
      */
     public function calendar_form($action, $calendar, $formfields)
     {
-        $cal_id = $calendar["id"];
+        $cal_id = $calendar['id'];
         $props = $this->_get_caldav_props($cal_id, self::OBJ_TYPE_VCAL);
         
-        $enabled = $this->calendars[$cal_id];
-        $input_caldav_tasks = new html_checkbox(array(
+        if($this->freebusy)
+        {
+            $enabled = $this->calendars[$cal_id]['freebusy'];
+            $input_freebusy = new html_checkbox(array(
+                "name" => "freebusy",
+                "title" => $this->cal->gettext("allowfreebusy"),
+                "id" => "chbox_freebusy",
+                "value" => 1,
+            ));
+        
+            $formfields['freebusy'] = array(
+              "label" => $this->cal->gettext('freebusy'),
+              "value" => $input_freebusy->show($enabled?1:0),
+              "id" => "freebusy",
+            );
+        }
+        
+        $enabled = $this->calendars[$cal_id]['tasks'];
+        $input_tasks = new html_checkbox(array(
             "name" => "tasks",
-            "id" => "tasks",
+            "id" => "chbox_tasks",
             "value" => 1,
         ));
         
-        $formfields["caldav_tasks"] = array(
+        $formfields["tasks"] = array(
             "label" => $this->cal->gettext("tasks"),
-            "value" => $input_caldav_tasks->show($enabled ? 1 : 0),
-            "id" => "caldav_url",
+            "value" => $input_tasks->show($enabled?1:0),
+            "id" => "tasks",
         );
         
         if(stripos($props['url'], 'https://apidata.googleusercontent.com/caldav/v2/') === 0){
@@ -503,7 +538,7 @@ class caldav_driver extends database_driver
             "value" => $input_caldav_pass->show(null), // Don't send plain text password to GUI
             "id" => "caldav_pass",
         );
-
+        
         return parent::calendar_form($action, $calendar, $formfields);
     }
 
@@ -536,12 +571,20 @@ class caldav_driver extends database_driver
         {
             $removed = $this->rc->config->get('calendar_caldavs_removed', array());
             $props['url'] = self::_encode_url($props['url']);
-            $prop['caldav_url'] = self::_encode_url($prop['caldav_url']);
-            if(isset($removed[slashify($props['url'])]) && $props['url'] != $prop['caldav_url'])
+            if(isset($removed[slashify($props['url'])]))
             {
                 unset($calendars[$idx]);
-                continue;
+                if(!empty($calendars) || $this->rc->action == '') // Take the user input
+                {
+                    continue;
+                }
+                else
+                {
+                    $calendars[0] = $pwd_expanded_props;
+                    $calendars[0]['href'] = $props['url'];
+                }
             }
+
             $result = $this->rc->db->query(
                 "SELECT * FROM " . $this->db_calendars_caldav_props .
                 " WHERE url LIKE ?",
@@ -658,7 +701,7 @@ class caldav_driver extends database_driver
     public function remove_calendar($prop)
     {
 
-        $removed = $this->_get_caldav_props($prop['id'], 'vcal');
+        $removed = $this->_get_caldav_props($prop['id'], self::OBJ_TYPE_VCAL);
         
         if(is_array($removed))
         {
@@ -667,9 +710,9 @@ class caldav_driver extends database_driver
             $this->rc->user->save_prefs(array('calendar_caldavs_removed' => $removed));
         }
          
-        if (parent::remove_calendar($prop))
+        if (parent::remove_calendar($prop, 'caldav'))
         {
-            self::debug_log("Removed calendar \"".$prop["id"]."\".");
+            self::debug_log("Removed calendar \"".$prop['id']."\".");
             return true;
         }
 
@@ -690,7 +733,7 @@ class caldav_driver extends database_driver
         $caldav = new caldav_client($prop['url'], $prop['user'], $prop['pass'], $this->rc->config->get('calendar_curl_verify_peer', true));
         $caldav_url = $prop['url'];
         $current_user_principal = array('{DAV:}current-user-principal');
-        if(!$response = $caldav->prop_find($caldav_url, $current_user_principal, 0))
+        if(!$response = $caldav->prop_find($caldav_url, $current_user_principal, 0, false))
         {
             $this->last_error = $this->rc->gettext('calendar.connectionfailed');
             if(!$retry)
@@ -1253,5 +1296,99 @@ class caldav_driver extends database_driver
         }
         
         return $success;
+    }
+    
+    /**
+     * Fetch free/busy information from a person within the given range
+     *
+     * @param string  E-mail address of attendee
+     * @param integer Requested period start date/time as unix timestamp
+     * @param integer Requested period end date/time as unix timestamp
+     *
+     * @return array  List of busy timeslots within the requested range
+     */
+    public function get_freebusy_list($email, $start, $end)
+    {
+        if($this->cache_slots_args == serialize(func_get_args()))
+        {
+            return $this->cache_slots;
+        }
+
+        $return_freebusy = false;
+        $ical = $this->cal->lib->get_ical();
+        $sql = 'SELECT * FROM ' . $this->db_calendars_caldav_props . ' WHERE user = ? AND obj_type = ?';
+        $result = $this->rc->db->query($sql, $email, 'vcal');
+        $slots = array();
+        while($result && $props = $this->rc->db->fetch_assoc($result))
+        {
+            $props = $this->_get_caldav_props($props['obj_id'], $props['obj_type']);
+            $sql = 'SELECT * FROM ' . $this->db_calendars . ' WHERE calendar_id = ?';
+            $calendar = array();
+            if($result2 = $this->rc->db->limitquery($sql, 0, 1, $props['obj_id']))
+            {
+                $calendar = $this->rc->db->fetch_assoc($result2);
+            }
+            if(!$calendar['freebusy'])
+            {
+                continue;
+            }
+            if($props['pass'] == '%p' && $props['user'] != $this->rc->user->data['username'])
+            {
+                continue;
+            }
+            else
+            {
+                $return_freebusy = true;
+                $this->_expand_pass($props);
+            }
+            
+            $parsed = calendar_plus::caldav_freebusy($props, $start, $end);
+            if(is_array($parsed))
+            {
+                foreach($parsed as $periods)
+                {
+                    foreach($periods['periods'] as $slot)
+                    {
+                        switch($slot[2])
+                        {
+                            case 'FREE':
+                                continue;
+                                break;
+                            case 'BUSY':
+                                $status = self::FREEBUSY_BUSY;
+                                break;
+                            case 'BUSY-TENTATIVE':
+                                $status = self::FREEBUSY_TENTATIVE;
+                                break;
+                            case 'OOF':
+                                $status = self::FREEBUSY_OOF;
+                                break;
+                            default:
+                                $status = self::FREEBUSY_UNKNOWN;
+                                break;
+                        }
+                        $slots[] = array(
+                            $slot[0]->format('U'),
+                            $slot[1]->format('U'),
+                            $status
+                        );
+                    }
+                }
+            }
+        }
+        
+        if($return_freebusy && empty($slots))
+        {
+            $slots[] = array(
+                $start,
+                $end,
+                self::FREEBUSY_FREE,
+            );
+        }
+        
+        $this->cache_slots_args = serialize(func_get_args());
+        $this->cache_slots = $slots;
+
+        return $this->cache_slots;
     }
 }

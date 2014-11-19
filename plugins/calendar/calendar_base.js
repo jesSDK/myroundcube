@@ -84,11 +84,15 @@ rcube_calendar.add_event_from_mail = function(mime_id, obj, status) // Begin mod
 {
   var calendar_obj = $($(obj).parent().children().last());
   var calendar = calendar_obj.val();
-  if(!calendar){
+  if (!calendar) {
     calendar_obj = $($(obj).parent().children().last().children());
     calendar = calendar_obj.val();
     var calendar_text = $(obj).parent().find('option[value=' + calendar + ']').attr('selected','selected').text();
     $(calendar_obj.parent()).replaceWith('<input type="hidden" class="calendar-saveto" value="' + calendar + '" /><span>' + calendar_text + '</span>');
+  }
+  
+  if (!$.isNumeric(calendar)) {
+    calendar = -1;
   }
 
   // ask user to delete the declined event from the local calendar (#1670)

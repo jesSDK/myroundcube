@@ -265,4 +265,8 @@ BEGIN
 		WHERE obj_id = old.obj_id;
 END;
 
+DELETE FROM system WHERE name = 'myrc_calendar';
+
+DELETE FROM plugin_manager WHERE conf = 'defaults_overwrite';
+
 INSERT INTO system (name, value) VALUES ('myrc_calendar', 'initial');

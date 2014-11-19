@@ -32,9 +32,10 @@ class caldav_client extends Sabre\DAV\Client
     const CLARK_GETETAG = '{DAV:}getetag';
     const CLARK_CALDATA = '{urn:ietf:params:xml:ns:caldav}calendar-data';
 
-    private $base_uri;
-    private $path;
+    public $base_uri;
+    public $path;
     private $libvcal;
+    private $rc;
 
     /**
      *  Default constructor for CalDAV client.
@@ -52,6 +53,7 @@ class caldav_client extends Sabre\DAV\Client
             require_once (dirname(__FILE__).'/../libcalendaring/libvcalendar.php');
 
         $this->libvcal = new libvcalendar();
+        $this->rc = rcube::get_instance();
 
         $tokens = parse_url($uri);
         $this->base_uri = $tokens['scheme']."://".$tokens['host'].($tokens['port'] ? ":".$tokens['port'] : null);
@@ -355,9 +357,10 @@ class caldav_client extends Sabre\DAV\Client
      * @param string $path absolute or relative URL to Resource
      * @param array $props list of properties to use for the query. Properties must have clark-notation.
      * @param int $depth 0 means no recurse while 1 means recurse
+     * @param boolean $log log exception
      * @return array
      */
-    public function prop_find($path, $props, $depth)
+    public function prop_find($path, $props, $depth, $log = true)
     {
         try {
             $response = $this->propFind($path, $props, $depth);
@@ -370,7 +373,7 @@ class caldav_client extends Sabre\DAV\Client
                 'file' => $err->getFile(),
                 'line' => $err->getLine(),
                 'message' => $err->getMessage()
-            ), true, false);
+            ), $log, false);
         }
         return $response;
     }
@@ -397,9 +400,37 @@ class caldav_client extends Sabre\DAV\Client
                 '    </D:prop>' .
                 '    </D:set>' .
                 '  </D:mkcol>';
-
-        return $this->request('MKCOL', $url, $body, array(
-            'Content-Type' => 'application/xml'
+        
+        try {
+            $response = $this->request('MKCOL', $url, $body, array(
+                'Content-Type' => 'application/xml'
+            ));
+        }
+        catch(Sabre\DAV\Exception $err)
+        {
+            return false;
+        }
+        return $response;
+    }
+    
+    /**
+     * Freebusy request for a given user
+     * @param string  username
+     * @param path    relative path to base uri
+     * @param integer unix timestamp
+     * @param integer unix timestamp
+     * @retrun array  List of busy timeslots within the requested range
+     */
+    public function freebusy($user, $path, $start, $end)
+    {
+        $body = '<?xml version="1.0" encoding="utf-8" ?>' .
+                '<C:free-busy-query xmlns:C="urn:ietf:params:xml:ns:caldav">' .
+                '<C:time-range start="' . gmdate("Ymd\THis\Z", $start) . '"' .
+                '     end="' . gmdate("Ymd\THis\Z", $end) . '"/>' .
+                '</C:free-busy-query>';
+        return $this->request('REPORT', $path, $body, array(
+            'Content-Type' => 'application/xml',
+            'Depth' => 1,
         ));
     }
 };

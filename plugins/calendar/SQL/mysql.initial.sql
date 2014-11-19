@@ -246,4 +246,8 @@ CREATE TABLE IF NOT EXISTS `calendars_google_xml_props` (
     REFERENCES `calendars` (`calendar_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) /*!40000 ENGINE=INNODB */ /*!40101 CHARACTER SET utf8 COLLATE utf8_general_ci */;
 
+DELETE FROM `system` WHERE `name` = 'myrc_calendar';
+
+DELETE FROM `plugin_manager` WHERE `conf` = 'defaults_overwrite';
+
 INSERT INTO `system` (name, value) VALUES ('myrc_calendar', 'initial');

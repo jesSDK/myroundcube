@@ -264,5 +264,19 @@ class caldav_sync
         $env::debug_log("Removing event url \"".$props["url"]."\".");
         return $this->caldav->remove_event($props["url"]);
     }
+    
+    /**
+     * Freebusy request for a given user.
+     *
+     * @param string  username
+     * @param string  relative path to caldav base uri
+     * @param integer unix timestamp
+     * @param integer unix timestamp
+     * @retrun array  List of busy timeslots within the requested range
+     */
+    public function freebusy($user, $path, $start, $end)
+    {
+        return $this->caldav->freebusy($user, $path, $start, $end);
+    }
 };
 ?>

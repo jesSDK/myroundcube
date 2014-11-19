@@ -1,3 +1,4 @@
 VERSION                COMMENT
 ---------------------------------------------------------------------------------
 1.0                    - Initial release
+1.0.1                  - Added log option to CalDAV client

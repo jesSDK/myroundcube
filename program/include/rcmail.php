@@ -94,7 +94,11 @@ class rcmail extends rcube
         }
 
         // start session
-        $this->session_init();
+        if (empty($GLOBALS['NOSESSION'])) {
+            if (!isset($_GET['_nosession'])) {
+                $this->session_init();
+            }
+        }
 
         // create user object
         $this->set_user(new rcube_user($_SESSION['user_id']));
@@ -732,7 +736,11 @@ class rcmail extends rcube
     {
         $this->plugins->exec_hook('session_destroy');
 
-        $this->session->kill();
+        if ($this->session) {
+            $this->session->kill();
+            $_SESSION = array('language' => $this->user->language, 'temp' => true, 'skin' => $this->config->get('skin'));
+        }
+
         $_SESSION = array('language' => $this->user->language, 'temp' => true, 'skin' => $this->config->get('skin'));
         $this->user->reset();
     }

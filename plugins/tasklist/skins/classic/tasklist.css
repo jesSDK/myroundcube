@@ -571,11 +571,13 @@ div.boxtitle {
 	margin-right: 3px;
 }
 
+/*
 .warning {
   background: #ff3800;
   border: 1px solid #ff3800;
   color: #fff;
 }
+*/
 
 .tag-draghelper li.tag {
 	list-style: none;

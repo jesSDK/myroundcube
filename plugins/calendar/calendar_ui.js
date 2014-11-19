@@ -2532,8 +2532,6 @@ function rcube_calendar_ui(settings)
       }
     }
     
-    console.log(this.calendars)
-    
     // select default calendar
     if (settings.default_calendar && this.calendars[settings.default_calendar] && !this.calendars[settings.default_calendar].readonly)
       this.selected_calendar = settings.default_calendar;

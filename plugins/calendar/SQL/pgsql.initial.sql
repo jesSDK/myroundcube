@@ -262,4 +262,8 @@ CREATE TRIGGER calendars_google_xml_props_last_change
 	FOR EACH ROW EXECUTE PROCEDURE 
 		update_last_change_column();
 
+DELETE FROM system WHERE name = 'myrc_calendar';
+
+DELETE FROM plugin_manager WHERE conf = 'defaults_overwrite';
+
 INSERT INTO system (name, value) VALUES ('myrc_calendar', 'initial');

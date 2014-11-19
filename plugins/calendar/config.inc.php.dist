@@ -135,33 +135,47 @@ $config['calendar_itip_smtp_pass'] = '123456';
 // Crypt key to encrypt passwords for added iCAL/CalDAV calendars
 $config['calendar_crypt_key'] = "put some random string here";
 
-// Enable debugging output for iCAL/CalDAV drivers
-$config['calendar_caldav_debug'] = false;
-$config['calendar_ical_debug'] = false;
-
 // Pre-installed calendars, added at first access to calendar section
-// Caldav driver is supported only
 // $config['calendar_preinstalled_calendars'] = array(
-//    'Caldav' => array(
-//                    'driver'      => 'caldav',
-//                    'name'        => 'Events',
-//                    'caldav_user' => '%u',
-//                    'caldav_pass' => '%p',
-//                    'caldav_url'  => 'http://example.caldav.org/%u/calendar/',
-//                    'color'       => 'cccc00',
-//                    'showalarms'  => 1,
-//                    'tasks'       => 1),
-//    'Other' => array(
-//                    'driver'          => 'other',
-//                    'name'            => 'Other',
-//                    'other_user'      => 'user@example.other.org',
-//                    'other_pass'      => 'password',
-//                    'other_url'       => 'http://example.other.org/user@example.other.org/other',
-//                    'color'           => 'cc0000',
-//                    'other_property1' => 'value1',
-//                    'other_property2' => 'value2',
-//                    'showalarms'      => 1,
-//                    'tasks'           => 1));
+//   0 => array(
+//          'driver'          => 'database',
+//          'name'            => 'Personal',
+//          'color'           => 'cc0000',
+//          'showalarms'      => 1,
+//          'tasks'           => 1,
+//          'freebusy'        => 1,
+//        ),
+//   1 => array(
+//          'driver'          => 'google_xml',
+//          'name'            => 'US Holidays',
+//          'google_xml_url'  => 'http://www.google.com/calendar/feeds/usa@holiday.calendar.google.com/public/basic',
+//          'color'           => 'cc0000',
+//          'showalarms'      => 1,
+//          'freebusy'        => 1,
+//       ),
+//   2 => array(
+//          'driver'      => 'caldav',
+//          'name'        => 'Events',
+//          'caldav_user' => '%u',
+//          'caldav_pass' => '%p', 
+//          'caldav_url'  => 'http://dav.mydomain.tld/calendars/%u/',
+//          'color'       => 'cccc00',
+//          'showalarms'  => 1,
+//          'tasks'       => 1,
+//          'freebusy'    => 1,
+//        ),
+//   3 => array(
+//          'driver'      => 'ical',
+//          'name'        => 'Daylight',
+//          'ical_user' => '%u',
+//          'ical_pass' => '%p',
+//          'ical_url'  => 'http://ical.mydomain.tld/calendars/%u/',
+//          'color'       => 'cccc00',
+//          'showalarms'  => 1,
+//          'tasks'       => 1,
+//          'freebusy'    => 0,
+//        ),
+// );
 
 /* Verify SSL Certs */
 $config['calendar_curl_verify_peer'] = false;
