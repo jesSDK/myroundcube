@@ -50,17 +50,17 @@ class rcube_imap_generic
 
     public static $mupdate;
 
-    protected $fp;
-    protected $host;
-    protected $logged = false;
-    protected $capability = array();
-    protected $capability_readed = false;
-    protected $prefs;
-    protected $cmd_tag;
-    protected $cmd_num = 0;
-    protected $resourceid;
-    protected $_debug = false;
-    protected $_debug_handler = false;
+    private $fp;
+    private $host;
+    private $logged = false;
+    private $capability = array();
+    private $capability_readed = false;
+    private $prefs;
+    private $cmd_tag;
+    private $cmd_num = 0;
+    private $resourceid;
+    private $_debug = false;
+    private $_debug_handler = false;
 
     const ERROR_OK = 0;
     const ERROR_NO = -1;
@@ -352,7 +352,7 @@ class rcube_imap_generic
      *
      * @return bool True if connection is closed
      */
-    protected function eof()
+    private function eof()
     {
         if (!is_resource($this->fp)) {
             return true;
@@ -375,7 +375,7 @@ class rcube_imap_generic
     /**
      * Closes connection stream.
      */
-    protected function closeSocket()
+    private function closeSocket()
     {
         @fclose($this->fp);
         $this->fp = null;
@@ -421,7 +421,7 @@ class rcube_imap_generic
         return false;
     }
 
-    protected function hasCapability($name)
+    private function hasCapability($name)
     {
         if (empty($this->capability) || $name == '') {
             return false;
@@ -865,7 +865,7 @@ class rcube_imap_generic
 
         if (!$this->fp) {
             $this->setError(self::ERROR_BAD, sprintf("Could not connect to %s:%d: %s",
-                $host, $this->prefs['port'], $errstr ?: "Unknown reason"));
+                $host, $this->prefs['port'], $errstr ? $errstr : "Unknown reason"));
 
             return false;
         }
@@ -1326,7 +1326,7 @@ class rcube_imap_generic
      * @return array List of mailboxes or hash of options if $status_ops argument
      *               is non-empty.
      */
-    protected function _listMailboxes($ref, $mailbox, $subscribed=false,
+    private function _listMailboxes($ref, $mailbox, $subscribed=false,
         $status_opts=array(), $select_opts=array())
     {
         if (!strlen($mailbox)) {
@@ -1987,7 +1987,7 @@ class rcube_imap_generic
      *
      * @return bool True on success, False on failure
      */
-    protected function modFlag($mailbox, $messages, $flag, $mod = '+')
+    private function modFlag($mailbox, $messages, $flag, $mod = '+')
     {
         if (!$this->select($mailbox)) {
             return false;
@@ -2002,8 +2002,14 @@ class rcube_imap_generic
             $flag = $this->flags[strtoupper($flag)];
         }
 
-        if (!$flag || (!in_array($flag, (array) $this->data['PERMANENTFLAGS'])
-            && !in_array('\\*', (array) $this->data['PERMANENTFLAGS']))
+        if (!$flag) {
+            return false;
+        }
+
+        // if PERMANENTFLAGS is not specified all flags are allowed
+        if (!empty($this->data['PERMANENTFLAGS'])
+            && !in_array($flag, (array) $this->data['PERMANENTFLAGS'])
+            && !in_array('\\*', (array) $this->data['PERMANENTFLAGS'])
         ) {
             return false;
         }
@@ -2524,50 +2530,61 @@ class rcube_imap_generic
             return false;
         }
 
-        switch ($encoding) {
-        case 'base64':
-            $mode = 1;
-            break;
-        case 'quoted-printable':
-            $mode = 2;
-            break;
-        case 'x-uuencode':
-        case 'x-uue':
-        case 'uue':
-        case 'uuencode':
-            $mode = 3;
-            break;
-        default:
-            $mode = 0;
-        }
-
-        // Use BINARY extension when possible (and safe)
-        $binary     = $mode && preg_match('/^[0-9.]+$/', $part) && $this->hasCapability('BINARY');
-        $fetch_mode = $binary ? 'BINARY' : 'BODY';
-        $partial    = $max_bytes ? sprintf('<0.%d>', $max_bytes) : '';
-
-        // format request
-        $key     = $this->nextTag();
-        $request = $key . ($is_uid ? ' UID' : '') . " FETCH $id ($fetch_mode.PEEK[$part]$partial)";
-        $result  = false;
-        $found   = false;
-
-        // send request
-        if (!$this->putLine($request)) {
-            $this->setError(self::ERROR_COMMAND, "Unable to send command: $request");
-            return false;
-        }
-
-        if ($binary) {
-            // WARNING: Use $formatted argument with care, this may break binary data stream
-            $mode = -1;
-        }
+        $binary    = true;
 
         do {
+            if (!$initiated) {
+                switch ($encoding) {
+                case 'base64':
+                    $mode = 1;
+                    break;
+                case 'quoted-printable':
+                    $mode = 2;
+                    break;
+                case 'x-uuencode':
+                case 'x-uue':
+                case 'uue':
+                case 'uuencode':
+                    $mode = 3;
+                    break;
+                default:
+                    $mode = 0;
+                }
+
+                // Use BINARY extension when possible (and safe)
+                $binary     = $binary && $mode && preg_match('/^[0-9.]+$/', $part) && $this->hasCapability('BINARY');
+                $fetch_mode = $binary ? 'BINARY' : 'BODY';
+                $partial    = $max_bytes ? sprintf('<0.%d>', $max_bytes) : '';
+
+                // format request
+                $key       = $this->nextTag();
+                $request   = $key . ($is_uid ? ' UID' : '') . " FETCH $id ($fetch_mode.PEEK[$part]$partial)";
+                $result    = false;
+                $found     = false;
+                $initiated = true;
+
+                // send request
+                if (!$this->putLine($request)) {
+                    $this->setError(self::ERROR_COMMAND, "Unable to send command: $request");
+                    return false;
+                }
+
+                if ($binary) {
+                    // WARNING: Use $formatted argument with care, this may break binary data stream
+                    $mode = -1;
+                }
+            }
+
             $line = trim($this->readLine(1024));
 
             if (!$line) {
                 break;
+            }
+
+            // handle UNKNOWN-CTE response - RFC 3516, try again with standard BODY request
+            if ($binary && !$found && preg_match('/^' . $key . ' NO \[UNKNOWN-CTE\]/i', $line)) {
+                $binary = $initiated = false;
+                continue;
             }
 
             // skip irrelevant untagged responses (we have a result already)
@@ -2630,7 +2647,7 @@ class rcube_imap_generic
 
                     // BASE64
                     if ($mode == 1) {
-                        $line = rtrim($line, "\t\r\n\0\x0B");
+                        $line = preg_replace('|[^a-zA-Z0-9+=/]|', '', $line);
                         // create chunks with proper length for base64 decoding
                         $line = $prev.$line;
                         $length = strlen($line);
@@ -2675,7 +2692,7 @@ class rcube_imap_generic
                     }
                 }
             }
-        } while (!$this->startsWith($line, $key, true));
+        } while (!$this->startsWith($line, $key, true) || !$initiated);
 
         if ($result !== false) {
             if ($file) {
@@ -3690,7 +3707,7 @@ class rcube_imap_generic
         return $result;
     }
 
-    protected function _xor($string, $string2)
+    private function _xor($string, $string2)
     {
         $result = '';
         $size   = strlen($string);
@@ -3709,7 +3726,7 @@ class rcube_imap_generic
      *
      * @return string Space-separated list of flags
      */
-    protected function flagsToStr($flags)
+    private function flagsToStr($flags)
     {
         foreach ((array)$flags as $idx => $flag) {
             if ($flag = $this->flags[strtoupper($flag)]) {
@@ -3761,7 +3778,7 @@ class rcube_imap_generic
     /**
      * CAPABILITY response parser
      */
-    protected function parseCapability($str, $trusted=false)
+    private function parseCapability($str, $trusted=false)
     {
         $str = preg_replace('/^\* CAPABILITY /i', '', $str);
 
@@ -3838,7 +3855,7 @@ class rcube_imap_generic
      *
      * @since 0.5-stable
      */
-    protected function debug($message)
+    private function debug($message)
     {
         if (($len = strlen($message)) > self::DEBUG_LINE_LENGTH) {
             $diff    = $len - self::DEBUG_LINE_LENGTH;

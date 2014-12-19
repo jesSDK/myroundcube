@@ -2327,8 +2327,6 @@ class rcube_imap extends rcube_storage
         }
 
         if ($saved) {
-            // let plugins know that a message has been appended
-            rcube::get_instance()->plugins->exec_hook("message_saved", array('saved' => $saved, 'folder' => $folder, 'message' => $message));
             // increase messagecount of the target folder
             $this->set_messagecount($folder, 'ALL', 1);
         }

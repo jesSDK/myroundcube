@@ -50,8 +50,7 @@ function rcmail_plugins_list($attrib)
         $attrib['id'] = 'rcmpluginlist';
     }
 
-    $plugins = (array) $RCMAIL->config->get('plugins');
-    $plugins = array_filter($RCMAIL->plugins->exec_hook('plugins_installed', $plugins));
+    $plugins     = array_filter((array) $RCMAIL->config->get('plugins'));
     $plugin_info = array();
 
     foreach ($plugins as $name) {
