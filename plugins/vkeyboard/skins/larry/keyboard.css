@@ -1,5 +1,5 @@
 #login-form .box-inner {
-  background: url(linen_bg.jpg) top left repeat #5C5C5C;
+  background: url(../../../myrc_sprites/skins/larry/images/myrc_linen_bg.jpg) top left repeat #5C5C5C;
 }
 .keyboardInput{
 vertical-align:middle;
@@ -188,4 +188,5 @@ vertical-align:middle;
   margin:0px 3px;
   vertical-align:middle;
   cursor:pointer;
+  background-position: -16px -1720px;
 }

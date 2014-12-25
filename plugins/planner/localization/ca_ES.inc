@@ -19,7 +19,6 @@ $labels['planner'] = 'Planificador';
 $labels['pluginname'] = 'Planificador';
 $labels['plugindescription'] = 'És una barreja entre calendari i llista de tasques';
 $labels['incompatiblebrowser'] = 'Per accedir al planificador, fes servir Explorer 9 o un altre navegador';
-$labels['plan'] = 'Crear';
 $labels['view'] = 'Vista';
 $labels['select_view'] = 'Seleccionar vista';
 $labels['flags'] = 'Marcadors';

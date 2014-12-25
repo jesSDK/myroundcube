@@ -44,8 +44,8 @@ class carddav extends rcube_plugin {
   static private $plugin = 'carddav';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a onclick="alert(\'Roundcube Core Patches are recommended in order to avoid unnecessary sessions and to correct wrong German localization labels.\')" href="#pmu_Roundcube_Core_Patches"><font color="red">IMPORTANT</font></a><br /><a href="http://trac.roundcube.net/ticket/1489935" target="_blank">Related Roundcube Ticket #1</a><br /><a href="http://trac.roundcube.net/ticket/1489993" target="_blank">Related Roundcube Ticket #2</a><br /><a href="http://myroundcube.com/myroundcube-plugins/carddav-plugin" target="_blank">Documentation</a><br /><a href="http://myroundcube.com/myroundcube-plugins/thunderbird-carddav" target="_blank">Desktop Client Configuration</a>';
-  static private $version = '7.2.2';
-  static private $date = '17-11-2014';
+  static private $version = '7.2.11';
+  static private $date = '19-12-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'extra' => '<span style="color: #ff0000;">IMPORTANT</span> &#8211;&nbsp;<div style="display: inline">Plugin requires Roundcube core files patches</div>',
@@ -54,6 +54,8 @@ class carddav extends rcube_plugin {
     'required_plugins' => array(
       'settings' => 'require_plugin',
       'db_version' => 'require_plugin',
+      'myrc_sprites' => 'require_plugin',
+      'libgpl' => 'require_plugin',
     ),
     'recommended_plugins' => array(
       'carddav_plus' => 'config',
@@ -90,57 +92,6 @@ class carddav extends rcube_plugin {
   public function init(){
     $rcmail = rcube::get_instance();
     
-    // Find me: Remove in a while (implemented 2014-08-19)
-    // Begin migrate
-    $sql_result = $rcmail->db->limitquery(
-      "SELECT * FROM ".get_table_name('system').
-      " WHERE name=?",
-      0,
-      1,
-      'myrc_carddav'
-    );
-    
-    $sql_result = $rcmail->db->fetch_assoc($sql_result);
-
-    if(!is_array($sql_result) || $sql_result['value'] != 'initial|20130903|20131110|20140406|20140410|20140411|20140809|20140819'){
-      $sql_result = $rcmail->db->query(
-        "SELECT * FROM ".get_table_name('carddav_contactgroups')
-      );
-      
-      $addressbooks = array();
-      while($sql_result && ($sql_arr = $rcmail->db->fetch_assoc($sql_result))){
-        $addressbooks[$sql_arr['addressbook']] = str_replace('carddav_addressbook', '', $sql_arr['addressbook']);
-      }
-      
-      foreach($addressbooks as $addressbook => $id){
-        $sql_result = $rcmail->db->limitquery(
-          "SELECT * FROM ".get_table_name('carddav_server').
-          " WHERE carddav_server_id=?",
-          0,
-          1,
-          $id
-        );
-        $sql_result = $rcmail->db->fetch_assoc($sql_result);
-        
-        if(is_array($sql_result)){
-          $rcmail->db->query(
-            "UPDATE ".get_table_name('carddav_contactgroups').
-            " SET addressbook=? WHERE addressbook=?",
-            $id,
-            $addressbook
-          );
-        }
-        else{
-          $rcmail->db->query(
-            "DELETE FROM ".get_table_name('carddav_contactgroups').
-            " WHERE addressbook=?",
-            $addressbook
-          );
-        }
-      }
-    }
-    // End migrate
-
     /* DB versioning */
     if(is_dir(INSTALL_PATH . 'plugins/db_version')){
       $this->require_plugin('db_version');
@@ -148,6 +99,9 @@ class carddav extends rcube_plugin {
         return;
       }
     }
+    
+    $this->require_plugin('libgpl');
+    $this->require_plugin('myrc_sprites');
     
     /* CardDAV plus */
     if(is_dir(INSTALL_PATH . 'plugins/carddav_plus')){
@@ -214,14 +168,14 @@ class carddav extends rcube_plugin {
           $this->include_script('carddav_addressbook.js');
           $this->add_hook('addressbooks_list', array($this, 'get_carddav_addressbook_sources'));
           $this->add_hook('addressbook_get', array($this, 'get_carddav_addressbook'));
-          if($rcmail->config->get('skin') == 'larry'){
+          if($rcmail->config->get('skin') == 'classic'){
             $this->add_button(array(
               'command' => 'plugin.carddav-addressbook-sync',
               'id' => 'carddavsyncbut',
-              'class' => 'button carddavsync',
+              'class' => 'button carddavsyncs',
               'href' => '#',
               'title' => 'carddav.sync',
-              'label' => 'carddav.sync_short',
+              'label' => 'carddav.blank',
               'type' => 'link'),
               'toolbar'
             );
@@ -230,10 +184,10 @@ class carddav extends rcube_plugin {
             $this->add_button(array(
               'command' => 'plugin.carddav-addressbook-sync',
               'id' => 'carddavsyncbut',
-              'class' => 'button carddavsync',
+              'class' => 'button carddavsync myrc_sprites',
               'href' => '#',
               'title' => 'carddav.sync',
-              'label' => 'carddav.blank',
+              'label' => 'carddav.sync_short',
               'type' => 'link'),
               'toolbar'
             );
@@ -369,7 +323,7 @@ class carddav extends rcube_plugin {
       $rcmail->output->add_footer(html::tag('iframe', array('src' => './?_task=settings&_action=edit-prefs&_section=addressbookcarddavs&_framed=1', 'height' => 0, 'width' => 0)));
       $rcmail->session->remove('carddav_newuser');
     }
-    else if($p['template'] == 'imortcontacts' && get_input_value('_token', RCUBE_INPUT_GPC)){
+    else if($p['template'] == 'importcontacts' && get_input_value('_token', RCUBE_INPUT_GPC)){
       unset($_SESSION['carddav_last_replication']);
     }
     else if($p['template'] == 'compose'){
@@ -630,6 +584,7 @@ class carddav extends rcube_plugin {
 
   protected function get_carddav_server_list(){
     $rcmail = rcube::get_instance();
+    $img = 'program/resources/blank.gif';
     $temp = (array) $this->get_carddav_server();
     if(count($temp) == 0){
       $this->login_after(array());
@@ -712,7 +667,7 @@ class carddav extends rcube_plugin {
           $merge = array('class' => 'carddav_edit_label');
         }
         $table->add(array(), html::tag('input', array_merge(array('type' => 'text', 'size' => '12', 'value' => $label, 'id' => $this->carddav_addressbook . $server['carddav_server_id']), $merge)));
-        $table->add(array(), html::tag('img', array('src' => './plugins/carddav/skins/' . $rcmail->config->get('skin', 'classic') . '/loadingsmall.gif', 'class' => 'loadingsmall', 'style' => 'visibility: hidden;', 'id' => 'l' . $this->carddav_addressbook . $server['carddav_server_id'])));
+        $table->add(array(), html::tag('img', array('src' => $img, 'class' => 'myrc_loading_small', 'style' => 'visibility: hidden;', 'id' => 'l' . $this->carddav_addressbook . $server['carddav_server_id'])));
         $table->add(array(), html::tag('input', array('title' => $this->gettext('protected'), 'type' => 'text', 'size' => '45', 'readonly' => 'readonly', 'value' => $server['url'])));
         if($server['username'] == '***TOKEN***' || $is_protected){
           $table->add(array(), html::tag('input', array('title' => $this->gettext('protected'), 'type' => 'text', 'size' => '17', 'readonly' => 'readonly', 'placeholder' => $this->gettext('protected'))));
@@ -734,14 +689,14 @@ class carddav extends rcube_plugin {
         }
         $title = $this->gettext('toggle');
         $onclick = 'carddav_server_readonly(this,"' . $server['carddav_server_id'] . '")';
-        $img = $server['read_only'] ? 'checked.png' : 'blank.gif';
+        $class = $server['read_only'] ? 'checked myrc_sprites' : '';
         $opacity = '';
         if(isset($urls[$server['url']]) || ($this->carddav_addressbook . $server['carddav_server_id']) == $autoabook){
           $title = $this->gettext('protected');
           $onclick = '';
           $opacity = ' opacity: .4;';
         }
-        $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;' . $opacity), html::tag('img', array('style' => trim($opacity), 'title' => $title, 'onclick' => $onclick, 'src' => $skin_path . '/' . $img))));
+        $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;' . $opacity), html::tag('img', array('class' => $class, 'style' => trim($opacity), 'title' => $title, 'onclick' => $onclick, 'src' => $img))));
         $autocomplete = $server['autocomplete'];
         $onclick= 'carddav_server_autocomplete(this,"' . $server['carddav_server_id'] . '")';
         $title = $this->gettext('toggle');
@@ -750,8 +705,8 @@ class carddav extends rcube_plugin {
           $onclick = '';
           $title = $this->gettext('protected');
         }
-        $img = $autocomplete ? 'checked.png' : 'blank.gif';
-        $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;'), html::tag('img', array('height' => '12', 'width' => '12', 'onclick' => $onclick, 'title' => $title, 'src' => $skin_path . '/' . $img))));
+        $class = $autocomplete ? 'checked myrc_sprites' : '';
+        $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;'), html::tag('img', array('height' => '12', 'width' => '12', 'onclick' => $onclick, 'title' => $title, 'class' => $class, 'src' => $img))));
         // find me: Remove 2015 - Everybody should have updated within next 5 months
         $v = 0;
         if(class_exists('carddav_plus')){
@@ -766,8 +721,8 @@ class carddav extends rcube_plugin {
           $onclick = '';
           $title = $this->gettext('protected');
         }
-        $img = $subscribed ? 'checked.png' : 'blank.gif';
-        $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;'), html::tag('img', array('height' => '12', 'width' => '12', 'onclick' => $onclick, 'title' => $title, 'src' => $skin_path . '/' . $img))));
+        $class = $subscribed ? 'checked myrc_sprites' : '';
+        $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;'), html::tag('img', array('height' => '12', 'width' => '12', 'onclick' => $onclick, 'title' => $title, 'class' => $class, 'src' => $img))));
         if($is_protected){
           unset($urls[$server['url']]);
           $delete = html::tag('a', array('href' => '#del', 'class' => 'deletebutton buttonpas', 'title' => $this->gettext('protected'), ));
@@ -794,13 +749,11 @@ class carddav extends rcube_plugin {
       $table->add(array(), $input_username->show());
       $table->add(array('nowrap' => 'nowrap'), $input_password->show());
       $input_read_only = new html_checkbox(array('name' => '_read_only', 'id' => '_read_only', 'value' => 1));
-      $img = 'blank.gif';
-      $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;'), html::tag('img', array('title' => $title, 'onclick' => 'if($("#_read_only").prop("checked")) { var state = false; var img = "blank.gif"; } else { var state = true; var img = "checked.png"; }; img = "' . $skin_path . '/" + img; $("#_read_only").prop("checked", state); $(this).attr("src", img); ', 'src' => $skin_path . '/' . $img)) . $input_read_only->show(false)));
+      $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;'), html::tag('img', array('class' => 'myrc_sprites', 'title' => $title, 'onclick' => 'if($("#_read_only").prop("checked")) { var state = false; $(this).removeClass("checked"); } else { var state = true; $(this).addClass("checked"); }; $("#_read_only").prop("checked", state);', 'src' => $img)) . $input_read_only->show(false)));
       $input_autocomplete = new html_checkbox(array('name' => '_autocomplete', 'id' => '_autocomplete', 'value' => 1));
-      $img = 'checked.png';
-      $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;'), html::tag('img', array('title' => $title, 'onclick' => 'if($("#_autocomplete").prop("checked")) { var state = false; var img = "blank.gif"; } else { var state = true; var img = "checked.png"; }; img = "' . $skin_path . '/" + img; $("#_autocomplete").prop("checked", state); $(this).attr("src", img); ', 'src' => $skin_path . '/' . $img)) . $input_autocomplete->show(true)));
-      $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px; opacity: .4;'), html::tag('img', array('title' => $this->gettext('protected'), 'style' => 'opacity: .4;', 'height' => '12', 'width' => '12', 'src' => $skin_path . '/checked.png'))));
-      $add = html::tag('a', array('href' => '#add', 'class' => 'addbutton', 'title' => $this->gettext('add'), 'onclick' => "return rcmail.command('plugin.carddav-server-save', '', this)"), $this->gettext('add'));
+      $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px;'), html::tag('img', array('class' => 'myrc_sprites checked', 'title' => $title, 'onclick' => 'if($("#_autocomplete").prop("checked")) { var state = false; $(this).removeClass("checked"); } else { var state = true; $(this).addClass("checked"); }; $("#_autocomplete").prop("checked", state);', 'src' => $img)) . $input_autocomplete->show(true)));
+      $table->add(array('align' => 'center'), html::tag('p', array('style' => 'width: 15px; height: 15px; border: 1px solid #B2B2B2; border-radius: 4px; opacity: .4;'), html::tag('img', array('title' => $this->gettext('protected'), 'class' => 'checked myrc_sprites', 'style' => 'opacity: .4;', 'height' => '12', 'width' => '12', 'src' => $img))));
+      $add = html::tag('a', array('href' => '#add', 'class' => 'iconlink add addbutton', 'title' => $this->gettext('add'), 'onclick' => "return rcmail.command('plugin.carddav-server-save', '', this)"), $this->gettext('add'));
       $table->add(array(), $add);
     }
     $content .= html::div(array('class' => 'carddav_container'), $table->show());
@@ -1028,6 +981,7 @@ class carddav extends rcube_plugin {
   }
 
   public function carddav_settings($args){
+    $rcmail = rcube::get_instance();
     if(!$args['section']){
       return array();
     }
@@ -1049,6 +1003,9 @@ class carddav extends rcube_plugin {
       }
       $list = false;
       if($args['section'] == 'addressbookcarddavs'){
+        if($rcmail->config->get('skin', 'larry') != 'classic'){
+          $rcmail->output->add_header(html::tag('link', array('rel' => 'stylesheet', 'href' => 'skins/larry/addressbook.css')));
+        }
         $list = $this->get_carddav_server_list();
       }
       $args = carddav_plus::carddav_settings($args, $addressbooks, $list);

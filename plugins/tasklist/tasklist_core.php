@@ -220,7 +220,12 @@ class tasklist_core extends rcube_plugin
                     $this->fetch_tasks($lists);
                   }
                   else {
-                    $refresh[] = $this->driver->get_task($rec);
+                    if ($rec['children_detach']) {
+                      $this->fetch_tasks($lists);
+                    }
+                    else {
+                      $refresh[] = $this->driver->get_task($rec);
+                    }
                   }
               }
               $this->cleanup_task($rec);
@@ -427,11 +432,13 @@ class tasklist_core extends rcube_plugin
         if (isset($rec['tags']) && !is_array($rec['tags'])) {
             $rec['tags'] = array_filter((array)$rec['tags']);
         }
-
+        
+        // Mod by Rosali (always save alarms)
         // alarms cannot work without a date
-        if ($rec['alarms'] && !$rec['date'] && !$rec['startdate'] && strpos($rec['alarms'], '@') === false)
+        /*
+        if ($rec['alarms'] && !$rec['startdate'] && strpos($rec['alarms'], '@') === false)
             $rec['alarms'] = '';
-
+        */
         // convert the submitted recurrence settings
         if (is_array($rec['recurrence'])) {
             $refdate = null;

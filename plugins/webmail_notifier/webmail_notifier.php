@@ -1,23 +1,15 @@
 <?php
-
-/**
- * Webmail Notifier
- *
- * @version 3.1.4 - 17.02.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- *
- **/
- 
-/** NOTICE
- *
- * #1- Designed for Webmail Notifier Firefox Addon 2.7.4 (http://webmailnotifier.mozdev.org)
- * #2- Due to restrictions in Webmail Notifier plugin will not work if Roundcube is running
- *     on a test environment on localhost! 
- *     ->Workaround for Windows: Fake hosts file
- *
- **/  
- 
+# 
+# This file is part of MyRoundcube "webmail_notifier" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2014 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 class webmail_notifier extends rcube_plugin
 {
   public $task = "login|logout|mail|settings";
@@ -28,12 +20,15 @@ class webmail_notifier extends rcube_plugin
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/webmail_notifier-plugin" target=_new>Documentation</a>';
   static private $download = 'http://myroundcube.googlecode.com';
-  static private $version = '3.1.4';
-  static private $date = '17-02-2014';
+  static private $version = '3.1.5';
+  static private $date = '25-12-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'Roundcube' => '1.0',
-    'PHP' => '5.3'
+    'PHP' => '5.3',
+    'required_plugins' => array(
+      'myrc_sprites' => 'require_plugin',
+    ),
   );
   static private $prefs = array('webmail_notifier_flag', 'webmail_notifier_folders');
   static private $config_dist = 'config.inc.php.dist';
@@ -191,14 +186,25 @@ class webmail_notifier extends rcube_plugin
         return $args;
       }
       $args['blocks']['webmail_notifier']['name'] = Q(sprintf($this->gettext('pluginname'), $name));
-      $content = '<a id="wmnaddon" href="' . $link . '" target="_new" title="' . $this->gettext('download') . '"><img src="' . './plugins/webmail_notifier/' . $skin_path . '/images/download.gif" /></a>';
+      if($skin_path == 'skins/classic'){
+        $content = '<a id="wmnaddon" href="' . $link . '" target="_new" title="' . $this->gettext('download') . '"><img src="plugins/webmail_notifier/' . $skin_path . '/images/download.gif" /></a>';
+      }
+      else{
+        $this->include_stylesheet($skin_path . '/webmail_notifier.css');
+        $content = '<a id="wmnaddon" href="' . $link . '" target="_new" title="' . $this->gettext('download') . '"><img class="myrc_sprites webmail_notifier" src="program/resources/blank.gif" /></a>';
+      }
       $args['blocks']['webmail_notifier']['options']['webmail_notifier_link'] = array( 
             'title' => html::label($field_id, Q(sprintf($this->gettext('webmailnotifieraddon'), $name))), 
             'content' => $content
       );
       $field_id = 'rcmfd_webmail_notifier_script';
-      $content = '<a id="wmnscript" href="./?_task=settings&_action=plugin.webmail_notifier_script&_time=' . time() . '" target="_self" title="' . $this->gettext('download') . '"><img src="' . './plugins/webmail_notifier/' . $skin_path . '/images/download.gif" /></a>';
-      $content .= '&nbsp;<a href="http://myroundcube.com/myroundcube-plugins/webmail_notifier-plugin" target=_new>' . $this->gettext('tutorial') . '</a>';
+      if($skin_path == 'skins/classic'){
+        $content = '<a id="wmnscript" href="./?_task=settings&_action=plugin.webmail_notifier_script&_time=' . time() . '" target="_self" title="' . $this->gettext('download') . '"><img src="plugins/webmail_notifier/' . $skin_path . '/images/download.gif" /></a>';
+      }
+      else{
+        $content = '<a id="wmnscript" href="./?_task=settings&_action=plugin.webmail_notifier_script&_time=' . time() . '" target="_self" title="' . $this->gettext('download') . '"><img class="myrc_sprites webmail_notifier" src="program/resources/blank.gif" /></a>';
+      }
+      $content .= '&nbsp;<div class="tutorial"><a href="http://myroundcube.com/myroundcube-plugins/webmail_notifier-plugin" target="_new">' . $this->gettext('tutorial') . '</a></div>';
       $args['blocks']['webmail_notifier']['options']['webmail_notifier_script'] = array( 
             'title' => html::label($field_id, Q(sprintf($this->gettext('webmailnotifierscript'), $name))), 
             'content' => $content

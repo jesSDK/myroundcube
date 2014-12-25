@@ -4,8 +4,8 @@ require_once (dirname(__FILE__).'/../../../tasklist/drivers/database/tasklist_da
 require_once (dirname(__FILE__).'/../../../calendar/drivers/calendar_driver.php');
 require_once (dirname(__FILE__).'/../../../calendar/drivers/database/database_driver.php');
 require_once (dirname(__FILE__).'/../../../calendar/drivers/caldav/caldav_driver.php');
-require_once (dirname(__FILE__).'/../../../libgpl/encryption.php');
-require_once (dirname(__FILE__).'/../../../libgpl/caldav_sync.php');
+require_once (dirname(__FILE__).'/../../../libgpl/encryption/encryption.php');
+require_once (dirname(__FILE__).'/../../../libgpl/caldav/caldav_sync.php');
 
 class tasklist_caldav_driver extends tasklist_database_driver
 {
@@ -213,8 +213,11 @@ class tasklist_caldav_driver extends tasklist_database_driver
                 if(is_array($parent_task))
                 {
                     $task = parent::get_task($update['remote_event']['uid']);
-                    $task['parent_id'] = $parent_task['id'] . ($related_to ? ('-' . $related_to) : '');
-                    parent::edit_task($task);
+                    if(is_array($task) && $parent_task['id'] != $task['id'])
+                    {
+                        $task['parent_id'] = $parent_task['id'] . ($related_to ? ('-' . $related_to) : '');
+                        parent::edit_task($task);
+                    }
                 }
             }
         }

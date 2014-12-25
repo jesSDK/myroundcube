@@ -13,3 +13,10 @@ VERSION                COMMENT
 3.0.14 - 3.0.17        - Fix move button
 3.0.18 - 3.0.19        - Remove redundant code (compressor)
 3.0.20                 - Added MSSQL support (third party contribution (https://asphostpage.com/)
+3.0.21                 - Fix toolbar button on hover
+                       - Fix planner items list position for small screens (height <= 850 px)
+3.0.22                 - New taskbar icon (larry)
+3.0.23                 - Implement sprites
+3.0.24                 - Implement myrc_sprites plugin
+3.0.25                 - Remove timepicker from required plugins
+3.0.26                 - Remove jqueryui from required plugins (loaded over libgpl)

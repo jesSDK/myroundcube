@@ -1,0 +1,12 @@
+VERSION             COMMENT
+--------------------------------------------------------------------------------------------------------------------
+1.0                 - Beta release of Kolab based tasklist
+1.0.1               - Fix splitter for classic skin
+1.0.2               - Implement cache for recurring tasks
+1.0.3 - 1.0.4       - Make it possible to detach a task from its parent
+1.0.5               - Implement move note to task
+1.0.6               - Fix error log entry for recurring tasks
+1.0.7               - Implement convert task to message, event, note
+1.0.8               - Fix messagelist "Save as task" command
+1.0.9 - 1.0.10      - Larry skin improvements
+1.0.11              - Avoid endless loop if parent task does not exist anymore

@@ -1,9 +1,9 @@
 #sections-table #rcmrowaccountlink td.section{
-  background: url(images/account-admin-col.png) 6px 0px no-repeat;
+  background-position: -8px -1036px;
 }
 
 #sections-table #rcmrowaccountlink.selected td.section{
-  background: url(images/account-admin-col.png) 6px -25px no-repeat;
+  background-position: -8px -1068px;
 }
 
 #accountlink

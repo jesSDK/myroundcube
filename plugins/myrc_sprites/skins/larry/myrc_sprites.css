@@ -1,0 +1,29 @@
+.myrc_sprites,
+#taskbar a.button-sticky_notes:before,
+#mailboxlist li.mailbox.notes > a,
+#messagelist .notessmall,
+#messagemenu li a.notesaddlink span.notesadd,
+#rcm_messagemenu li a.notesaddlink span.notesadd,
+#sections-table #rcmrowaccountlink td.section {
+  background-image: url(images/myrc_sprites.png?v=1.0.4) !important;
+  background-repeat: no-repeat;
+}
+
+.myrc_loading {
+  background-image: url(images/myrc_loading.gif?v=1.0.4) !important;
+  background-repeat: no-repeat;
+}
+
+.myrc_loading_small {
+  background-image: url(images/myrc_loading_small.gif?v=1.0.4) !important;
+  background-repeat: no-repeat;
+}
+
+.myrc_sprites_core_buttons {
+  background-image: url(../../../../skins/larry/images/buttons.png?v=3e15.39327);
+  background-repeat: no-repeat;
+}
+
+.myrc_sprites_core_buttons.deletebutton {
+  background-position: -7px -380px;
+}

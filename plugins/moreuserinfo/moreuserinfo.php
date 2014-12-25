@@ -1,14 +1,15 @@
 <?php
-/**
- * moreuserinfo
- *
- *
- * @version 4.0.34 - 14.09.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- *
- **/
-
+# 
+# This file is part of MyRoundcube "moreuserinfo" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2014 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 class moreuserinfo extends rcube_plugin
 {
 
@@ -19,12 +20,15 @@ class moreuserinfo extends rcube_plugin
   static private $plugin = 'moreuserinfo';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/moreuserinfo-plugin" target="_blank">Documentation</a>';
-  static private $version = '4.0.34';
-  static private $date = '14-09-2014';
+  static private $version = '4.0.36';
+  static private $date = '18-12-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'Roundcube' => '1.0',
-    'PHP' => '5.3'
+    'PHP' => '5.3',
+    'required_plugins' => array(
+      'myrc_sprites' => 'require_plugin',
+    ),
   );
   static private $prefs = null;
   static private $config_dist = 'config.inc.php.dist';
@@ -35,6 +39,7 @@ class moreuserinfo extends rcube_plugin
     if($rcmail->action == 'jappix.loadmini'){
       return;
     }
+    $this->require_plugin('myrc_sprites');
     $this->add_texts('localization/');
     if(!in_array('global_config', $rcmail->config->get('plugins'))){
       $this->load_config();
@@ -130,11 +135,9 @@ class moreuserinfo extends rcube_plugin
         $rcmail->output->add_script('$(".topleft").html($(".topleft").html() + "<a onclick=\'' . $onclick . '\'' . ' id=\'accountinformationlink\' href=\'' . $href . '\'>' . $this->gettext('accountinformation') . '</a>");', 'docready');
       }
     }
+    
     if($p['template'] != "mail")
       return $p;
-
-    if(isset($_SESSION['temp']) || strtolower($rcmail->task) != "mail")
-      return $p; 
 
     $skin  = $rcmail->config->get('skin');
     $_skin = get_input_value('_skin', RCUBE_INPUT_POST);
@@ -142,44 +145,42 @@ class moreuserinfo extends rcube_plugin
     if($_skin != "")
       $skin = $_skin;
 
-    // abort if there are no css adjustments
-    if(!file_exists('plugins/moreuserinfo/skins/' . $skin . '/moreuserinfo.css')){
-      if(!file_exists('plugins/moreuserinfo/skins/classic/moreuserinfo.css'))   
-        return $p;
-      else
-        $skin = "classic";
-    }
+    if(!class_exists('accounts') && $skin == 'classic'){
+      // abort if there are no css adjustments
+      if(!file_exists('plugins/moreuserinfo/skins/' . $skin . '/moreuserinfo.css')){
+        if(!file_exists('plugins/moreuserinfo/skins/classic/moreuserinfo.css'))   
+          return $p;
+        else
+          $skin = "classic";
+      }
+      
+      $this->include_stylesheet('skins/' . $skin . '/moreuserinfo.css');
+    
+      $user = $rcmail->user->data['username'];
+      if(strlen($user) > 20)
+        $user = substr($user,0,20) . "...";
 
-    $this->include_stylesheet('skins/' . $skin . '/moreuserinfo.css');
-    $browser = new rcube_browser;
-    if($browser->ie && $browser->ver == 6){
-      $this->include_stylesheet('skins/' . $skin . '/ie6.css');	
+      $rcmail->output->add_footer('<div id="showusername"><a title="' . $this->gettext('userinfo', 'moreuserinfo') . '" href="./?_task=settings&_action=plugin.moreuserinfo_show">' . $user . '&nbsp;</a></div>');
     }
     
-    $user = $rcmail->user->data['username'];
-    if(strlen($user) > 20)
-      $user = substr($user,0,20) . "...";
-
-    $skin = $rcmail->config->get('skin', 'classic');
-    if(!class_exists('accounts') && $skin != 'larry')
-      $rcmail->output->add_footer('<div id="showusername"><a title="' . $this->gettext('userinfo', 'moreuserinfo') . '" href="./?_task=settings&_action=plugin.moreuserinfo_show">' . $user . '&nbsp;</a></div>');
-
     return $p;
-
   }
 
   function infohtml()
   {
     $rcmail = rcmail::get_instance();
+    
+    $skin = $rcmail->config->get('skin', 'larry');
+    $this->include_stylesheet('skins/' . $skin . '/moreuserinfo.css');
 
     $user = $rcmail->user;
     $username = $user->data['username'];
     $temp = explode('@', $username);
     $domainpart = $temp[1] ? $temp[1] : 'default';
-    $skin = $rcmail->config->get('skin', 'classic');
-    $this->include_script('flashclipboard.js');
+
+    $rcmail->output->add_header(html::tag('script', array('type' => 'text/javascript', 'src' => 'plugins/libgpl/flashclipboard/flashclipboard_moreuserinfo.js')));
     $rcmail->output->add_footer(html::tag('div', array('id' => 'zclipdialog', 'title' => $this->gettext('copiedtoclipboard'))));
-    $icon = '&nbsp;' . html::tag('img', array('class' => 'zclip', 'src' => 'plugins/moreuserinfo/skins/' . $skin . '/images/clipboard.png', 'title' => $this->gettext('copytoclipboard'), 'alt' => $this->gettext('copytoclipboard'), 'align' => 'baseline'));
+    $icon = '&nbsp;' . html::tag('img', array('class' => 'zclip myrc_sprites', 'src' => 'program/resources/blank.gif', 'title' => $this->gettext('copytoclipboard'), 'alt' => $this->gettext('copytoclipboard'), 'align' => 'baseline'));
 
 
     $table = new html_table(array('class' => 'propform propform_settings', 'cols' => 2, 'cellpadding' => 3));

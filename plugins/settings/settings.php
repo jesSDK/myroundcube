@@ -1,12 +1,17 @@
 <?php
-/**
- * settings
- *
- * @version 5.0 - 04.09.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- */
-
+# 
+# This file is part of MyRoundcube "settings" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (C) 2011, Lazlo Westerhof
+# Lazlo Westerhof <roundcube@lazlo.me> 
+# Copyright (C) 2014 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 class settings extends rcube_plugin
 {
   public $task = 'settings';
@@ -18,12 +23,13 @@ class settings extends rcube_plugin
   static private $plugin = 'settings';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?settings" target="_blank">Documentation</a>';
-  static private $version = '5.0';
-  static private $date = '04-09-2014';
+  static private $version = '5.0.3';
+  static private $date = '21-12-2014';
   static private $licence = 'All Rights reserved';
   static private $requirements = array(
     'Roundcube' => '1.0',
-    'PHP' => '5.3'
+    'PHP' => '5.3',
+    'required_plugins' => array('myrc_sprites' => 'require_plugin'),
   );
   static private $prefs = null;
 
@@ -31,6 +37,7 @@ class settings extends rcube_plugin
     $rcmail = rcmail::get_instance();
 
     $this->require_plugin('qtip');
+    $this->require_plugin('myrc_sprites');
 
     $this->register_handler('plugin.account_sections', array($this, 'account_sections'));
     $this->add_hook('preferences_sections_list', array($this, 'account_link'));
@@ -39,14 +46,6 @@ class settings extends rcube_plugin
     
     $skin  = $rcmail->config->get('skin');
     $this->include_stylesheet('skins/' . $skin . '/settings.css');
-
-    $browser = new rcube_browser();
-    if($browser->ie){
-      if($browser->ver < 8)
-        $this->include_stylesheet('skins/' . $skin . '/iehacks.css');
-      if($browser->ver < 7)
-        $this->include_stylesheet('skins/' . $skin . '/ie6hacks.css');
-    }
 
     $this->add_texts('localization/'); 
     $rcmail->output->add_label('settings.account');
@@ -127,7 +126,6 @@ class settings extends rcube_plugin
     }
     $args['list']['calendar'] = array();
     $args['list']['calendarsharing'] = array();
-    $args['list']['nabblelink'] = array();
     $args['list']['plugin_manager'] = array();
     $args['list']['plugin_manager_settings'] = array();
     $args['list']['plugin_manager_admins'] = array();

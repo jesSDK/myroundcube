@@ -2,10 +2,10 @@
  * Roundcube Planner
  */
 
-#taskbar a.button-planner {
-  background: url(images/planner.png) 10px 11px no-repeat;
+#taskbar a.button-planner span.button-inner {
+	background-position: -12px -206px;
 }
-
-#taskbar a.button-planner:hover span.button-inner{
-  background: url(images/planner.png) 4px -45px no-repeat;
+#taskbar a.button-planner:hover span.button-inner,
+#taskbar a.button-planner.button-selected span.button-inner {
+	background-position: -12px -238.5px;
 }

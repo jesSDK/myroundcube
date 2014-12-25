@@ -1,0 +1,3 @@
+.ui-dialog .ui-dialog-titlebar-close:hover { padding: 1px !important; }
+.ui-dialog .ui-dialog-titlebar-close { border: 1px solid #aaaaaa; background: #e6e6e7 url(images/ui-bg_highlight-hard_75_e6e6e7_1x100.png); height: 16px; width: 16px; }
+.ui-icon-closethick { background-position: -97px -129px; }

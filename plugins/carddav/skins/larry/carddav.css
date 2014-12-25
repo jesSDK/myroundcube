@@ -25,47 +25,45 @@
   color: orange;
 }
 
-#_read_only, #_autocomplete {
-  display: none;
+img.zclip {
+  background-position: -16px -432px;
+  width: 20px;
+  height: 16px;
 }
 
-a.deletebutton {
-  position: relative;
-  left: 5px;
-  top: -3px;
-  display: inline-block;
-  width: 24px;
-  height: 18px;
-  text-decoration: none;
-  text-indent: -5000px;
-  background: url(buttons.png) -7px -377px no-repeat;
+img.checked {
+  background-position: -16px -912px;
+}
+
+#_read_only, #_autocomplete {
+  display: none;
 }
 
 a.buttonpas {
   opacity: .4;
 }
 
+a.deletebutton {
+  top: 2px !important;
+}
+
 a.addbutton {
   position: relative;
   left: 5px;
-  top: -3px;
+  top: 2px;
   display: inline-block;
   width: 24px;
   height: 18px;
   text-decoration: none;
   text-indent: -5000px;
-  background: url(buttons.png) -7px -355px no-repeat;
+  background-position: -7px -355px;
 }
 
 #addressbooktoolbar a.carddavsync {
-  background-image: url('sync.png');
-  background-repeat: no-repeat;
-  background-position: center 2px;
+  background: 6px -463px;
 }
 
-#addressbooktoolbar a.carddavloading {
-  background-image: url('loading.gif');
-  background-repeat: no-repeat;
+#addressbooktoolbar a.myrc_loading {
   background-position: center 2px;
 }
 

@@ -922,9 +922,13 @@ class rcube_db
      */
     public function table_name($table)
     {
+        $plugin = rcube::get_instance()->plugins->exec_hook('table_name', array(
+           'table' => $table
+        ));
+         
         // add prefix to the table name if configured
-        if (($prefix = $this->options['table_prefix']) && strpos($table, $prefix) !== 0) {
-            return $prefix . $table;
+        if (($prefix = $this->options['table_prefix']) && strpos($plugin['table'], $prefix) !== 0) {
+            return $prefix . $plugin['table'];
         }
 
         return $table;

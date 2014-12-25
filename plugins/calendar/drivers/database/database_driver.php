@@ -6,9 +6,11 @@
  * @version @package_version@
  * @author Lazlo Westerhof <hello@lazlo.me>
  * @author Thomas Bruederli <bruederli@kolabsys.com>
+ * @author Roland 'rosali' Liebl <dev-team@myroundcube.com>
  *
  * Copyright (C) 2010, Lazlo Westerhof <hello@lazlo.me>
  * Copyright (C) 2012, Kolab Systems AG <contact@kolabsys.com>
+ * Copyright (C) 2014, MyRoundcube.com <dev-team@myroundcube.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -97,6 +99,7 @@ class database_driver extends calendar_driver
         $arr['active']     = $arr['subscribed'] ? true : false;
         $arr['name']       = html::quote($arr['name']);
         $arr['listname']   = html::quote($arr['name']);
+        $arr['readonly']   = $arr['readonly'] ? true : false;
         $this->calendars[$arr['calendar_id']] = $arr;
         $calendar_ids[] = $this->rc->db->quote($arr['calendar_id']);
       }
@@ -234,14 +237,15 @@ class database_driver extends calendar_driver
   {
     $result = $this->rc->db->query(
       "INSERT INTO " . $this->db_calendars . "
-       (user_id, name, color, showalarms, tasks, freebusy)
-       VALUES (?, ?, ?, ?, ?, ?)",
+       (user_id, name, color, showalarms, tasks, freebusy, readonly)
+       VALUES (?, ?, ?, ?, ?, ?, ?)",
        $this->rc->user->ID,
        $prop['name'],
        $prop['color'],
        $prop['showalarms']?1:0,
        $prop['tasks']?1:0,
-       $prop['freebusy']?1:0
+       $prop['freebusy']?1:0,
+       $prop['readonly']?1:0
     );
 
     if ($result)
@@ -344,11 +348,12 @@ class database_driver extends calendar_driver
       return false;
 
     if (!empty($this->calendars)) {
-      if ($event['calendar'] && !$this->calendars[$event['calendar']])
+      if ($event['calendar'] && !$this->calendars[$event['calendar']]) {
         return false;
-      if (!$event['calendar'])
+      }
+      if (!$event['calendar']) {
         $event['calendar'] = reset(array_keys($this->calendars));
-      
+      }
       $event['sequence'] = 0;
       
       $event = $this->_save_preprocess($event);

@@ -113,3 +113,11 @@ VERSION                COMMENT
                        - Remove ability to delete calendar collections. It is too dangerous to allow users
                          to remove entire collections. This feature will be included into a future "privacy" plugin.
 7.2.1                  - Fix https://code.google.com/p/myroundcube/issues/detail?id=749
+7.2.2 - 7.2.3          - https://forum.myroundcube.com/topic/85-bugfix-some-typos-in-carddav-plugin/
+7.2.4                  - Larry skin improvements
+7.2.5                  - Remove old migration routine
+7.2.6                  - Fixed a typo in PostgreSQL and SQLite database script 20140809
+                         https://forum.myroundcube.com/topic/159-carddav-typo-in-sql-patch-files-20140809/
+7.2.7 - 7.2.8          - Do not display sync failure initiated from iframes
+7.2.9 - 7.2.10         - Implement myrc_sprites plugin
+7.2.11                 - Add libgpl to required plugins

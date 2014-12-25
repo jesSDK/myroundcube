@@ -6,41 +6,5 @@ $(document).ready(function() {
     catch(e){
       $('#planner_button').show();
     }
-    if(rcmail.env.skin == 'larry'){
-      var minmode = rcmail.get_cookie('minimalmode');
-      if(parseInt(minmode) || (minmode === null && $(window).height() < 850)){
-        $('#taskbar a.button-planner').hover(function(){
-          $('#taskbar a.button-planner span.button-inner').css('background', 'url(plugins/planner/skins/larry/images/planner.png) 4px -43px no-repeat');
-        });
-        $('#taskbar a.button-planner').on('mouseleave', function(){
-          if(rcmail.env.action != 'plugin.planner'){
-            $('#taskbar a.button-planner span.button-inner').css('background', 'none');
-          }
-        });
-      }
-      $(window).resize(function(){
-        var minmode = rcmail.get_cookie('minimalmode');
-        if(parseInt(minmode) || (minmode === null && $(window).height() < 850)){
-          $('#taskbar a.button-planner').hover(function(){
-            $('#taskbar a.button-planner span.button-inner').css('background', 'url(plugins/planner/skins/larry/images/planner.png) 4px -43px no-repeat');
-          });
-          $('#taskbar a.button-planner').on('mouseleave', function(){
-            if(rcmail.env.action != 'plugin.planner'){
-              $('#taskbar a.button-planner span.button-inner').css('background', 'none');
-            }
-          });
-        }
-        else{
-          $('#taskbar a.button-planner').hover(function(){
-            $('#taskbar a.button-planner span.button-inner').css('background', 'url(plugins/planner/skins/larry/images/planner.png) 4px -45px no-repeat');
-          });
-          $('#taskbar a.button-planner').on('mouseleave', function(){
-            if(rcmail.env.action != 'plugin.planner'){
-              $('#taskbar a.button-planner span.button-inner').css('background', 'none');
-            }
-          });
-        }
-      });
-    }
   });
 });

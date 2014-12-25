@@ -87,7 +87,7 @@ $config['carddav_debug'] = false;
       */
 $config['carddav_protect'] = false;
 
-// Maxaximum number of CardDAV resources
+// Maximum number of CardDAV resources
       /*
       The maximum number of CardDAV resources users are allowed to connect to. You must define
       the 'max_carddavs' property value high enough to accommodate default address books plus

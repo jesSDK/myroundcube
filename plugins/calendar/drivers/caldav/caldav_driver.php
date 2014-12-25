@@ -4,8 +4,10 @@
  * CalDAV driver for the Calendar plugin
  *
  * @author Daniel Morlock <daniel.morlock@awesome-it.de>
+ * @author Roland 'rosali' Liebl <dev-team@myroundcube.com>
  *
  * Copyright (C) 2013, Awesome IT GbR <info@awesome-it.de>
+ * Copyright (C) 2014, MyRoundcube.com <dev-team@myroundcube.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,8 +27,8 @@ require_once (dirname(__FILE__).'/../database/database_driver.php');
 require_once (dirname(__FILE__).'/../../../tasklist/drivers/tasklist_driver.php');
 require_once (dirname(__FILE__).'/../../../tasklist/drivers/database/tasklist_database_driver.php');
 require_once (dirname(__FILE__).'/../../../tasklist/drivers/caldav/tasklist_caldav_driver.php');
-require_once (dirname(__FILE__).'/../../../libgpl/caldav_sync.php');
-require_once (dirname(__FILE__).'/../../../libgpl/encryption.php');
+require_once (dirname(__FILE__).'/../../../libgpl/caldav/caldav_sync.php');
+require_once (dirname(__FILE__).'/../../../libgpl/encryption/encryption.php');
 
 /**
  * TODO
@@ -75,8 +77,6 @@ class caldav_driver extends database_driver
 
     private $sync_clients = array();
 
-    // Min. time period to wait until sync check.
-    private $sync_period = 10; // seconds
 
     /**
      * Default constructor
@@ -136,10 +136,14 @@ class caldav_driver extends database_driver
         if ($obj_type == 'vcal')
         {
             $db_table = $this->db_calendars_caldav_props;
+            $fields = " (obj_id, obj_type, url, tag, user, pass, sync) ";
+            $values = "VALUES (?, ?, ?, ?, ?, ?, ?)";
         }
         else
         {
             $db_table = $this->db_events_caldav_props;
+            $fields = " (obj_id, obj_type, url, tag, user, pass) ";
+            $values = "VALUES (?, ?, ?, ?, ?, ?)";
         }
         
         $this->_remove_caldav_props($obj_id, $obj_type);
@@ -152,14 +156,17 @@ class caldav_driver extends database_driver
         }
 
         $query = $this->rc->db->query(
-            "INSERT INTO " . $db_table . " (obj_id, obj_type, url, tag, user, pass) ".
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO " . $db_table . $fields .
+            $values,
             $obj_id,
             $obj_type,
             $props["url"],
             isset($props["tag"]) ? $props["tag"] : null,
             isset($props["user"]) ? $props["user"] : null,
-            $password);
+            $password,
+            $props['sync'] ? $props['sync'] : 5
+        );
+        
         return $this->rc->db->affected_rows($query);
     }
 
@@ -237,14 +244,17 @@ class caldav_driver extends database_driver
      */
     private function _is_synced($cal_id)
     {
+        $now = date(self::DB_DATE_FORMAT);
+        $last = date(self::DB_DATE_FORMAT, time() - $this->sync_clients[$cal_id]->sync * 60);
+
         // Atomic sql: Check for exceeded sync period and update last_change.
         $query = $this->rc->db->query(
             "UPDATE " . $this->db_calendars_caldav_props ." " .
-            "SET last_change = CURRENT_TIMESTAMP " .
+            "SET last_change = ? " .
             "WHERE obj_id = ? AND obj_type = ? " .
-            "AND last_change <= (CURRENT_TIMESTAMP - ?);",
-        $cal_id, self::OBJ_TYPE_VCAL, $this->sync_period);
-
+            "AND last_change <= ?",
+            $now, $cal_id, self::OBJ_TYPE_VCAL, $last);
+            
         if($query->rowCount() > 0)
         {
             $is_synced = $this->sync_clients[$cal_id]->is_synced();
@@ -350,7 +360,7 @@ class caldav_driver extends database_driver
         $calendar_home_set = array('{urn:ietf:params:xml:ns:caldav}calendar-home-set');
         $cal_attribs = array('{DAV:}resourcetype', '{DAV:}displayname');
 
-        require_once (INSTALL_PATH . 'plugins/libgpl/caldav-client.php');
+        require_once (INSTALL_PATH . 'plugins/libgpl/caldav/caldav-client.php');
         $caldav = new caldav_client($props['url'], $props['user'], $props['pass'], $this->rc->config->get('calendar_curl_verify_peer', true));
 
         $tokens = parse_url($props['url']);
@@ -538,6 +548,17 @@ class caldav_driver extends database_driver
             "value" => $input_caldav_pass->show(null), // Don't send plain text password to GUI
             "id" => "caldav_pass",
         );
+
+        $select = new html_select(array('name' => 'sync', 'id' => $field_id));
+        $intervals = array(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 10 => 10, 15 => 15, 30 => 30, 45 => 45, 60 => 60);
+        foreach($intervals as $interval => $text){
+          $select->add($text, $interval);
+        }
+        $formfields["sync_interval"] = array(
+            "label" => $this->cal->gettext("sync_interval"),
+            "value" => $select->show((int) ($props["sync"] ? $props['sync'] : 5)) . '&nbsp;' . $this->cal->gettext('minute_s'),
+            "id" => "sync_interval",
+        );
         
         return parent::calendar_form($action, $calendar, $formfields);
     }
@@ -555,9 +576,10 @@ class caldav_driver extends database_driver
         if(!isset($props['color'])) {
             $props['color'] = 'cc0000';
         }
-        $props['user'] = $prop["caldav_user"];
-        $props['pass'] = $prop["caldav_pass"];
+        $props['user'] = $prop['caldav_user'];
+        $props['pass'] = $prop['caldav_pass'];
         $pwd_expanded_props = $props;
+        $props['sync'] = $prop['sync'];
         $this->_expand_pass($pwd_expanded_props);
         
         if($pwd_expanded_props['pass'] != '***TOKEN***' && !$this->_check_connection($pwd_expanded_props))
@@ -617,6 +639,7 @@ class caldav_driver extends database_driver
                 $props['url'] = self::_encode_url($calendar['href']);
                 $props['name'] = $calendar['name'];
                 $props['color'] = $calendar['color'];
+                $props['sync'] = $calendar['sync'];
 
                 if (($obj_id = parent::create_calendar($props)) !== false) {
                     $result = $result && $this->_set_caldav_props($obj_id, self::OBJ_TYPE_VCAL, $props, 'create_calendar');
@@ -686,6 +709,7 @@ class caldav_driver extends database_driver
                 'url'  => self::_encode_url($prop['caldav_url']),
                 'user' => $prop['caldav_user'],
                 'pass' => $prop['caldav_pass'],
+                'sync' => $prop['sync'],
                 'edit_calendar'
             ));
         }
@@ -728,7 +752,7 @@ class caldav_driver extends database_driver
      */
     private function _check_connection($prop, $retry = false)
     {
-        require_once (INSTALL_PATH . 'plugins/libgpl/caldav-client.php');
+        require_once (INSTALL_PATH . 'plugins/libgpl/caldav/caldav-client.php');
         $prop['url'] = self::_encode_url($prop['url']);
         $caldav = new caldav_client($prop['url'], $prop['user'], $prop['pass'], $this->rc->config->get('calendar_curl_verify_peer', true));
         $caldav_url = $prop['url'];
@@ -760,7 +784,7 @@ class caldav_driver extends database_driver
      */
     private function _add_collection($prop)
     {
-        require_once (INSTALL_PATH . 'plugins/libgpl/caldav-client.php');
+        require_once (INSTALL_PATH . 'plugins/libgpl/caldav/caldav-client.php');
         $prop['url'] = self::_encode_url($prop['url']);
         $caldav = new caldav_client($prop['url'], $prop['user'], $prop['pass'], $this->rc->config->get('calendar_curl_verify_peer', true));
         return $caldav->add_collection($prop['url'], $prop['name'], 'calendar', 'caldav');
@@ -944,7 +968,12 @@ class caldav_driver extends database_driver
         self::debug_log("Syncing calendar id \"$cal_id\".");
         
         $this->current_cal_id = $cal_id;
-        $cal_sync = $this->sync_clients[$cal_id];
+        if(! $cal_sync = $this->sync_clients[$cal_id])
+        {
+            self::debug_log("No sync client for calendar id \"$cal_id\".");
+            return;
+        }
+        
         $events = array();
         $caldav_props = array();
 

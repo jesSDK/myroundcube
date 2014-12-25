@@ -19,7 +19,6 @@ $labels['planner'] = 'Planner';
 $labels['pluginname'] = 'Planner';
 $labels['plugindescription'] = 'Questo è una via di mezzo tra un semplice calendario e una lista \'Da Fare\'';
 $labels['incompatiblebrowser'] = 'Per accedere al Planner utilizza Internet Explorer 9 o un programma di navigazione alternativo.';
-$labels['plan'] = 'Crea';
 $labels['view'] = 'Vista';
 $labels['select_view'] = 'Seleziona vista';
 $labels['flags'] = 'Contrassegni';

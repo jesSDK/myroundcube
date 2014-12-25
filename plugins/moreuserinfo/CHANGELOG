@@ -29,3 +29,4 @@ VERSION                COMMENT
 4.0.31 - 4.0.32        - Info page restyling
 4.0.33                 - Filter invalid CalDAVs display
 4.0.34                 - calendar plugin related adjustments
+4.0.35                 - Move flashclipboard.js to libgpl

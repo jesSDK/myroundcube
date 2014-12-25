@@ -335,7 +335,7 @@ class calendar_core extends rcube_plugin // Mod by Rosali
    */
   public function get_default_driver()
   {
-    $default = $this->rc->config->get("calendar_driver_default", "kolab"); // Fallback to kolab if nothing was configured.
+    $default = $this->rc->config->get('calendar_driver_default', 'database'); // Fallback to database if nothing was configured.
     return $this->get_driver_by_name($default);
   }
 
@@ -710,7 +710,7 @@ class calendar_core extends rcube_plugin // Mod by Rosali
         }
       }
       foreach($options as $id => $prop){
-        if($prop['readonly'] !== true){
+        if($prop['readonly'] != true){
           $select_cal->add($prop['name'], strval($id));
         }
       }
@@ -919,12 +919,14 @@ class calendar_core extends rcube_plugin // Mod by Rosali
     $success = $reload = $got_msg = false;
 
     $driver = null;
-    if($event['calendar'])
+    if ($event['calendar']) {
       $driver = $this->get_driver_by_cal($event['calendar']);
-      
+    }
+    
     // This can happen if creating a new event outside the calendar e.g. from an ical file attached to an email.
-    if(!$driver)
+    if (!$driver) {
       $driver = $this->get_default_driver();
+    }
 
     // don't notify if modifying a recurring instance (really?)
     if ($event['_savemode'] && $event['_savemode'] != 'all' && $event['_notify'])
@@ -940,6 +942,8 @@ class calendar_core extends rcube_plugin // Mod by Rosali
         $event['uid'] = $this->generate_uid();
         $this->prepare_event($event, $action);
         if ($success = $driver->new_event($event)) {
+          $new_event = $driver->get_event($event['uid']);
+          $event['event_id'] = $new_event['calendar'] . ':' . $new_event['id'];
           $event['id'] = $event['uid'];
           $this->cleanup_event($event);
         }
@@ -1172,13 +1176,11 @@ class calendar_core extends rcube_plugin // Mod by Rosali
     $this->rc->output->command('plugin.unlock_saving');
     
     // Begin mod by Rosali (make the event accessible by GUI)
-    if ($action != 'remove') {
-      $this->rc->output->command('plugin.event_callback', array(
-        'task'   => $this->rc->task,
-        'action' => $this->rc->action,
-        'evt'    => $this->_client_event($event),
-      ));
-    }
+    $this->rc->output->command('plugin.event_callback', array(
+      'task'   => $this->rc->task,
+      'action' => $this->rc->action,
+      'evt'    => $action != 'remove' ? $this->_client_event($event) : null,
+    ));
     // End mod by Rosali
 
     // update event object on the client or trigger a complete refretch if too complicated

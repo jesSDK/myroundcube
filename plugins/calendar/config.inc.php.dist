@@ -163,6 +163,7 @@ $config['calendar_crypt_key'] = "put some random string here";
 //          'showalarms'  => 1,
 //          'tasks'       => 1,
 //          'freebusy'    => 1,
+//          'sync'        => 5, // every (x) minute(s)
 //        ),
 //   3 => array(
 //          'driver'      => 'ical',
@@ -174,11 +175,25 @@ $config['calendar_crypt_key'] = "put some random string here";
 //          'showalarms'  => 1,
 //          'tasks'       => 1,
 //          'freebusy'    => 0,
+//          'sync'        => 3600, // every (x) minute(s)
 //        ),
 // );
 
 /* Verify SSL Certs */
 $config['calendar_curl_verify_peer'] = false;
+
+/* Reminders sounds */
+   /* 
+      In order to add more sounds extend this array
+      and add sound files into sounds folder of calendar_plus
+      plugin.
+   */
+$config['calendar_reminders_available_sounds'] = array(
+  'pling'           => 'sound.wav',
+  'bling'           => 'sound2.wav',
+  'digital clock'   => 'sound3.wav',
+  'flub'            => 'sound4.wav'
+);
 
 /* Cronjob */
 $config['cron_log'] = true;

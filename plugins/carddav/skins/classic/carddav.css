@@ -32,6 +32,11 @@ fieldset {
   display: none;
 }
 
+.myrc_loading_small {
+  background-image: url('loadingsmall.gif');
+  background-repeat: no-repeat;
+}
+
 a.deletebutton {
   position: relative;
   left: 5px;
@@ -73,7 +78,7 @@ a.addbutton {
   background-position: center -1px;
 }
 
-#abooktoolbar a.carddavloading {
+#abooktoolbar a.myrc_loading {
   background-image: url('loading.gif');
   background-repeat: no-repeat;
   background-position: center -1px;

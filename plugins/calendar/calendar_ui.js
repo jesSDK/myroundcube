@@ -1934,7 +1934,9 @@ function rcube_calendar_ui(settings)
           titleFormat: { day: 'dddd ' + settings['date_long'] },
           allDayText: rcmail.gettext('all-day', 'calendar'),
           currentTimeIndicator: settings.time_indicator,
-          eventRender: fc_event_render,
+          eventRender: function (event, element, view) {
+            fc_event_render(event, element, view)
+          },
           eventClick: function(event) {
             event_show_dialog(event);
           }
@@ -2284,7 +2286,6 @@ function rcube_calendar_ui(settings)
       else if (p.refetch) {
         fc.fullCalendar('refetchEvents');
       }
-
       // remove temp events
       fc.fullCalendar('removeEvents', function(e){ return e.temp; });
     };
@@ -2626,7 +2627,12 @@ function rcube_calendar_ui(settings)
           me.events_loaded($(this).fullCalendar('clientEvents').length);
       },
       // event rendering
-      eventRender: fc_event_render,
+      // Begin mod by Rosali (let other plugins jump in)
+      eventRender: function (event, element, view) {
+        fc_event_render(event, element, view);
+        rcmail.triggerEvent('eventRender', { evt: event, element: element, view: view });
+      },
+      // End mod by Rosali
       // render element indicating more (invisible) events
       overflowRender: function(data, element) {
         element.html(rcmail.gettext('andnmore', 'calendar').replace('$nr', data.count))
@@ -3084,7 +3090,7 @@ window.rcmail && rcmail.addEventListener('init', function(evt) {
 
   // show calendars list when ready
   $('#calendars').css('visibility', 'inherit');
-
+  
   // show toolbar
   $('#toolbar').show();
 

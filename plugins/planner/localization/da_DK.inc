@@ -18,7 +18,6 @@ $labels['planner'] = 'Planlægning';
 $labels['pluginname'] = 'Planlægning';
 $labels['plugindescription'] = 'Dette er en mellemting mellem en simpel kalender og en Todo liste';
 $labels['incompatiblebrowser'] = 'For at anvende dette planlægningsmodul, anvend venligst Internet Explorer 9 eller en alternativ Browser.';
-$labels['plan'] = 'Opret';
 $labels['view'] = 'Vis';
 $labels['select_view'] = 'Vælg vis';
 $labels['flags'] = 'Flag';

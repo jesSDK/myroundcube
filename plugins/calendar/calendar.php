@@ -18,8 +18,8 @@ class calendar extends calendar_core
   static private $plugin = 'calendar';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = 'This plugin is a fork of <a href="https://git.kolab.org/roundcubemail-plugins-kolab/tree/plugins/calendar" target="_new">Kolab calendar (core)</a> and <a href="https://gitlab.awesome-it.de/kolab/roundcube-plugins/tree/feature_caldav" target="_new">Awesome Information technology CalDAV/iCal drivers implementation</a>.<br /><a href="http://myroundcube.com/myroundcube-plugins/calendar-beta-plugin" target="_blank">Documentation</a>';
-  static private $version = '19.0.4';
-  static private $date = '19-11-2014';
+  static private $version = '19.0.20';
+  static private $date = '19-12-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'extra' => '<span style="color: #ff0000;">IMPORTANT</span> &#8211;&nbsp;<div style="display: inline">Plugin requires Roundcube core files patches</span></div>',
@@ -28,10 +28,10 @@ class calendar extends calendar_core
     'required_plugins' => array(
       'settings' => 'require_plugin',
       'db_version' => 'require_plugin',
-      'http_request' => 'require_plugin',
       'tasklist' => 'require_plugin',
       'libcalendaring' => 'require_plugin',
       'libgpl'         => 'require_plugin',
+      'myrc_sprites'   => 'require_plugin',
     ),
     'recommended_plugins' => array(
       'calendar_plus' => 'require_plugin',
@@ -63,6 +63,10 @@ class calendar extends calendar_core
   static private $db_version = array(
     'initial',
     '20141113',
+    '20141122',
+    '20141123',
+    '20141125',
+    '20141205',
   );
   static private $sqladmin = array('db_dsnw', 'calendars');
 
@@ -125,6 +129,8 @@ class calendar extends calendar_core
     {
       $this->require_plugin('calendar_plus');
     }
+    
+    $this->require_plugin('myrc_sprites');
 
     $this->require_plugin('tasklist');
   }
@@ -147,12 +153,12 @@ class calendar extends calendar_core
           require_once(INSTALL_PATH . 'plugins/calendar/drivers/' . $driver_name . '/' . $driver_class . '.php');
           $driver = $this->_load_driver($driver_class, $driver_name);
         }
-        else if (file_exists(INSTALL_PATH . 'plugins/calendar_plus/calendar_plus.php')) {
+        if (file_exists(INSTALL_PATH . 'plugins/calendar_plus/drivers/' . $driver_name . '/' . $driver_class . '.php')) {
           require_once(INSTALL_PATH . 'plugins/calendar_plus/drivers/' . $driver_name . '/' . $driver_class . '.php');
           $driver = $this->_load_driver($driver_class, $driver_name);
         }
         else {
-          require_once(INSTALL_PATH . 'plugins/calendar_plus/drivers/database/database_driver.php');
+          require_once(INSTALL_PATH . 'plugins/calendar/drivers/database/database_driver.php');
           $driver = $this->_load_driver('database_driver', 'database');
         }
       }

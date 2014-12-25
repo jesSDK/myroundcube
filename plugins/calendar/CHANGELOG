@@ -6,3 +6,16 @@ VERSION             COMMENT
                     - Implemented freebusy support for iCal driver
 19.0.3              - Fix an issue in CalDAV driver autodiscover method to avoid creation of dups
 19.0.4              - Suppress error log on authentication failure
+19.0.5 - 19.0.6     - Make sure that database scripts install over an existing deprecated calendar plugin version
+                      (calendar plugin < v. 19.0)
+19.0.7              - Fixed wrong driver fallback include path
+19.0.8 - 19.0.9     - Added default reminders sounds options to config.inc.php.dist
+19.0.10             - Implement indivial sync intervals for CalDAV and iCal drivers
+19.0.11             - Moved ical_sync.php to libgpl
+19.0.12             - Implement event convertion features (convert to task, note, message)
+19.0.13 - 19.0.14   - Add readonly flag to calendars table
+19.0.15             - Minor css fix
+19.0.16 - 19.0.17   - Larry skin improvements
+19.0.18             - Implement myrc_sprites plugin
+19.0.19             - Remove http_request from requird plugins
+19.0.20             - Adjust SQL update script timestamps

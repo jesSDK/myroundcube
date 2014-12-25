@@ -1,16 +1,17 @@
 <?php
-/**
- * jappix4roundcube
- *
- * @version 2.0.19 - 14.07.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- *
- *
- * Forked from: see below
- *
- **/
-
+# 
+# This file is part of MyRoundcube "jappix4roundcube" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (C) 2011, Lazlo Westerhof
+# Lazlo Westerhof <roundcube@lazlo.me> 
+# Copyright (C) 2014 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 /**
  * jappix4roundcube
  *
@@ -32,16 +33,16 @@ class jappix4roundcube extends rcube_plugin {
   static private $plugin = 'jappix4roundcube';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/jappix4roundcube-plugin" target="_blank">Documentation</a>';
-  static private $version = '2.0.19';
-  static private $date = '14-07-2014';
+  static private $version = '2.0.21';
+  static private $date = '19-12-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'Roundcube' => '1.0',
     'PHP' => '5.3',
     'required_plugins' => array(
-      'http_request' => 'require_plugins',
       'db_version' => 'require_plugin',
-      'gibberish' => 'require_plugin',
+      'libgpl' => 'require_plugin',
+      'myrc_sprites' => 'require_plugin',
     ),
   );
   static private $tables = array(
@@ -69,7 +70,7 @@ class jappix4roundcube extends rcube_plugin {
       return;
     }
     
-    $this->require_plugin('gibberish');
+    $this->require_plugin('libgpl');
 
     $this->load_config();
     $this->add_texts('localization/', true);
@@ -96,7 +97,7 @@ class jappix4roundcube extends rcube_plugin {
     }
     
     if(!$rcmail->config->get('jabber_enc') && $rcmail->config->get('jappix_inherit')){
-      gibberish::include_php();
+      libgpl::include_php('plugins/libgpl/gibberish/GibberishAES.php');
       $key = md5($rcmail->user->data['username'] . ':' . $rcmail->decrypt($_SESSION['password']));
       $rcmail->config->set('jabber_enc', GibberishAES::enc($rcmail->decrypt($_SESSION['password']), $key));
     }
@@ -111,8 +112,10 @@ class jappix4roundcube extends rcube_plugin {
     $lg = explode('_', $_SESSION['language']);
     $lg = $lg[0];
     $src  = unslashify($rcmail->config->get('jappix_url', 'https://jappix.com'));
-    gibberish::include_js();
+    libgpl::include_js('gibberish/gibberish-aes.js');
     $display = $rcmail->config->get('jappix_full', 0) ? '' : 'display:none';
+
+    $this->require_plugin('myrc_sprites');
     $this->add_button(array(
       'command' => 'tjappix',
       'type' => 'link',
@@ -123,7 +126,7 @@ class jappix4roundcube extends rcube_plugin {
           });",
       'class' => 'button-jappix4roundcube',
       'classsel' => 'button-jappix4roundcube button-selected',
-      'innerclass' => 'button-inner',
+      'innerclass' => 'button-inner myrc_sprites',
       'label' => 'jappix4roundcube.task',
       'style' => $display,
     ), 'taskbar');
@@ -262,7 +265,7 @@ class jappix4roundcube extends rcube_plugin {
       $rcmail->output->set_env('jabber_mini', $rcmail->config->get('jappix_mini', true) ? 1 : 0);
       $rcmail->output->set_env('jabber_autologon', $rcmail->config->get('jappix_mini_autologon', true));
       $this->include_script('jappix.js');
-      gibberish::include_js();
+      libgpl::include_js('gibberish/gibberish-aes.js');
       $file = 'mini.css';
       $browser = new rcube_browser();
       if($browser->ie && $browser->ver < 7){
@@ -381,7 +384,7 @@ class jappix4roundcube extends rcube_plugin {
 
   function preferences_save($args){
     if($args['section'] == 'jabber'){
-      gibberish::include_php();
+      libgpl::include_php('plugins/libgpl/gibberish/GibberishAES.php');
       $rcmail = rcmail::get_instance();
       $username = trim(get_input_value('_jabber_username', RCUBE_INPUT_POST));
       if(preg_match('/[@\/\\ ]/', $username)){
@@ -426,7 +429,7 @@ class jappix4roundcube extends rcube_plugin {
   }
   
   function password_change($args){
-    gibberish::include_php();
+    libgpl::include_php('plugins/libgpl/gibberish/GibberishAES.php');
     $rcmail = rcmail::get_instance();
     $key = md5($rcmail->user->data['username'] . ':' . $args['old_pass']);
     $dec = GibberishAES::dec($rcmail->config->get('jabber_enc'), $key);
@@ -468,7 +471,6 @@ class jappix4roundcube extends rcube_plugin {
     else{
       $sql = 'DELETE FROM ' . get_table_name('jappix') . ' WHERE lang=?';
       $rcmail->db->query($sql, $lg);
-      $this->require_plugin('http_request');
       $domain = slashify($rcmail->config->get('jappix_url', 'https://jappix.com'));
       $url = $domain . 'php/get.php?l=' . $lg . '&t=js&g=mini.xml';
       $http = new MyRCHttp;

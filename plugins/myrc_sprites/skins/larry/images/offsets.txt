@@ -1,0 +1,19 @@
+Plugin              start (x/y px)  grid (x/y px)
+-----------------------------------------------------
+planner             0016 x 0008     no fixed grid
+calendar            0016 x 0368     24 x 24
+sticky_notes        0016 x 0528     24 x 24
+compose_in_taskbar  0016 x 0720     24 x 24
+jappix4roundcube    0016 x 0816     24 x 24
+carddav             0016 x 0912     
+taskbar             0016 x 0976
+settings            0016 x 1040     24 x 24
+markbuttons         0016 x 1136     16 x 16
+scheduled_sending   0016 x 1256     
+hmail_rules         0016 x 1360     24 x 24
+hmail_signature     0016 x 1424     24 x 24
+rss_feed            0016 x 1488     16 x 16
+vcard_attachments   0016 x 1552     
+vcard_send          0016 x 1648
+vkeyboard           0016 x 1720
+webmail_notifier    0016 x 1784

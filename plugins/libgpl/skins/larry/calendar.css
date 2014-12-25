@@ -1,0 +1,5 @@
+.ui-dialog .ui-dialog-titlebar-close { position: absolute; right: 10px; top: 10px;  margin: 0; z-index: 99999; width: 18px; height: 18px;}
+.ui-dialog .ui-dialog-titlebar-close span { display: block; margin: 0; background: url(images/ui-icons_004458_256x240.png) -79px -128px no-repeat; width: 18px; height: 18px;}
+.ui-dialog .ui-dialog-titlebar-close, .ui-dialog .ui-dialog-titlebar-close:focus { border: 1px solid #cccccc; background: #f8f8f8 url(images/ui-bg_highlight-hard_75_f8f8f8_1x100.png) 50% 50% repeat-x; }
+.ui-dialog .ui-dialog-titlebar-close:hover { border: 1px solid #cccccc; background: #e4e4e4 url(images/ui-bg_highlight-soft_90_e4e4e4_1x100.png) 50% 50% repeat-x;}
+.fc-event { cursor: pointer !important; }

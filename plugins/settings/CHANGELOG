@@ -6,3 +6,5 @@ VERSION                COMMENT
 4.5                    - Move Server Settings section to Account Administration section
 4.5.1                  - Make plugin independent from plugin_manager plugin
 5.0                    - calendar plugin adjustments
+5.0.1 - 5.0.2          - Implement myrc_sprites plugin
+5.0.3                  - Removed depricated nabble code

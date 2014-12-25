@@ -52,6 +52,10 @@
 				<label for="taskedit-tasklist"><roundcube:label name="tasklist.list" /></label>
 				<roundcube:object name="plugin.tasklist_select" id="taskedit-tasklist" tabindex="26" />
 			</div>
+			<div class="form-section" id="taskedit-is_subtask" style="display:none;">
+				<label for="taskedit-is_subtask"><roundcube:label name="tasklist.is_subtask" /></label>
+				<input type="checkbox" name="children_detach" />
+			</div>
 			<div class="form-section" id="tasklist-recurrence-warning">
 			  <roundcube:object name="plugin.recurrence_warning" class="event-dialog-message edit-recurring-warning" style="display:none" object="task" />
 		  </div>

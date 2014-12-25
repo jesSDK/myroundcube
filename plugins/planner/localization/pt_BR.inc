@@ -19,7 +19,6 @@ $labels['planner'] = 'Planner';
 $labels['pluginname'] = 'Planner';
 $labels['plugindescription'] = 'Este é um híbrido entre um calendário simples e uma lista de tarefas.';
 $labels['incompatiblebrowser'] = 'Para acessar o Planner, por favor, use Internet Explorer 9 ou um navegador alternativo.';
-$labels['plan'] = 'Criar';
 $labels['view'] = 'Exibir';
 $labels['select_view'] = 'Selecione visão';
 $labels['flags'] = 'Marcadores';

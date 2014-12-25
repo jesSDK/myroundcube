@@ -1,17 +1,16 @@
 <?php
-
-/**
- * Archive (archivefolder)
- *
- * Sample plugin that adds a new button to the mailbox toolbar
- * To move messages to a special archive folder.
- * Based on Mark As Junk sample plugin.
- *
- * @version 2.9.6 - 09.11.2014
- * @author Andre Rodier, Thomas Bruederli, Roland 'rosali' Liebl
- * @website http://myroundcube.com 
- */
-
+# 
+# This file is part of MyRoundcube "archivefolder" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Previous authors Andre Rodier, Thomas Bruederli
+# Copyright (c) 2014 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+#
 class archivefolder extends rcube_plugin
 {
   public $task = 'mail|settings';
@@ -22,8 +21,8 @@ class archivefolder extends rcube_plugin
   static private $plugin = 'archivefolder';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/archivefolder-plugin" target="_blank">Documentation</a>';
-  static private $version = '2.9.6';
-  static private $date = '09-11-2014';
+  static private $version = '2.9.7';
+  static private $date = '17-12-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'Roundcube' => '1.0',
@@ -63,16 +62,10 @@ class archivefolder extends rcube_plugin
         'toolbar');
       }
       
-      // add label for contextmenu
-      // find me: do it only if contextmenu is registered
-      $rcmail->output->add_label(
-        'archivefolder.buttontitle'
-      );  
-
       $rcmail->output->set_env('archive_folder', $archive_folder);
-      $rcmail->output->set_env('archive_folder_icon', $this->url($skin_path.'/foldericon.png'));
-      
-      $this->include_stylesheet($skin_path . '/archivefolder.css');
+      if($rcmail->config->get('skin', 'larry') == 'classic'){
+        $this->include_stylesheet($skin_path . '/archivefolder.css');
+      }
     }
     else if ($rcmail->task == 'settings') {
       $dont_override = $rcmail->config->get('dont_override', array());

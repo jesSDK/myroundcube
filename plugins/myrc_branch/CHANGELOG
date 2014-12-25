@@ -1,0 +1,6 @@
+VERSION                COMMENT
+---------------------------------------------------------------------------------
+1.0                    - Roundcube 0.9.5
+2.0                    - Roundcube 1.0.3
+3.0                    - Roundcube 1.0.3 beta branch
+3.0.1                  - Define a MyRoundcube plugins bundle version constant

@@ -91,6 +91,7 @@ function rcube_tasklist_ui(settings)
     /*  public methods  */
     this.init = init;
     this.edit_task = task_edit_dialog;
+    this.task_show_dialog = task_show_dialog; // Mod by Rosali (task auto open)
     this.delete_task = delete_task;
     this.add_childtask = add_childtask;
     this.quicksearch = quicksearch;
@@ -862,21 +863,30 @@ function rcube_tasklist_ui(settings)
         if (tags_title != '') {
           tags_title = tags_title.substr(0, tags_title.length -2);
         }
+
         var div = $('<div>').addClass('taskhead').html(
             '<div class="progressbar"><div class="progressvalue" style="width:' + (rec.complete * 100) + '%"></div></div>' +
             '<input type="checkbox" name="completed[]" value="1" class="complete" aria-label="' + rcmail.gettext('complete','tasklist') + '" ' + (is_complete(rec) ? 'checked="checked" ' : '') + '/>' + 
             '<span class="flagged"></span>' +
             '<span class="title">' + text2html(Q(rec.title)) + '</span>' +
             '<span class="tags" title="' + tags_title + '">' +
-            (rec.startdate ? '<span class="startdate">' + rec.startdate + (rec.starttime ? (' ' + rec.starttime) : '') + '</span>' : '') +
+            (rec.startdate ? '<span class="startdate">' + rec.startdate + (rec.starttime ? (' ' + rec.starttime) : ' 00:00') + '</span>' : '') +
             ((rec.startdatetime && (rec.startdatetime < new Date().getTime() / 1000 ) && (rec.status == 'NEEDS-ACTION' || !rec.status)) ? '<span class="taskstatus warning">' + rcmail.gettext('status-needs-action', 'tasklist') + '</span>' :
             rec.status ? ('<span class="taskstatus">' + rcmail.gettext('status-' + rec.status.toLowerCase(), 'tasklist') + '</span>') : '') +
             tags_html +
             '</span>' +
             '<span class="date">' + Q(rec.date || rcmail.gettext('nodate','tasklist')) + '</span>' +
+            '<span class="time" style="display:none;">' + (rec.time ? rec.time : '') + '</span>' +
+            // Begin mod by Rosali (include some more properties)
+            '<span class="description" style="display:none;">' + (rec.description ? rec.description : '') + '</span>' +
+            '<span class="alarms" style="display:none;">' + (rec.alarms ? rec.alarms : '') + '</span>' +
+            '<span class="priority" style="display:none;">' + (rec.flagged ? rec.flagged : '') + '</span>' +
+            '<span class="priority" style="display:none;">' + (rec.recurrence ? $(rec.recurrence).serialize() : '') + '</span>' +
             '<a href="#" class="actions">V</a>'
             )
-            .data('id', rec.id);
+            .data('id', rec.id)
+            .data('recurrence', rec.recurrence ? rec.recurrence : null); // pass recurrence object
+            // End mod by Rosali
         // Begin mod by Rosali (recurring task clones are not draggable)
         if (!rec.isclone) {
             div.draggable({
@@ -1257,33 +1267,35 @@ function rcube_tasklist_ui(settings)
 
         // Begin mod by Rosali
         // Hide disabled tasklists and don't preset a selected unsubscribed tasklist
-        var tasklist_option;
-        $('#taskedit-tasklist').children().each(function(){
-          tasklist_option = $(this).val();
-          if (rcmail.env.tasklists[tasklist_option].active == true) {
-            $(this).show();
-          }
-          else {
-            $(this).hide();
-          }
-        });
-        
-        var tasklist_selected = rec.list || me.selected_list;
-        if (tasklist_selected && !rcmail.env.tasklists[tasklist_selected].active) {
-          $('#taskedit-tasklist').children().each(function(){
-            tasklist_selected = $(this).val();
-            if (rcmail.env.tasklists[tasklist_selected].active == true) {
-              return false;
+        if (rcmail.env.task == 'tasks') {
+            var tasklist_option;
+            $('#taskedit-tasklist').children().each(function(){
+                tasklist_option = $(this).val();
+                if (rcmail.env.tasklists[tasklist_option].active == true) {
+                    $(this).show();
+                }
+                else {
+                    $(this).hide();
+                }
+              });
+
+            var tasklist_selected = rec.list || me.selected_list;
+            if (tasklist_selected && !rcmail.env.tasklists[tasklist_selected].active) {
+                $('#taskedit-tasklist').children().each(function(){
+                    tasklist_selected = $(this).val();
+                    if (rcmail.env.tasklists[tasklist_selected].active == true) {
+                        return false;
+                    }
+                    else {
+                        tasklist_selected = false;
+                    }
+                });
             }
-            else {
-              tasklist_selected = false;
+
+            if (!tasklist_selected) {
+                rcmail.display_message(rcmail.gettext('subscribe', 'tasklist'), 'error');
+                return false;
             }
-          });
-        }
-        
-        if (!tasklist_selected) {
-          rcmail.display_message(rcmail.gettext('subscribe', 'tasklist'), 'error');
-          return false;
         }
         // End mod by Rosali
 
@@ -1313,6 +1325,26 @@ function rcube_tasklist_ui(settings)
         var complete = $('#taskedit-completeness').val((rec.complete || 0) * 100);
         completeness_slider.slider('value', complete.val());
         var taskstatus = $('#taskedit-status').val(rec.status || '');
+        
+        // Begin mod by Rosali (make it possible to remove subtask property)
+        var parent_id = me.selected_task.parent_id;
+        if (parent_id) {
+          $('input[name="children_detach"]').prop('checked', true).val(0);
+          $('#taskedit-is_subtask').show();
+        }
+        else{
+          $('input[name="children_detach"]').prop('checked', false).val(1);
+          $('#taskedit-is_subtask').hide();
+        }
+        $('input[name="children_detach"]').click(function() {
+          if ($(this).prop('checked')) {
+            $('input[name="children_detach"]').val(0);
+          }
+          else {
+            $('input[name="children_detach"]').val(1);
+          }
+        });
+        // End mod by Rosali
 
         // Begin mod by Rosali (disable GUI element for recurring events and subtasks)
         if(rec.recurrence || rec.isclone || (rec.recurrence_id && rec.recurrence_id != 0) || (presets && presets.parent_id && action == 'new')){
@@ -1415,9 +1447,10 @@ function rcube_tasklist_ui(settings)
             // End mod by Rosali
             
             // copy form field contents into task object to save
-            $.each({ title:title, description:description, date:recdate, time:rectime, startdate:recstartdate, starttime:recstarttime, status:taskstatus, list:tasklist }, function(key,input){
+            $.each({ title:title, description:description, date:recdate, time:rectime, startdate:recstartdate, starttime:recstarttime, status:taskstatus, list:tasklist}, function(key,input){
                 me.selected_task[key] = input.val();
             });
+            me.selected_task.children_detach = $('input[name="children_detach"]').val();
             me.selected_task.tags = [];
             me.selected_task.attachments = [];
             me.selected_task.recurrence = me.serialize_recurrence(rectime.val());

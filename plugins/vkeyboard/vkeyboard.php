@@ -1,13 +1,17 @@
 <?php
-/**
- * vkeyboard
- *
- * @version 1.8.5 - 17.02.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- * 
- **/
- 
+# 
+# This file is part of MyRoundcube "vkeyboard" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (C) 2011, Lazlo Westerhof
+# Lazlo Westerhof <roundcube@lazlo.me> 
+# Copyright (C) 2014 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 class vkeyboard extends rcube_plugin
 {
   public $task = 'login|logout|settings';
@@ -19,12 +23,15 @@ class vkeyboard extends rcube_plugin
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/vkeyboard-plugin" target="_blank">Documentation</a>';
   static private $download = 'http://myroundcube.googlecode.com';
-  static private $version = '1.8.5';
-  static private $date = '17-02-2014';
+  static private $version = '1.8.6';
+  static private $date = '25-12-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'Roundcube' => '1.0',
-    'PHP' => '5.3'
+    'PHP' => '5.3',
+    'required_plugins' => array(
+      'myrc_sprites' => 'require_plugin',
+    ),
   );
   static private $prefs = null;
   static private $config_dist = null;
@@ -32,6 +39,7 @@ class vkeyboard extends rcube_plugin
   function init()
   {
     $this->rcmail = rcmail::get_instance();
+    $this->require_plugin('myrc_sprites');
     if($this->rcmail->task == 'settings' || $this->rcmail->task == 'login' || $this->rcmail->task == 'logout'){
       $lang = get_input_value('_lang_sel', RCUBE_INPUT_GET);
       if($lang){

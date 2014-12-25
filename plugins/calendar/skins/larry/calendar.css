@@ -1410,8 +1410,9 @@ fieldset #calendarcategories div {
 
 /* Invitation UI in mail */
 
-#messagemenu li a.calendarlink span.calendar {
-	background-position: 0px -1948px;
+#messagemenu li a.calendarlink span.calendar,
+#rcm_messagemenu li a.calendarlink span.calendar {
+	background-position: 0px -2196px;
 }
 
 div.calendar-invitebox {

@@ -110,11 +110,11 @@ if(window.rcmail){
   
   function carddav_server_readonly(obj, id){
     if(obj.src.indexOf('checked.png') > -1){
-      obj.src = obj.src.replace('checked.png', 'blank.gif');
+      obj.src = 'program/resources/blank.gif';
       var readonly = 0;
     }
     else{
-      obj.src = obj.src.replace('blank.gif', 'checked.png');
+      obj.src = 'plugins/carddav/skins/' + rcmail.env.skin + '/checked.png';
       var readonly = 1;
     }
     $('#lcarddav_addressbook'+ id).css('visibility', 'visible');
@@ -126,11 +126,11 @@ if(window.rcmail){
 
   function carddav_server_autocomplete(obj, id){
     if(obj.src.indexOf('checked.png') > -1){
-      obj.src = obj.src.replace('checked.png', 'blank.gif');
+      obj.src = 'program/resources/blank.gif';
       var autocomplete = 0;
     }
     else{
-      obj.src = obj.src.replace('blank.gif', 'checked.png');
+      obj.src = 'plugins/carddav/skins/' + rcmail.env.skin + '/checked.png';
       var autocomplete = 1;
     }
     $('#lcarddav_addressbook'+ id).css('visibility', 'visible');
@@ -142,11 +142,11 @@ if(window.rcmail){
   
   function carddav_server_subscribe(obj, id){
     if(obj.src.indexOf('checked.png') > -1){
-      obj.src = obj.src.replace('checked.png', 'blank.gif');
+      obj.src = 'program/resources/blank.gif';
       var subscribed = 0;
     }
     else{
-      obj.src = obj.src.replace('blank.gif', 'checked.png');
+      obj.src = 'plugins/carddav/skins/' + rcmail.env.skin + '/checked.png';
       var subscribed = 1;
     }
     $('#lcarddav_addressbook'+ id).css('visibility', 'visible');
@@ -268,7 +268,7 @@ if(window.rcmail){
   }
   
   function carddav_server_success(response){
-    window.setTimeout("$('.loadingsmall').css('visibility', 'hidden');", 1000);
+    window.setTimeout("$('.myrc_loading_small').css('visibility', 'hidden');", 1000);
     if(response.tabbed){
       if(typeof parent.parent.getIFRAMEDiv == "function"){
         try{
@@ -291,7 +291,7 @@ if(window.rcmail){
   }
 
   function carddav_server_failure(response){
-    window.setTimeout("$('.loadingsmall').css('visibility', 'hidden');", 1000);
+    window.setTimeout("$('.myrc_loading_small').css('visibility', 'hidden');", 1000);
     parent.rcmail.display_message(response.message, 'error');
     if(response.reload){
       document.location.reload();

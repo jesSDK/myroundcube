@@ -9,10 +9,10 @@
 		<user>rosali</user>
 		<email>dev-team@myroundcube.com</email>
 		<active>yes</active>
-	</lead><date>2014-07-14</date>
+	</lead><date>2014-12-19</date>
 	<version>
-		<release>2.0.19</release>
-		<api>2.0.19</api>
+		<release>2.0.21</release>
+		<api>2.0.21</api>
 	</version>
 	<stability>
 		<release>stable</release>

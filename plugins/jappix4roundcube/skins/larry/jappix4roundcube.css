@@ -1,27 +1,21 @@
-﻿#sections-table #rcmrowjabber td.section{
+﻿#sections-table #rcmrowjabber td.section {
   background-position: 6px -478px;
 }
 
-#taskbar a.button-jappix4roundcube span.button-inner
-{
-  background: url(chat.png) 5px 0 no-repeat;
-  height: 18px;
+#taskbar a.button-jappix4roundcube span.button-inner {
+  background-position: -12px -814px;
 }
 
 #taskbar a.button-jappix4roundcube:hover span.button-inner,
-#taskbar a.button-jappix4roundcube.button-selected span.button-inner
-{
-  background: url(chat.png) 5px -43px no-repeat;
-  height: 18px;
+#taskbar a.button-jappix4roundcube.button-selected span.button-inner {
+  background: -12px -845.5px;
 }
 
-#preferences-details .propform
-{
+#preferences-details .propform {
   font-weight: normal;
   font-size: 11px;
 }
 
-#header
-{
+#header {
   overflow: hidden;
 }

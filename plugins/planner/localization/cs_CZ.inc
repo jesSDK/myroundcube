@@ -16,7 +16,6 @@ $labels['planner'] = 'Plánovač';
 $labels['pluginname'] = 'Plánovač';
 $labels['plugindescription'] = 'Jde o hybrid mezi jednoduchým kalendářem a seznamem úkolů';
 $labels['incompatiblebrowser'] = 'Pro přístup k Plánovači použijte Internet Explorer 9 nebo alternativní prohlížeč.';
-$labels['plan'] = 'Vytvořit';
 $labels['view'] = 'Zobrazit';
 $labels['select_view'] = 'Vybrat pohled';
 $labels['flags'] = 'Příznaky';

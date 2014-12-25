@@ -1,3 +1,4 @@
 VERSION                COMMENT
 ---------------------------------------------------------------------------------
 1.8.5                  - Roundcube 1.0 compatibility
+1.8.6                  - Implement myrc_sprites plugin

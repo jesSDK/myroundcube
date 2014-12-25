@@ -17,7 +17,6 @@ $labels['planner'] = 'Planificador';
 $labels['pluginname'] = 'Planificador';
 $labels['plugindescription'] = 'Este es un complemento mixto entre un calendario simple y una lista de tareas.';
 $labels['incompatiblebrowser'] = 'Para acceder al Planificador, por favor use Internet Explorer 9 o un explorador alternativo.';
-$labels['plan'] = 'Crear';
 $labels['view'] = 'Ver';
 $labels['select_view'] = 'Seleccionar vista';
 $labels['flags'] = 'Indicadores';

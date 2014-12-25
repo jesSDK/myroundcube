@@ -16,7 +16,6 @@ $labels['planner'] = 'Планировщик';
 $labels['pluginname'] = 'Планировщик';
 $labels['plugindescription'] = 'Это симбиоз календаря и списка дел';
 $labels['incompatiblebrowser'] = 'Для входа в Планировщик используйте Internet Explorer 9 или альтернативный браузер';
-$labels['plan'] = 'Создать';
 $labels['view'] = 'Просмотр';
 $labels['select_view'] = 'Выбрать просмотр';
 $labels['flags'] = 'Флаги';

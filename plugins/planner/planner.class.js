@@ -1,71 +1,1305 @@
-var default_starttime="08:00",planner_items=0,js_time_formats=[],js_date_formats=[],planner_request=[],blink_timer;(function(a){a.fn.blink=function(b){b=a.extend({delay:500},b||{});return this.each(function(){var c=a(this);blink_timer=setInterval(function(){"visible"==a(c).css("visibility")?a(c).css("visibility","hidden"):a(c).css("visibility","visible")},b.delay)})}})(jQuery);
-function planner_overlay_toggle(a){$("#planner_help").hide();a?(window.clearTimeout(rcmail.env.planner_timeout),rcmail.env.planner_timeout=window.setTimeout("planner_timeout()",5E3),0<planner_items&&$("#overlay").show()):($("#overlay").hide(),window.clearTimeout(rcmail.env.planner_timeout))}
-function planner_timeout(){$("#overlay").is(":visible")&&(rcmail.display_message(rcmail.gettext("planner.errorsaving"),"error"),planner_overlay_toggle(!1),rcmail.http_post("plugin.planner_retrieve","_p="+rcmail.env.planner_items))}
-function planner_init(a){planner_sort();$("#planner_items_list").hide();rcmail.env.planner_counts=[];var b="all today tomorrow week starred done deleted overdue".split(" ");$("#planner_items_list").hide();for(var c in b)planner_show(b[c]);$("#planner_items_list").show();a&&planner_dialog_adjust_gui(a)}
-function planner_dialog(){if(rcmail.env.planner_dialog_initialized)$("#planner_input").dialog("open");else{$dialogContent=$("#planner_input");var a={};a[rcmail.gettext("planner.search")]=function(c){c.preventDefault();rcmail.env.planner_search_mode=!0;planner_overlay_toggle(!0);planner_search();planner_overlay_toggle(!1);$(".flink").css("font-weight","normal")};a[rcmail.gettext("planner.plan")]=function(c){c.preventDefault();planner_dialog_submit()};a[rcmail.gettext("planner.cancel")]=function(){$dialogContent.dialog("close")};
-var b=rcmail.gettext("planner.new");"edit"==$("#planner_mode").val()&&(b=rcmail.gettext("planner.edit"));$dialogContent.dialog({modal:"true"===$("#dialog_modal").html(),title:b,width:parseInt($("#dialog_width").html()),height:parseInt($("#dialog_height").html()),zIndex:parseInt($("#dialog_zIndex").html()),close:function(){planner_dialog_reset_gui()},buttons:a}).show();rcmail.env.planner_dialog_initialized=!0}var c=-1;$(".ui-dialog-buttonset").children().each(function(){c++;switch(c){case 0:"new"==
-$("#planner_mode").val()?($(this).focus(),$(this).css("font-weight","bold")):$(this).css("font-weight","normal");break;case 1:"edit"==$("#planner_mode").val()?($(this).focus(),$(this).css("font-weight","bold")):$(this).css("font-weight","normal");break;case 2:$(this).css("font-weight","normal")}});$("#planner_help").hide()}
-function planner_search(){planner_items=0;$("#planner_items_list li").hide();for(var a=$.trim($.trim($("#planner_preview_date").text())+" "+$.trim($("#planner_preview_time").text())+" "+$.trim($("#planner_preview_text").text())),b=a;-1<a.indexOf(" ");)a=a.replace(" ","");for(;-1<a.indexOf(".");)a=a.replace(".","");for(;-1<a.indexOf(":");)a=a.replace(":","");$("#planner_items_list li").each(function(){for(var c=$(this).text();-1<c.indexOf(" ");)c=c.replace(" ","");for(;-1<c.indexOf(".");)c=c.replace(".",
-"");for(;-1<c.indexOf(":");)c=c.replace(":","");0>c.search(RegExp(a,"i"))?$(this).hide():(planner_items++,$(this).show())});$("#dfilter").attr("title",b);18<b.length&&(b=b.substr(0,15)+" ...");$("#dfilter").html(rcmail.gettext("planner.searchresult")+" &raquo;<b>"+b+"</b>&laquo;");planner_dialog_adjust_gui();$("#items_count").text(planner_items+"/"+(parseInt($("#all_count").text())+parseInt($("#done_count").text())+parseInt($("#deleted_count").text())));$(".lcontrol").css("font-weight","normal");
-b=rcmail.gettext("planner.matches_plural");1==planner_items&&(b=rcmail.gettext("planner.matches"));$("#planner_input").dialog("option","title",rcmail.gettext("planner.search")+": "+planner_items+" "+b)}
-function planner_datetimepicker(){var a=!1;js_time_formats[rcmail.env.rc_time_format]||(rcmail.env.rc_time_format="HH:MM");js_date_formats[rcmail.env.rc_date_format]||(rcmail.env.rc_date_format="dd.mm.yy");"tt"==js_time_formats[rcmail.env.rc_time_format].substr(js_time_formats[rcmail.env.rc_time_format].length-2).toLowerCase()&&(a=!0);$("#planner_datetimepicker").datetimepicker({timeText:rcmail.gettext("planner.timeText"),hourText:rcmail.gettext("planner.hourText"),minuteText:rcmail.gettext("planner.minuteText"),
-minDate:new Date(9E5*Math.round((new Date).getTime()/9E5)),showButtonPanel:!1,onSelect:function(a){a=planner_dialog_ampm_replace(a)+" ";var c=$("#planner_raw").val(),e=planner_dialog_parse($("#planner_raw").val());e[0]&&(c=$.trim(c.replace(e[0],"")));e[1]&&(c=$.trim(c.replace(e[1],"")));$("#planner_raw").val(a+c);planner_dialog_preview(c,a)},timeFormat:js_time_formats[rcmail.env.rc_time_format].toLowerCase(),dateFormat:js_date_formats[rcmail.env.rc_date_format].toLowerCase(),ampm:a,defaultDate:new Date(9E5*
-Math.round(((new Date).getTime()+36E5)/9E5))})}
-function planner_dialog_submit(){$("#planner_help").hide();if(""!=$.trim($("#planner_text").val())){var a="";!0===$("#planner_starred").prop("checked")&&(a="&_starred=1");!0===$("#planner_done").prop("checked")&&(a+="&_done=1");!0===$("#planner_deleted").prop("checked")&&(a+="&_deleted=1");""!=$("#planner_datetime").val()&&(a=a+"&_d="+encodeURIComponent($("#planner_datetime").val()));"new"==$("#planner_mode").val()?rcmail.http_post("plugin.planner_new","_t="+encodeURIComponent($("#planner_text").val())+
-"&_d="+encodeURIComponent($("#planner_datetime").val())+a):rcmail.http_post("plugin.planner_edit","_id="+$("#planner_id").val()+"&_c="+$("#planner_created").val()+"&_t="+encodeURIComponent($("#planner_text").val())+a);planner_overlay_toggle(!0);$("#planner_help").hide();$("#planner_raw").val("");$("#planner_mode").val("new");$("#planner_id").val("");$("#planner_datetimepicker").datetimepicker("setDate",new Date);$("#planner_input").dialog("close")}}
-function planner_keypress(){for(var a=Math.min(rcmail.gettext("planner.tomorrow").length,rcmail.gettext("planner.today").length),b=0;b<=a&&rcmail.gettext("planner.tomorrow").substr(b,1)==rcmail.gettext("planner.today").substr(b,1);b++);b=Math.max(b+1,1);$(document).keyup(function(){if($("#planner_raw").val().length>=b)if($("#planner_raw").val().toLowerCase()==rcmail.gettext("planner.today").substr(0,$("#planner_raw").val().length).toLowerCase()){var c=9E5*Math.round(((new Date).getTime()+36E5)/9E5);
-$("#planner_datetimepicker").datetimepicker("setDate",new Date(c));c=(new Date(c)).format(js_time_formats[rcmail.env.rc_time_format]);c=planner_dialog_ampm_replace(c);$("#planner_autocomplete").show();$("#planner_autocomplete_content").html(rcmail.gettext("planner.today").toLowerCase()+" "+c+" ")}else $("#planner_raw").val().toLowerCase()==rcmail.gettext("planner.tomorrow").substr(0,$("#planner_raw").val().length).toLowerCase()?(c=9E5*Math.round((new Date).getTime()/9E5)+864E5,$("#planner_datetimepicker").datetimepicker("setDate",
-new Date(c)),c=(new Date(c)).format(js_time_formats[rcmail.env.rc_time_format]),c=planner_dialog_ampm_replace(c),$("#planner_autocomplete").show(),$("#planner_autocomplete_content").html(rcmail.gettext("planner.tomorrow").toLowerCase()+" "+c+" ")):($("#planner_autocomplete").hide(),$("#planner_autocomplete_content").html(""));var a=planner_dialog_parse($("#planner_raw").val()),c=a[1]&&a[0]?a[1]+" "+a[0]:!1,d=$("#planner_raw").val();a[2]&&(d=a[2]);planner_dialog_preview(d,c)});$(document).keypress(function(a){if(13==
-a.charCode)$("#planner_autocomplete").is(":visible")?$("#planner_autocomplete").trigger("click"):(a.preventDefault(),planner_overlay_toggle(!0),"new"==$("#planner_mode").val()?(planner_search(),planner_overlay_toggle(!1)):planner_dialog_submit());else if(13!=a.charCode){a=String.fromCharCode(a.charCode);try{!0!==$("#planner_input").dialog("isOpen")&&planner_dialog()}catch(b){planner_dialog()}a&&$("#planner_raw").focus()}});$(document).keydown(function(a){40==a.keyCode&&$("#planner_autocomplete").is(":visible")&&
-(a.preventDefault(),$("#planner_autocomplete").trigger("click"))})}
-function planner_dialog_parse(a){var b=[],c=[],e=[],d=[],g,h,c=$("#planner_raw").val().split(" ");if(2>c.length)return b;g=c[0];if(c[0].toLowerCase()==rcmail.gettext("planner.today").toLowerCase())b[0]=planner_dialog_time(c[1]),b[1]=g,b[2]=a.replace(g,"").replace(b[0],"");else if(c[0].toLowerCase()==rcmail.gettext("planner.tomorrow").toLowerCase())b[0]=planner_dialog_time(c[1]),b[1]=g,b[2]=a.replace(g,"").replace(b[0],"");else if((d=c[0].match(/\+(([0-9][0-9])|([0-9]))/))&&d[0])c=a.split(d[0]),b[0]=
-planner_dialog_time(c[1]),b[1]=g,b[2]=a.replace(g,"").replace(b[0],"");else{c[0]+=" ";e=$("#planner_datetimepicker").datepicker("option","dateFormat");e=e.replace(/dd/i,"d");e=e.replace(/mm/i,"m");e=e.replace(/yy/i,"y");h=planner_dialog_date_separator();e=e.split(h);h="[\\"+h+"]";var d="",f;for(f in e)d+=e[f],f<e.length-1&&(d+=h);d=d.replace("d","(0[1-9]|[12][0-9]|3[01])");d=d.replace("m","(0[1-9]|1[012])");d=d.replace("y","((20)[0-9][0-9])");if((d=c[0].match(eval("/"+d+"/")))&&d[0])c=a.split(d[0]),
-b[0]=planner_dialog_time(c[1]),b[1]=g,b[2]=a.replace(g,"").replace(b[0],"");else{d="";for(f in e)"y"!=e[f]&&(d=d+e[f]+h);d=d.replace("d","(0[1-9]|[12][0-9]|3[01])");d=d.replace("m","(0[1-9]|1[012])");d="/"+d+"/";d=d.replace("]/","\\s]/");if((d=c[0].match(eval(d)))&&d[0])c=a.split(d[0]),b[0]=planner_dialog_time(c[1]),b[1]=g,b[2]=a.replace(g,"").replace(b[0],"")}}return b}
-function planner_dialog_time(a){var b=[],c="default";a=" "+a+" ";(b=a.match(/([\s]([0-9])|(0[0-9])|(1[0-9]|2[0-3])):([0-5][0-9](am\s|pm\s|a\s|p\s|h\s|\s))/))&&b[0]?c=b[0]:(b=a.match(/([\s]([0-9])|(0[0-9])|(1[0-9]|2[0-3]))(h\s|am\s|pm\s|a\s|p\s|\s)/i))&&b[0]&&(c=b[0]);return $.trim(c)}function planner_dialog_date_separator(a){var b=[];a||(a=$("#planner_datetimepicker").datepicker("option","dateFormat"));return(b=a.match(/[^a-z0-9]/i))&&b[0]?b[0]:!1}
-function planner_dialog_ampm_replace(a){a=a.replace(/\sam/i,"am");return a=a.replace(/\spm/i,"pm")}function planner_dialog_format_reduce(a){var b=[];separator=planner_dialog_date_separator(a);var b=a.split(separator),c;for(c in b)a=a.replace(b[c],b[c].substr(0,1).toLowerCase());return a}
-function planner_dialog_datetime_display(a,b){var c,e,d,g,h,f,k;g=[];c=[];d=[];-1<a.indexOf("default")&&(a=a.replace("default",default_starttime));c=planner_dialog_format_reduce($("#planner_datetimepicker").datepicker("option","dateFormat"));b||(b=c);g=a.split(" ");d=g[0];g=g[1];b=planner_dialog_format_reduce(b);if("+"!=a.substr(0,1)){e=planner_dialog_date_separator(c);c=c.split(e);for(var j in c)switch(c[j]){case "y":h=j;break;case "m":f=j;break;case "d":k=j}if(e=planner_dialog_date_separator(d))d=
-d.split(e),3>d.length&&0==h&&(d=(new Date).getFullYear()+e+d[0]+e+d[1],d=d.split(e)),a=b.replace("m",d[f]),a=a.replace("d",d[k]),d[h]||(d[h]=(new Date).getFullYear()),a=a.replace("y",d[h])+" "+g}return a}
-function planner_dialog_datetime(a){var b=[],c=[],e=[],d;a=planner_dialog_datetime_display(a,"m/d/y");b=a.split(" ");if(b[0]&&b[1]){if(-1<b[1].indexOf(":")){for(d=0;d<b.length;d++)0==b[d].substr(0,1)&&(b[d]=b[d].substr(1));c=b[1].split(":");b[1]=12>parseInt(c[0])&&-1<b[1].toLowerCase().indexOf("p")?Math.min(parseInt(c[0])+12,23)+":"+c[1]:c[0]+":"+c[1]}else b[1]=12>parseInt(b[1])&&-1<b[1].toLowerCase().indexOf("p")?Math.min(parseInt(b[1])+12,23)+":00":b[1]+":00";c=b[1].split(":");2>c[0].length&&(c[0]=
-"0"+c[0]);2>c[1].length&&(c[1]="0"+c[1]);b[1]=c[0]+":"+c[1];e.time_format=js_time_formats[rcmail.env.rc_time_format];c=a.split(" ");e.date_formatted=c[0];if(b[0].toLowerCase()==rcmail.gettext("planner.today").toLowerCase())datetime=new Date,datetime=datetime.getMonth()+1+"/"+datetime.getDate()+"/"+datetime.getFullYear()+" "+b[1];else if(b[0].toLowerCase()==rcmail.gettext("planner.tomorrow").toLowerCase())datetime=new Date((new Date).getTime()+864E5),datetime=datetime.getMonth()+1+"/"+datetime.getDate()+
-"/"+datetime.getFullYear()+" "+b[1];else if("+"==b[0].substr(0,1)){datetime=new Date((new Date).getFullYear(),(new Date).getMonth(),(new Date).getDate());datetime=36E5*Math.round(datetime.getTime()/36E5)+864E5*parseInt(b[0]);c=b[1].split(":");for(d=0;d<c.length;d++)0==c[d].substr(0,1)&&(c[d]=c[d].substr(1));datetime=datetime+36E5*parseInt(c[0])+6E4*parseInt(c[1])}else datetime=(new Date(b[0]+" "+b[1])).getTime();e.date=b[0];e.time=b[1];datetime&&(e.date_stamp=datetime,datetime=new Date(datetime),
-e.time_formatted=datetime.format(e.time_format),a=datetime.getMonth()+1+"",2>a.length&&(a="0"+a),b=datetime.getDate()+"",2>b.length&&(b="0"+b),c=datetime.getHours()+"",2>c.length&&(c="0"+c),d=datetime.getMinutes()+"",2>d.length&&(d="0"+d),e.datetime=datetime.getFullYear()+"-"+a+"-"+b+" "+c+":"+d+":00",datetime=datetime.format("dd mmm"),c=datetime.split(" "),e.date_short_locale=c[0]+" "+rcmail.gettext("planner."+c[1]))}return e}
-function planner_html_sanitize(a){return a=a.replace("<","&lt;").replace(">","&gt;")}
-function planner_dialog_preview(a,b){var c=[];$("#planner_text").val($.trim(a));$("#planner_preview_text").html($.trim(planner_html_sanitize(a)));b?(a=$.trim(b)+" "+$.trim(a),c=planner_dialog_datetime($.trim(b)),c.date_stamp?($("#planner_datetimepicker").datetimepicker("setDate",new Date(c.date_stamp)),$("#planner_datetime").val(c.datetime),$("#planner_preview_date").html(planner_html_sanitize(c.date_short_locale)),$("#planner_preview_time").html(planner_html_sanitize(c.time_formatted)),$("#planner_preview_text").addClass("datetime")):
-($("#planner_raw").val(c[0]+" "),$("#planner_preview_text").html(planner_html_sanitize(b+" "+a)),$("#planner_text").val(b+" "+a),$("#planner_datetime").val(""))):($("#planner_preview_text").removeClass("datetime"),$("#planner_preview_time").html(""),$("#planner_preview_date").html(""),$("#planner_datetime").val(""))}
-function planner_dialog_edit(a,b,c){planner_dialog_reset_gui();var e=a.find(".created").val();$("#planner_input").dialog("option","title",rcmail.gettext("planner.edit"));planner_dialog_preview(b,c);c&&(c=planner_dialog_datetime_display(c),b=c+" "+b);$("#planner_raw").val(b);$("#planner_mode").val("edit");$("#planner_id").val(a.parent().parent().attr("id"));$("#planner_created").val(e);"delete"==a.parent().parent().children().next().attr("class")&&($("#planner_done").prop("checked",!0),$("#planner_preview_done").removeClass("pdelete"),
-$("#planner_preview_done").addClass("pdone"));"star"==a.parent().parent().children().attr("class")&&($("#planner_starred").prop("checked",!0),$("#planner_preview_star").removeClass("pnostar"),$("#planner_preview_star").addClass("pstar"));"deleted"==$("#controls").val()&&($("#planner_deleted").prop("checked",!0),$("#planner_done").prop("checked",!1),$("#planner_preview_done").removeClass("pdone"),$("#planner_preview_done").addClass("pdelete"));planner_dialog()}
-function planner_dialog_reset_gui(){$("#planner_raw").val("");$("#planner_autocomplete_content").html("");$("#planner_autocomplete").hide();$("#planner_done").prop("checked",!1);$("#planner_preview_done").removeClass("pdone");$("#planner_starred").prop("checked",!1);$("#planner_preview_star").removeClass("pstar");$("#planner_preview_star").addClass("pnostar");$("#planner_deleted").prop("checked",!1);$("#planner_preview_done").removeClass("pdelete");$("#planner_id").val("");try{!0!==$("#planner_input").dialog("isOpen")&&
-$("#planner_input").dialog("option","title",rcmail.gettext("planner.new"))}catch(a){planner_dialog(),$("#planner_input").dialog("option","title",rcmail.gettext("planner.new"))}$("#planner_mode").val("new");$("#planner_datetime").val("");$("#planner_text").val("");$("#planner_preview_text").html("");$("#planner_preview_time").html("");$("#planner_preview_date").html("");$("#planner_datetimepicker").datetimepicker("setDate",new Date(9E5*Math.round(((new Date).getTime()+36E5)/9E5)));$(".ui-dialog-buttonset").children().blur();
-$("#planner_raw").focus()}
-function planner_dialog_adjust_gui(){"birthdays"==rcmail.env.planner_filter?$(".nobirthday").hide():$(".nobirthday").show();planner_items=0;$("#planner_items_list li").each(function(){"none"!=$(this).css("display")&&planner_items++});rcmail.env.planner_counts&&rcmail.env.planner_counts[rcmail.env.planner_items]?$("#items_count").text(planner_items+"/"+rcmail.env.planner_counts[rcmail.env.planner_items]):$("#items_count").text(planner_items);planner_show_overdue_count();if("right"==$("#control_bar_position").html())var a=
-$("#planner_items").offset().left+$("#planner_items_list").width()-$("#control_bar").width()-parseInt($("#control_bar_fudge").html());else"left"==$("#control_bar_position").html()?a=$("#planner_items").offset().left:"center"==$("#control_bar_position").html()&&(a=$("#planner_items").offset().left,$("#control_bar").css("width",$("#planner_items_list").width()),$("#control_bar").html("<center>"+$("#control_bar").html()+"</center>"));a&&$("#control_bar").css("left",a);$("#control_bar").show();if("variable"==
-$("#filter_bar_position").html()){var b=$("#planner_items_list").offset().top+$("#planner_items_list").height(),b=Math.min(b,$(window).height()-parseInt($("#filter_bar_fudge").html()));$("#filter_bar").css("top",b);a=$("#planner_items").offset().left+$("#planner_items_list").width()-$("#expunge_bar").width()-parseInt($("#control_bar_fudge").html());$("#expunge_bar").css("top",b);$("#expunge_bar").css("left",a)}rcmail.env.planner_filter&&rcmail.env.planner_filter!=rcmail.env.planner_last_filter&&(rcmail.env.planner_last_filter=
-rcmail.env.planner_filter,planner_save_prefs(),$("#f"+rcmail.env.planner_filter).trigger("click"))}
-function planner_save_prefs(){rcmail.env.planner_items&&rcmail.env.planner_items!=rcmail.env.planner_saved_view&&(rcmail.env.planner_saved_view=rcmail.env.planner_items,planner_request[0]="_v="+rcmail.env.planner_items+"&");rcmail.env.planner_filter&&rcmail.env.planner_filter!=rcmail.env.planner_saved_filter&&(rcmail.env.planner_saved_filter=rcmail.env.planner_filter,planner_request[1]="_f="+rcmail.env.planner_filter+"&");if(planner_request[0]||planner_request[1]){var a="";planner_request[0]&&(a+=
-planner_request[0]);planner_request[1]&&(a+=planner_request[1]);a=a.substr(0,a.length-1);a!=rcmail.env.planner_saved_request&&(rcmail.env.planner_saved_request=a,rcmail.http_post("plugin.planner_prefs",a))}}
-function planner_show(a){"function"==typeof eval("planner_show_"+a)&&($("#planner_items").css("overflow","hidden"),"all"!=a&&"today"!=a&&"tomorrow"!=a&&"week"!=a?($("#birthdays_count").hide(),$("#bdlabel").hide(),$("#cbirthdays").hide()):($("#birthdays_count").show(),$("#bdlabel").show(),$("#cbirthdays").show()),planner_overlay_toggle(!0),eval("planner_show_"+a)(),planner_overlay_toggle(!1),$("#planner_items").css("overflow","auto"),rcmail.env.planner_select=a)}
-function planner_show_init(){planner_filter("all")}function planner_show_all(){$("#planner_items_list li").show();$(".delete").each(function(){$(this).parent().hide()});$(".remove").each(function(){$(this).parent().hide()});planner_filter("all")}
-function planner_show_overdue(){$(".datetime").each(function(){var a=new Date($(this).prev().prev().val());if(a){var b=new Date,a=a.getTime(),b=b.getTime();a<b?$(this).parent().parent().show():$(this).parent().parent().hide()}});$(".nodate").each(function(){$(this).parent().parent().hide()});$(".delete").each(function(){$(this).parent().hide()});$(".remove").each(function(){$(this).parent().hide()});$(".birthday").each(function(){$(this).parent().hide()});planner_filter("overdue")}
-function planner_show_today(){$(".nodate").each(function(){$(this).parent().parent().show()});$(".datetime").each(function(){var a=new Date($(this).prev().prev().val());if(a){var b=new Date,b=new Date(b.getFullYear(),b.getMonth(),b.getDate(),23,59,59),c=new Date((new Date(b)).getTime()-864E5),c=new Date(c.getFullYear(),c.getMonth(),c.getDate(),23,59,59),a=a.getTime(),b=b.getTime(),c=c.getTime();a>b||a<=c?$(this).parent().parent().hide():$(this).parent().parent().show()}});$(".delete").each(function(){$(this).parent().hide()});
-$(".remove").each(function(){$(this).parent().hide()});planner_filter("today")}
-function planner_show_tomorrow(){$(".nodate").each(function(){$(this).parent().parent().show()});$(".datetime").each(function(){var a=new Date($(this).prev().prev().val());if(a){var b=new Date,b=new Date(b.getFullYear(),b.getMonth(),b.getDate(),23,59,59),c=new Date((new Date(b)).getTime()+864E5),c=new Date(c.getFullYear(),c.getMonth(),c.getDate(),23,59,59),a=a.getTime(),b=b.getTime(),c=c.getTime();a>b&&a<=c?$(this).parent().parent().show():$(this).parent().parent().hide()}});$(".delete").each(function(){$(this).parent().hide()});
-$(".remove").each(function(){$(this).parent().hide()});planner_filter("tomorrow")}
-function planner_show_week(){$(".nodate").each(function(){$(this).parent().parent().show()});$(".datetime").each(function(){var a=new Date($(this).prev().prev().val());if(a){var b=new Date,b=new Date(b.getFullYear(),b.getMonth(),b.getDate(),23,59,59),c=b.getDay();0==c&&(c=7);b=new Date(b.getTime()-864E5*c);c=new Date((new Date(b)).getTime()+6048E5);c=new Date(c.getFullYear(),c.getMonth(),c.getDate(),23,59,59);a=a.getTime();b=b.getTime();c=c.getTime();a>b&&a<=c?$(this).parent().parent().show():$(this).parent().parent().hide()}});
-$(".delete").each(function(){$(this).parent().hide()});$(".remove").each(function(){$(this).parent().hide()});planner_filter("week")}function planner_show_starred(){$("#planner_items_list li").show();$(".delete").each(function(){$(this).parent().hide()});$(".remove").each(function(){$(this).parent().hide()});$(".birthday").each(function(){$(this).parent().hide()});$(".nostar").each(function(){$(this).parent().hide()});planner_filter("starred")}
-function planner_show_done(){$(".done").each(function(){$(this).parent().hide()});$(".remove").each(function(){$(this).parent().hide()});$(".birthday").each(function(){$(this).parent().hide()});$(".nostar").each(function(){$(this).parent().hide()});$(".star").each(function(){$(this).parent().hide()});$(".delete").each(function(){$(this).parent().show()});planner_filter("done")}
-function planner_show_deleted(){$("#planner_items_list li").hide();$(".remove").each(function(){$(this).parent().show()});planner_filter("deleted")}
-function planner_show_overdue_count(){var a=0;$(".datetime").each(function(){var c=new Date($(this).prev().prev().val());if(c){var b=new Date,c=c.getTime(),b=b.getTime();c<b&&(!$(this).parent().hasClass("birthday")&&$(this).parent().prev().hasClass("done"))&&a++}});0<a&&!rcmail.env.planner_blink&&(rcmail.env.planner_blink=!0,$("#overdue_count").blink({delay:1500}));a==rcmail.env.planner_counts.overdue?(clearInterval(blink_timer),rcmail.env.planner_blink=!1,$("#overdue_count").css("visibility","visible")):
-$("#overdue_count").html(a);if(a>rcmail.env.planner_counts.overdue)try{var b=$('<audio src="plugins/planner/sound.wav" />');b.get(0).play()}catch(c){b=$('<embed id="sound" src="plugins/planner/sound.wav" hidden=true autostart=true loop=false />'),b.appendTo($("body")),window.setTimeout("$('#sound').remove()",5E3)}}
-function planner_sort(){$("#planner_items_list li").sortElements(function(a,b){var c=$(a).children().next().next().children().next().next().next().val();c||(c=$(a).children().next().children().next().next().next().val())||(c=0);var c=(new Date(c)).getTime(),e=$(b).children().next().next().children().next().next().next().val();e||(e=$(b).children().next().children().next().next().next().val())||(e=0);var d=$(a).children().next().next().children().next().next().next().text();d||(d=$(a).children().next().next().children().text());
-var g=$(b).children().next().next().children().next().next().next().text();g||(g=$(b).children().next().next().children().text());var h="0000000000000",f="0000000000000";0==c&&(h=(new Date).getTime()-parseInt($(a).children().next().next().children().find(".created").val())+"",f=(new Date).getTime()-parseInt($(b).children().next().next().children().find(".created").val())+"");for(;13>h.length;)h="0"+h;for(;13>f.length;)f="0"+f;e=(new Date(e)).getTime();c=c+h+d.toLowerCase();e=e+f+g.toLowerCase();return c>
-e?1:-1})}
-function planner_filter(a){a&&(planner_items=0,$("#planner_items_list li").each(function(){"none"!=$(this).css("display")&&planner_items++}),$("#"+a+"_count").html(planner_items),rcmail.env.planner_counts[a]=planner_items);switch(rcmail.env.planner_filter){case "todos":$(".datetime").each(function(){$(this).parent().parent().hide()});break;case "plans":$(".nodate").each(function(){$(this).parent().parent().hide()});break;case "birthdays":$(".nodate").each(function(){$(this).parent().parent().hide()}),$(".datetime").each(function(){$(this).parent().hasClass("birthday")||
-$(this).parent().parent().hide()})}"deleted"!=rcmail.env.planner_items?$("#expunge_bar").hide():1<planner_items&&$("#expunge_bar").show();window.setTimeout("planner_dialog_adjust_gui()",100)}
-function planner_drag(){$("#planner_items_list").sortable({revert:!1,containment:"window",scroll:!1,helper:"clone",cursor:"move",items:"li.drag_nodate",stop:function(a,b){var d=b.item.find(".drag_id").val(),g=$("#"+d).prev().find(".created").val(),h=$("#"+d).prev();h.hasClass("drag_datetime")||h.hasClass("drag_birthday")?planner_sort():(g=g?g-1E3:(new Date).getTime(),$("#"+d).prev().find(".created").val(g),planner_overlay_toggle(!0),rcmail.http_post("plugin.planner_created","_id="+d+"&_c="+Math.round(g/
-1E3)));planner_drag()},appendTo:"#planner_drag_list",zIndex:999999});"function"==typeof planner_drag_notes&&planner_drag_notes();"function"==typeof planner_drag_events&&planner_drag_events();if("function"==typeof planner_drag_birthdays)planner_drag_birthdays();else{var a=$("#planner_items"),b=$(".button-mail");$("li.drag_birthday",a).draggable({cancel:"a.ui-icon",revert:"invalid",containment:"window",scroll:!1,helper:"clone",cursor:"move",appendTo:"#planner_drag_list",zIndex:999999});b.droppable({accept:"#planner_items_list > li.drag_birthday",
-activeClass:"ui-state-highlight",tolerance:"touch",drop:function(a,b){var d=(new Date(b.draggable.find(".time").next().val())).getTime()+252E5,d=Math.round(d/1E3);new Date(1E3*d)<new Date&&(d=new Date(1E3*d),d=(new Date(d.getMonth()+1+"/"+d.getDate()+"/"+(d.getFullYear()+1)+" 08:00:00")).getTime(),d=Math.round(d/1E3));var d="&_date="+d,g=b.draggable.find(".drag_email").val(),h=rcmail.env.task;rcmail.env.task="mail";rcmail.env.compose_newwindow?composenewwindowcommandcaller("compose",g+"?subject="+
-rcmail.gettext("planner.happybirthday")+d,this):rcmail.command("compose",g+"?subject="+rcmail.gettext("planner.happybirthday")+d,this);$("#planner_help").hide();rcmail.env.task=h}})}a=$("#planner_items");$("li.drag_birthday",a).draggable({cancel:"a.ui-icon",revert:"invalid",containment:"window",scroll:!1,helper:"clone",cursor:"move",appendTo:"#planner_drag_list",zIndex:999999});$("li.drag_datetime",a).draggable({cancel:"a.ui-icon",revert:"invalid",containment:"window",scroll:!1,helper:"clone",cursor:"move",
-appendTo:"#planner_drag_list",zIndex:999999});$(".ddate").droppable({accept:function(a){if(a.children().hasClass("edit"))return!0},activeClass:"ui-state-highlight",tolerance:"pointer",drop:function(a,b){planner_overlay_toggle(!0);var d=b.draggable.find(".datetime").text();d||(d=b.draggable.text());var g=$(this).attr("id"),h=new Date(9E5*Math.round(((new Date).getTime()+36E5)/9E5)),f=b.draggable.find(".datetime").prev().prev().val();f?(f=f.split(" "),f=f[1].split(":"),f=f[0]+":"+f[1]):f=h.getHours()+
-":"+h.getMinutes();switch(g){case "today":case "ctoday":rcmail.http_post("plugin.planner_edit","_id="+b.draggable.find(".drag_id").val()+"&_t="+encodeURIComponent(d)+"&_d="+encodeURIComponent((new Date(h)).format("mm/dd/yyyy")+" "+f));break;case "tomorrow":case "ctomorrow":h=new Date((new Date(h)).getTime()+864E5);(f=b.draggable.find(".datetime").prev().prev().val())?(f=f.split(" "),f=f[1].split(":"),f=f[0]+":"+f[1]):f=h.getHours()+":"+h.getMinutes();rcmail.http_post("plugin.planner_edit","_id="+
-b.draggable.find(".drag_id").val()+"&_t="+encodeURIComponent(d)+"&_d="+encodeURIComponent((new Date(h)).format("mm/dd/yyyy")+" "+f));break;case "week":case "cweek":planner_overlay_toggle(!1),b.draggable.find(".nodate").trigger("click"),$("#planner_datetimepicker").datepicker("setDate",h),$(".ui-state-highlight").trigger("click")}}});$("#planner_items_list").disableSelection();$(".date").attr("title",rcmail.gettext("planner.remove_date"));$(".date").on("mousedown",function(a){if(3==a.which){a=$(this).parent().find(".datetime").text();
-var b=$(this).parent().find(".drag_id").val();planner_overlay_toggle(!0);var d=$(this).parent().find(".created").val();$(this).parent().parent().removeClass("today");$(this).parent().parent().removeClass("highlight");$(this).parent().parent().removeClass("drag_datetime");$(this).parent().parent().addClass("drag_nodate");rcmail.http_post("plugin.planner_edit","_id="+b+"&_c="+d+"&_t="+encodeURIComponent(a))}})};
+// find me: ToDo
+/*
+
+   As the filename states this stuff has to be
+   ported to a javascript class ...
+   
+   Move $.trigger('click') to GUI js
+   
+*/
+ 
+var default_starttime = '08:00';
+var planner_items = 0;
+var js_time_formats = new Array();
+var js_date_formats = new Array();
+var planner_request = new Array();
+var blink_timer;
+
+(function($)
+{
+	$.fn.blink = function(options)
+	{
+		var defaults = { delay:500 };
+		var options = $.extend(defaults, arguments[0] || {});
+		
+		return this.each(function()
+		{
+			var obj = $(this);
+			blink_timer = setInterval(function()
+			{
+				if($(obj).css("visibility") == "visible")
+				{
+					$(obj).css('visibility','hidden');
+				}
+				else
+				{
+					$(obj).css('visibility','visible');
+				}
+			}, options.delay);
+		});
+	}
+}(jQuery));
+
+function planner_overlay_toggle(state){
+  $('#planner_help').hide();
+  if(state){
+    window.clearTimeout(rcmail.env.planner_timeout);
+    rcmail.env.planner_timeout = window.setTimeout('planner_timeout()', 5000);
+    if(planner_items > 0){
+      $('#overlay').show();
+    }
+  }
+  else{
+    $('#overlay').hide();
+    window.clearTimeout(rcmail.env.planner_timeout);
+  }
+}
+
+function planner_timeout(){
+  if($('#overlay').is(":visible")){
+    rcmail.display_message(rcmail.gettext('planner.errorsaving'), 'error');
+    planner_overlay_toggle(false);
+    rcmail.http_post('plugin.planner_retrieve', '_p=' + rcmail.env.planner_items);
+  }
+}
+
+function planner_init(birthdays){
+    // sort list
+    planner_sort();
+    // set counts
+    $('#planner_items_list').hide();
+    rcmail.env.planner_counts = new Array();
+    var views = new Array('all', 'today', 'tomorrow', 'week', 'starred', 'done', 'deleted', 'overdue');
+    $('#planner_items_list').hide();
+    for(var i in views){
+      planner_show(views[i]);
+    }
+    $('#planner_items_list').show();
+    if(birthdays)
+      planner_dialog_adjust_gui(birthdays);
+}
+ 
+function planner_dialog(){
+  if(!rcmail.env.planner_dialog_initialized){
+    $dialogContent = $('#planner_input');
+    var buttons = {};
+    buttons[rcmail.gettext('planner.search')] = function(e) {
+      e.preventDefault();
+      rcmail.env.planner_search_mode = true;
+      planner_overlay_toggle(true);
+      planner_search();
+      planner_overlay_toggle(false);
+      $('.flink').css('font-weight', 'normal');
+    };
+    buttons[rcmail.gettext('planner.plan')] = function(e) {
+      e.preventDefault();
+      planner_dialog_submit();
+    };
+    buttons[rcmail.gettext('planner.cancel')] = function() {
+      $dialogContent.dialog('close');
+    };
+    var title = rcmail.gettext('planner.new');
+    if($('#planner_mode').val() == 'edit'){
+      title = rcmail.gettext('planner.edit');
+    }
+    $dialogContent.dialog({
+      modal: ($('#dialog_modal').html() === 'true'),
+      title: title,
+      width: parseInt($('#dialog_width').html()),
+      height: parseInt($('#dialog_height').html()),
+      zIndex: parseInt($('#dialog_zIndex').html()),
+      close: function() {
+        planner_dialog_reset_gui();
+      },
+      buttons: buttons
+    }).show();
+    rcmail.env.planner_dialog_initialized = true;
+  }
+  else{
+    $('#planner_input').dialog('open');
+  }
+  var i = -1;
+  $('.ui-dialog-buttonset').children().each(function(){
+    i++;
+    switch(i){
+      case 0:
+        if($('#planner_mode').val() == 'new'){
+          $(this).focus();
+          $(this).css('font-weight', 'bold');
+        }
+        else{
+          $(this).css('font-weight', 'normal');
+        }
+        break;
+      case 1:
+        if($('#planner_mode').val() == 'edit'){
+          $(this).focus();
+          $(this).css('font-weight', 'bold');
+        }
+        else{
+          $(this).css('font-weight', 'normal');
+        }
+        break;
+      case 2:
+        $(this).css('font-weight', 'normal');
+        break;
+    }
+  });
+  $('#planner_help').hide();
+}
+
+function planner_search(){
+  planner_items = 0;
+  $("#planner_items_list li").hide();
+  var filter = $.trim($.trim($("#planner_preview_date").text()) + ' ' + $.trim($("#planner_preview_time").text()) + ' ' + $.trim($("#planner_preview_text").text()));
+  var sfilter = filter;
+  while(filter.indexOf(' ') > -1){
+    filter = filter.replace(' ', '');
+  }
+  while(filter.indexOf('.') > -1){
+    filter = filter.replace('.', '');
+  }
+  while(filter.indexOf(':') > -1){
+    filter = filter.replace(':', '');
+  }
+  $("#planner_items_list li").each(function(){
+    var text = $(this).text();
+    while(text.indexOf(' ') > -1){
+      text = text.replace(' ', '');
+    }
+    while(text.indexOf('.') > -1){
+      text = text.replace('.', '');
+    }
+    while(text.indexOf(':') > -1){
+      text = text.replace(':', '');
+    }
+    if(text.search(new RegExp(filter, "i")) < 0){
+      $(this).hide();
+    }
+    else{
+      planner_items ++;
+      $(this).show();
+    }
+  });
+  $('#dfilter').attr('title', sfilter);
+  if(sfilter.length > 18)
+    sfilter = sfilter.substr(0,15) + ' ...';
+  $('#dfilter').html(rcmail.gettext('planner.searchresult') + ' &raquo;<b>' + sfilter + '</b>&laquo;');
+  planner_dialog_adjust_gui();
+  $('#items_count').text(planner_items + '/' + (parseInt($('#all_count').text()) + parseInt($('#done_count').text()) + parseInt($('#deleted_count').text())));
+  $('.lcontrol').css('font-weight', 'normal');
+  var label = rcmail.gettext('planner.matches_plural');
+  if(planner_items == 1)
+    label = rcmail.gettext('planner.matches');
+  $('#planner_input').dialog('option', 'title', rcmail.gettext('planner.search') + ': ' + planner_items + ' ' + label);
+}
+
+function planner_datetimepicker(){
+  var ampm = false;
+  if(!js_time_formats[rcmail.env.rc_time_format]){
+    rcmail.env.rc_time_format = 'HH:MM';
+  }
+  if(!js_date_formats[rcmail.env.rc_date_format]){
+    rcmail.env.rc_date_format = 'dd.mm.yy';
+  }
+  if(
+    js_time_formats[rcmail.env.rc_time_format].substr(js_time_formats[rcmail.env.rc_time_format].length - 2).toLowerCase() == 'tt'
+  ){
+    ampm = true;
+  }
+  $("#planner_datetimepicker").datetimepicker({
+    timeText: rcmail.gettext('planner.timeText'),
+    hourText: rcmail.gettext('planner.hourText'),
+    minuteText: rcmail.gettext('planner.minuteText'),
+    minDate: new Date(Math.round(new Date().getTime() / (15 * 60 * 1000)) * 15 * 60 * 1000),
+    showButtonPanel: false,
+    onSelect: function(dateText){
+      dateText = planner_dialog_ampm_replace(dateText) + ' ';
+      var val = $('#planner_raw').val();
+      var repl = planner_dialog_parse($('#planner_raw').val());
+      if(repl[0])
+        val = $.trim(val.replace(repl[0], ''));
+      if(repl[1])
+        val = $.trim(val.replace(repl[1], ''));
+      $("#planner_raw").val(dateText + val);
+      planner_dialog_preview(val, dateText);
+    },
+    timeFormat: js_time_formats[rcmail.env.rc_time_format],
+    dateFormat: js_date_formats[rcmail.env.rc_date_format],
+    ampm: ampm,
+    defaultDate: new Date(Math.round((new Date().getTime() + 60 * 60 * 1000) / (15 * 60 * 1000)) * 15 * 60 * 1000)
+  });
+}
+
+function planner_dialog_submit(){
+  $('#planner_help').hide();
+  if($.trim($('#planner_text').val()) == ''){
+    return;
+  }
+  var append = '';
+  if($('#planner_starred').prop('checked') === true)
+    append = '&_starred=1';
+  if($('#planner_done').prop('checked') === true)
+    append = append + '&_done=1';
+  if($('#planner_deleted').prop('checked') === true)
+    append = append + '&_deleted=1';
+  if($('#planner_datetime').val() != '')
+    append = append + '&_d=' + encodeURIComponent($('#planner_datetime').val());
+  if($('#planner_mode').val() == 'new'){
+    rcmail.http_post('plugin.planner_new', '_t=' + encodeURIComponent($('#planner_text').val()) + '&_d=' + encodeURIComponent($('#planner_datetime').val()) + append);
+  }
+  else{
+    rcmail.http_post('plugin.planner_edit', '_id=' + $("#planner_id").val() + '&_c=' + $('#planner_created').val() + '&_t=' + encodeURIComponent($('#planner_text').val()) + append);
+  }
+  planner_overlay_toggle(true);
+  $('#planner_help').hide();
+  $('#planner_raw').val("");
+  $('#planner_mode').val('new');
+  $('#planner_id').val('');
+  $('#planner_datetimepicker').datetimepicker('setDate', (new Date()));
+  $('#planner_input').dialog('close');
+}
+
+function planner_keypress(){
+  var l = Math.min(rcmail.gettext('planner.tomorrow').length, rcmail.gettext('planner.today').length);
+  for(var i = 0; i<= l; i++){
+    if(rcmail.gettext('planner.tomorrow').substr(i,1) != rcmail.gettext('planner.today').substr(i,1)){
+      break;
+    }
+  }
+  i = Math.max(i+1, 1);
+  $(document).keyup(function(e){
+    if($('#planner_raw').val().length >= i){
+      if($('#planner_raw').val().toLowerCase() == rcmail.gettext('planner.today').substr(0, $('#planner_raw').val().length).toLowerCase()){
+        var now = Math.round((new Date().getTime() + 60 * 60 * 1000) / (15 * 60 * 1000)) * 15 * 60 * 1000;
+        $('#planner_datetimepicker').datetimepicker('setDate', new Date(now));
+        var time = new Date(now).format(js_time_formats[rcmail.env.rc_time_format]);
+        time = planner_dialog_ampm_replace(time);
+        $('#planner_autocomplete').show();
+        $('#planner_autocomplete_content').html(rcmail.gettext('planner.today').toLowerCase() + ' ' + time + ' ');
+      }
+      else{
+        if($('#planner_raw').val().toLowerCase() == rcmail.gettext('planner.tomorrow').substr(0, $('#planner_raw').val().length).toLowerCase()){
+          var now = Math.round(new Date().getTime() / (15 * 60 * 1000)) * 15 * 60 * 1000 + 86400000;
+          $('#planner_datetimepicker').datetimepicker('setDate', new Date(now));
+          var time = new Date(now).format(js_time_formats[rcmail.env.rc_time_format]);
+          time = planner_dialog_ampm_replace(time);
+          $('#planner_autocomplete').show();
+          $('#planner_autocomplete_content').html(rcmail.gettext('planner.tomorrow').toLowerCase() + ' ' + time + ' ');
+        }
+        else{
+          $('#planner_autocomplete').hide();
+          $('#planner_autocomplete_content').html('');
+        }
+      }
+    }
+    var ret = planner_dialog_parse($('#planner_raw').val());
+    if(ret[1] && ret[0]){
+      var time = ret[1] + ' ' + ret[0];
+    }
+    else{
+      var time = false;
+    }
+    var text = $('#planner_raw').val();
+    if(ret[2])
+      text = ret[2];
+    planner_dialog_preview(text, time);
+  });
+  $(document).keypress(function(key){
+    if(key.charCode == 13){
+      if($('#planner_autocomplete').is(":visible")){
+        $('#planner_autocomplete').trigger('click');
+      }
+      else{
+        key.preventDefault();
+        planner_overlay_toggle(true);
+        if($('#planner_mode').val() == 'new'){
+          planner_search();
+          planner_overlay_toggle(false);
+        }
+        else{
+          planner_dialog_submit();
+        }
+      }
+    }
+    else if(key.charCode != 13){
+      var typed = String.fromCharCode(key.charCode);
+      try{
+        if($('#planner_input').dialog("isOpen") !== true){
+          planner_dialog();
+        }
+      }
+      catch(e){
+        planner_dialog();
+      }
+      if(typed){
+        $('#planner_raw').focus();
+      }
+    }
+  });
+  $(document).keydown(function(key){
+    if(key.keyCode == 40){
+      if($('#planner_autocomplete').is(":visible")){
+        key.preventDefault();
+        $('#planner_autocomplete').trigger('click');
+      }
+    }
+  });
+}
+
+function planner_dialog_parse(val){
+  var ret = new Array();
+  var temparr = new Array();
+  var temp = new Array();
+  var matches = new Array();
+  var b, dateFormat, separator, day_part, month_part, year_part, reg;
+  temparr = $("#planner_raw").val().split(' ');
+  if(temparr.length < 2)
+    return ret;
+  b = temparr[0];
+  // today
+  if(temparr[0].toLowerCase() == rcmail.gettext('planner.today').toLowerCase()){
+    ret[0] = planner_dialog_time(temparr[1]);
+    ret[1] = b;
+    ret[2] = val.replace(b,'').replace(ret[0],'');
+  }
+  else if(temparr[0].toLowerCase() == rcmail.gettext('planner.tomorrow').toLowerCase()){
+    ret[0] = planner_dialog_time(temparr[1]);
+    ret[1] = b;
+    ret[2] = val.replace(b,'').replace(ret[0],'');
+  }
+  else{
+    // +5
+    matches = temparr[0].match(/\+(([0-9][0-9])|([0-9]))/);
+    if(matches && matches[0]){
+      temparr = val.split(matches[0]);
+      ret[0] = planner_dialog_time(temparr[1]);
+      ret[1] = b;
+      ret[2] = val.replace(b,'').replace(ret[0],'');
+    }
+    else{
+      temparr[0] = temparr[0] + ' ';
+      dateFormat = $("#planner_datetimepicker").datepicker("option", "dateFormat");
+      dateFormat = dateFormat.replace(/dd/i, 'd');
+      dateFormat = dateFormat.replace(/mm/i, 'm');
+      dateFormat = dateFormat.replace(/yy/i, 'y');
+      separator = planner_dialog_date_separator();
+      temp = dateFormat.split(separator);
+      separator = '[\\' + separator + ']';
+      reg = '';
+      for(var i in temp){
+        reg = reg + temp[i];
+        if(i < temp.length - 1)
+          reg = reg + separator;
+      }
+      day_part = '(0[1-9]|[12][0-9]|3[01])';
+      month_part = '(0[1-9]|1[012])';
+      year_part = '((20)[0-9][0-9])';
+      reg = reg.replace('d', day_part);
+      reg = reg.replace('m', month_part);
+      reg = reg.replace('y', year_part);
+      reg = '/' + reg + '/';
+      // full date
+      matches = temparr[0].match(eval(reg));
+      if(matches && matches[0]){
+        temparr = val.split(matches[0]);
+        ret[0] = planner_dialog_time(temparr[1]);
+        ret[1] = b;
+        ret[2] = val.replace(b,'').replace(ret[0],'');
+      }
+      else{
+        // day and month only
+          reg = '';
+        for(var i in temp){
+          if(temp[i] != 'y')
+            reg = reg + temp[i] + separator;
+        }
+        reg = reg.replace('d', day_part);
+        reg = reg.replace('m', month_part);
+        reg = '/' + reg + '/';
+        reg = reg.replace(']/', '\\s]/');
+        matches = temparr[0].match(eval(reg));
+        if(matches && matches[0]){
+          temparr = val.split(matches[0]);
+          ret[0] = planner_dialog_time(temparr[1]);
+          ret[1] = b;
+          ret[2] = val.replace(b,'').replace(ret[0],'');
+        }
+      }
+    }
+  }
+  return ret;
+}
+
+function planner_dialog_time(val){
+  var matches = new Array();
+  var ret = 'default';
+  val = ' ' + val + ' ';
+  matches = val.match(/([\s]([0-9])|(0[0-9])|(1[0-9]|2[0-3])):([0-5][0-9](am\s|pm\s|a\s|p\s|h\s|\s))/);
+  if(matches && matches[0]){
+    ret =  matches[0];
+  }
+  else{
+    matches = val.match(/([\s]([0-9])|(0[0-9])|(1[0-9]|2[0-3]))(h\s|am\s|pm\s|a\s|p\s|\s)/i);
+    if(matches && matches[0]){
+      ret = matches[0];
+    }
+  }
+  return $.trim(ret);
+}
+
+function planner_dialog_date_separator(dateFormat){
+  var separator;
+  var temparr = new Array();
+  if(!dateFormat)
+    dateFormat = $("#planner_datetimepicker").datepicker("option", "dateFormat");
+  separator = '/';
+  temparr = dateFormat.match(/[^a-z0-9]/i);
+  if(temparr && temparr[0])
+    separator = temparr[0];
+  else
+    separator = false
+  return separator;
+}
+
+function planner_dialog_ampm_replace(datetime){
+  datetime = datetime.replace(/\sam/i, 'am');
+  datetime = datetime.replace(/\spm/i, 'pm');
+  return datetime;
+}
+
+function planner_dialog_format_reduce(format){
+  var temparr = new Array();
+  separator = planner_dialog_date_separator(format);
+  temparr = format.split(separator);
+  for(var i in temparr){
+    format = format.replace(temparr[i], temparr[i].substr(0, 1).toLowerCase());
+  }
+  return format;
+}
+
+function planner_dialog_datetime_display(datetime, dateFormat){
+  var dpformat, separator, date_part, time_part, posy, posm, posd;
+  var dt = new Array();
+  var temparr = new Array();
+  var temp = new Array();
+  if(datetime.indexOf('default') > -1){
+    datetime = datetime.replace('default', default_starttime);
+  }
+  dpformat = planner_dialog_format_reduce($("#planner_datetimepicker").datepicker("option", "dateFormat"));
+  if(!dateFormat)
+    dateFormat = dpformat
+  dt = datetime.split(' ');
+  date_part = dt[0];
+  time_part = dt[1];
+  dateFormat = planner_dialog_format_reduce(dateFormat);
+  if(datetime.substr(0,1) != '+'){
+    separator = planner_dialog_date_separator(dpformat);
+    temparr = dpformat.split(separator);
+    for(var i in temparr){
+      switch(temparr[i]){
+        case 'y':
+          posy = i;
+          break;
+        case 'm':
+          posm = i;
+          break;
+        case 'd':
+          posd = i;
+      }
+    }
+    separator = planner_dialog_date_separator(date_part);
+    if(separator){
+      temp = date_part.split(separator);
+      if(temp.length < 3 && posy == 0){
+        date_part = new Date().getFullYear() + separator + temp[0] + separator + temp[1];
+        temp = date_part.split(separator);
+      }
+      datetime = dateFormat.replace('m', temp[posm]);
+      datetime = datetime.replace('d', temp[posd]);
+      if(!temp[posy])
+        temp[posy] = new Date().getFullYear();
+      datetime = datetime.replace('y', temp[posy]) + ' ' + time_part;
+    }
+  }
+  return datetime;
+}
+
+function planner_dialog_datetime(time){
+  var temparr = new Array();
+  var temp = new Array();
+  var ret = new Array();
+  var m, d, h, min;
+  time = planner_dialog_datetime_display(time, 'm/d/y');
+  temparr = time.split(' ');
+  if(temparr[0] && temparr[1]){
+    var min = '';
+    var temp = new Array();
+    if(temparr[1].indexOf(':') > -1){
+      for(var i=0; i< temparr.length; i++){
+        if(temparr[i].substr(0,1) == 0){
+          temparr[i] = temparr[i].substr(1);
+        }
+      }
+      temp = temparr[1].split(':');
+      if(parseInt(temp[0]) < 12 && temparr[1].toLowerCase().indexOf('p') > -1){
+        temparr[1] = Math.min(parseInt(temp[0]) + 12, 23) + ':' + temp[1];
+      }
+      else{
+        temparr[1] = temp[0] + ':' + temp[1];
+      }
+    }
+    else{
+      if(parseInt(temparr[1]) < 12 && temparr[1].toLowerCase().indexOf('p') > -1){
+        temparr[1] = Math.min(parseInt(temparr[1]) + 12, 23) + ':00';
+      }
+      else{
+        temparr[1] = temparr[1] + ':00';
+      }
+    }
+    temp = temparr[1].split(':');
+    if(temp[0].length < 2)
+      temp[0] = '0' + temp[0];
+    if(temp[1].length < 2)
+      temp[1] = '0' + temp[1];
+    temparr[1] = temp[0] + ':' + temp[1];
+    ret['time_format'] = js_time_formats[rcmail.env.rc_time_format]
+    temp = time.split(' ');
+    ret['date_formatted'] = temp[0];
+    if(temparr[0].toLowerCase() == rcmail.gettext('planner.today').toLowerCase()){
+      datetime = new Date();
+      datetime = (datetime.getMonth() + 1) + '/' + datetime.getDate() + '/' + datetime.getFullYear() + ' ' + temparr[1];
+    }
+    else if(temparr[0].toLowerCase() == rcmail.gettext('planner.tomorrow').toLowerCase()){
+      datetime = new Date(new Date().getTime() + 86400000);
+      datetime = (datetime.getMonth() + 1) + '/' + datetime.getDate() + '/' + datetime.getFullYear() + ' ' + temparr[1];
+    }
+    else if(temparr[0].substr(0,1) == '+'){
+      datetime = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+      datetime = Math.round(datetime.getTime() / 3600000) * 3600000 + parseInt(temparr[0]) * 86400000;
+      temp = temparr[1].split(':');
+      for(var i=0; i< temp.length; i++){
+        if(temp[i].substr(0,1) == 0){
+          temp[i] = temp[i].substr(1);
+        }
+      }
+      datetime = datetime + (parseInt(temp[0]) * 60 * 60 * 1000) + (parseInt(temp[1]) * 60 * 1000);
+    }
+    else{
+      datetime = new Date(temparr[0] + ' ' + temparr[1]).getTime();
+    }
+    ret['date'] = temparr[0];
+    ret['time'] = temparr[1];
+    if(datetime){
+      ret['date_stamp'] = datetime;
+      datetime = new Date(datetime);
+      ret['time_formatted'] = datetime.format(ret['time_format']);
+      m = (datetime.getMonth() + 1) + '';
+      if(m.length < 2)
+        m = '0' + m;
+      d = datetime.getDate() + '';
+      if(d.length < 2)
+        d = '0' + d;
+      h = datetime.getHours() + '';
+      if(h.length < 2)
+        h = '0' + h;
+      min = datetime.getMinutes() + '';
+      if(min.length < 2)
+        min = '0' + min;
+      ret['datetime'] = datetime.getFullYear() + "-" + m + '-' + d + ' ' + h + ':' + min + ':00';
+      datetime = datetime.format('dd mmm');
+      temp = datetime.split(' ');
+      ret['date_short_locale'] = temp[0] + ' ' + rcmail.gettext('planner.' + temp[1]);
+    }
+  }
+  return ret;
+}
+
+function planner_html_sanitize(text){
+  text = text.replace('<', '&lt;').replace('>', '&gt;');
+  return text;
+}
+
+function planner_dialog_preview(text, time){
+  var datetime = new Array();
+  $('#planner_text').val($.trim(text));
+  $('#planner_preview_text').html($.trim(planner_html_sanitize(text)));
+  if(time){
+    text = $.trim(time) + ' ' + $.trim(text);
+    datetime = planner_dialog_datetime($.trim(time));
+    if(datetime['date_stamp']){
+      $('#planner_datetimepicker').datetimepicker('setDate', new Date(datetime['date_stamp']));
+      $('#planner_datetime').val(datetime['datetime']);
+      $('#planner_preview_date').html(planner_html_sanitize(datetime['date_short_locale']));
+      $('#planner_preview_time').html(planner_html_sanitize(datetime['time_formatted']));
+      $('#planner_preview_text').addClass('datetime');
+    }
+    else{
+      $('#planner_raw').val(datetime[0] + ' ');
+      $('#planner_preview_text').html(planner_html_sanitize(time + ' ' + text));
+      $('#planner_text').val(time + ' ' + text);
+      $('#planner_datetime').val('');
+    }
+  }
+  else{
+    $('#planner_preview_text').removeClass('datetime');
+    $('#planner_preview_time').html('');
+    $('#planner_preview_date').html('');
+    $('#planner_datetime').val('');
+  }
+}
+
+function planner_dialog_edit(obj, text, time){
+  planner_dialog_reset_gui();
+  var created = obj.find('.created').val();
+  $('#planner_input').dialog('option', 'title', rcmail.gettext('planner.edit'));
+  planner_dialog_preview(text, time);
+  if(time){
+    time = planner_dialog_datetime_display(time);
+    text = time + ' ' + text;
+  }
+  $("#planner_raw").val(text);
+  $("#planner_mode").val('edit');
+  $("#planner_id").val(obj.parent().parent().attr("id"));
+  $("#planner_created").val(created);
+  if(obj.parent().parent().children().next().attr('class') == 'delete'){
+    $("#planner_done").prop('checked', true);
+    $("#planner_preview_done").removeClass('pdelete');
+    $("#planner_preview_done").addClass('pdone');
+  }
+  if(obj.parent().parent().children().attr('class') == 'star'){
+    $("#planner_starred").prop('checked', true);
+    $("#planner_preview_star").removeClass('pnostar');
+    $("#planner_preview_star").addClass('pstar');
+  }
+  if($('#controls').val() == 'deleted'){
+    $("#planner_deleted").prop('checked', true);
+    $("#planner_done").prop('checked', false);
+    $("#planner_preview_done").removeClass('pdone');
+    $("#planner_preview_done").addClass('pdelete');
+  }
+  planner_dialog();
+}
+
+function planner_dialog_reset_gui(){
+  $("#planner_raw").val('');
+  $('#planner_autocomplete_content').html('');
+  $('#planner_autocomplete').hide();
+  $("#planner_done").prop('checked', false);
+  $("#planner_preview_done").removeClass('pdone');
+  $("#planner_starred").prop('checked', false);
+  $("#planner_preview_star").removeClass('pstar');
+  $("#planner_preview_star").addClass('pnostar');
+  $("#planner_deleted").prop('checked', false);
+  $("#planner_preview_done").removeClass('pdelete');
+  $('#planner_id').val('');
+  try{
+    if($('#planner_input').dialog("isOpen") !== true){
+      $('#planner_input').dialog('option', 'title', rcmail.gettext('planner.new'));
+    }
+  }
+  catch(e){
+    planner_dialog();
+    $('#planner_input').dialog('option', 'title', rcmail.gettext('planner.new'));
+  }
+  $('#planner_mode').val('new');
+  $('#planner_datetime').val('');
+  $('#planner_text').val('');
+  $('#planner_preview_text').html('');
+  $('#planner_preview_time').html('');
+  $('#planner_preview_date').html('');
+  $('#planner_datetimepicker').datetimepicker('setDate', new Date(Math.round((new Date().getTime() + 60 * 60 * 1000) / (15 * 60 * 1000)) * 15 * 60 * 1000));
+  $('.ui-dialog-buttonset').children().blur();
+  $("#planner_raw").focus();
+}
+
+function planner_dialog_adjust_gui(){
+  if(rcmail.env.planner_filter == 'birthdays'){
+    $('.nobirthday').hide();
+  }
+  else{
+    $('.nobirthday').show();
+  }
+  planner_items = 0;
+  $('#planner_items_list li').each(function(){
+    if($(this).css('display') != 'none'){
+      planner_items ++;
+    }
+  });
+  if(rcmail.env.planner_counts && rcmail.env.planner_counts[rcmail.env.planner_items]){
+    $('#items_count').text(planner_items + '/' + rcmail.env.planner_counts[rcmail.env.planner_items]);
+  }
+  else{
+    $('#items_count').text(planner_items);
+  }
+  planner_show_overdue_count();
+  if($('#control_bar_position').html() == 'right'){
+    var posx = $('#planner_items').offset().left + $('#planner_items_list').width() - $('#control_bar').width() - parseInt($('#control_bar_fudge').html());
+  }
+  else if($('#control_bar_position').html() == 'left'){
+    var posx = $('#planner_items').offset().left;
+  }
+  else if($('#control_bar_position').html() == 'center'){
+    var posx = $('#planner_items').offset().left;
+    $('#control_bar').css('width', $('#planner_items_list').width());
+    $('#control_bar').html('<center>' + $('#control_bar').html() + '</center>');
+  }
+  if(posx){
+    $('#control_bar').css('left', posx);
+  }
+  $('#control_bar').show();
+  if($('#filter_bar_position').html() == 'variable'){
+    var posy = $('#planner_items_list').offset().top + $('#planner_items_list').height();
+    posy = Math.min(posy, $(window).height() - parseInt($('#filter_bar_fudge').html()));
+    $('#filter_bar').css('top', posy);
+    var posx = $('#planner_items').offset().left + $('#planner_items_list').width() - $('#expunge_bar').width() - parseInt($('#control_bar_fudge').html());
+    $('#expunge_bar').css('top', posy);
+    $('#expunge_bar').css('left', posx);
+  }
+  if(rcmail.env.planner_filter && rcmail.env.planner_filter != rcmail.env.planner_last_filter){
+    rcmail.env.planner_last_filter = rcmail.env.planner_filter;
+    planner_save_prefs();
+    $('#f' + rcmail.env.planner_filter).trigger('click');
+  }
+}
+
+function planner_save_prefs(){
+  if(rcmail.env.planner_items && rcmail.env.planner_items != rcmail.env.planner_saved_view){
+    rcmail.env.planner_saved_view = rcmail.env.planner_items;
+    planner_request[0] = '_v=' + rcmail.env.planner_items + '&';
+  }
+  if(rcmail.env.planner_filter && rcmail.env.planner_filter != rcmail.env.planner_saved_filter){
+    rcmail.env.planner_saved_filter = rcmail.env.planner_filter;
+    planner_request[1] = '_f=' + rcmail.env.planner_filter + '&';
+  }
+  if(planner_request[0] || planner_request[1]){
+    var request = '';
+    if(planner_request[0])
+      request = request + planner_request[0];
+    if(planner_request[1])
+      request = request + planner_request[1];
+    request = request.substr(0, request.length -1);
+    if(request != rcmail.env.planner_saved_request){
+      rcmail.env.planner_saved_request = request;
+      rcmail.http_post('plugin.planner_prefs', request);
+    }
+  }
+}
+
+function planner_show(view){
+  if(typeof eval('planner_show_' + view) == 'function'){
+    $('#planner_items').css('overflow', 'hidden');
+    if(view != 'all' && view != 'today' && view != 'tomorrow' && view != 'week'){
+      $('#birthdays_count').hide();
+      $('#bdlabel').hide();
+      $('#cbirthdays').hide();
+    }
+    else{
+      $('#birthdays_count').show();
+      $('#bdlabel').show();
+      $('#cbirthdays').show();
+    }
+    planner_overlay_toggle(true);
+    eval('planner_show_' + view)();
+    planner_overlay_toggle(false);
+    $('#planner_items').css('overflow', 'auto');
+    rcmail.env.planner_select = view;
+  }
+}
+
+function planner_show_init(){
+  planner_filter('all');
+}
+
+function planner_show_all(){
+  $('#planner_items_list li').show();
+  $('.delete').each(function(){
+    $(this).parent().hide();
+  });
+  $('.remove').each(function(){
+    $(this).parent().hide();
+  });
+  planner_filter('all');
+}
+
+function planner_show_overdue(){
+  $('.datetime').each(function(){
+    var d = new Date($(this).prev().prev().val());
+    if(d){
+      var t = new Date();
+      d = d.getTime();
+      t = t.getTime();
+      if(d < t){
+        $(this).parent().parent().show();
+      }
+      else{
+        $(this).parent().parent().hide();
+      }
+    }
+  });
+  $('.nodate').each(function(){
+    $(this).parent().parent().hide();
+  });
+  $('.delete').each(function(){
+    $(this).parent().hide();
+  });
+  $('.remove').each(function(){
+    $(this).parent().hide();
+  });
+  $('.birthday').each(function(){
+    $(this).parent().hide();
+  });
+  planner_filter('overdue');
+}
+
+function planner_show_today(){
+  $('.nodate').each(function(){
+    $(this).parent().parent().show();
+  });
+  $('.datetime').each(function(){
+    var d = new Date($(this).prev().prev().val());
+    if(d){
+      var t = new Date();
+      var t = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59);
+      var y = new Date(new Date(t).getTime() - 86400000);
+      y = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 23, 59, 59);
+      d = d.getTime();
+      t = t.getTime();
+      y = y.getTime();
+      if(d > t || d <= y){
+        $(this).parent().parent().hide();
+      }
+      else{
+        $(this).parent().parent().show();
+      }
+    }
+  });
+  $('.delete').each(function(){
+    $(this).parent().hide();
+  });
+  $('.remove').each(function(){
+    $(this).parent().hide();
+  });
+  planner_filter('today');
+}
+
+function planner_show_tomorrow(){
+  $('.nodate').each(function(){
+    $(this).parent().parent().show();
+  });
+  $('.datetime').each(function(){
+    var d = new Date($(this).prev().prev().val());
+    if(d){
+      var t = new Date();
+      var t = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59);
+      var y = new Date(new Date(t).getTime() + 86400000);
+      y = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 23, 59, 59);
+      d = d.getTime();
+      t = t.getTime();
+      y = y.getTime();
+      if(d > t && d <= y){
+        $(this).parent().parent().show();
+      }
+      else{
+        $(this).parent().parent().hide();
+      }
+    }
+  });
+  $('.delete').each(function(){
+    $(this).parent().hide();
+  });
+  $('.remove').each(function(){
+    $(this).parent().hide();
+  });
+  planner_filter('tomorrow');
+}
+
+function planner_show_week(){
+  $('.nodate').each(function(){
+    $(this).parent().parent().show();
+  });
+  $('.datetime').each(function(){
+    var d = new Date($(this).prev().prev().val());
+    if(d){
+      var t = new Date();
+      var t = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59);
+      var b = t.getDay();
+      if(b == 0)
+        b = 7;
+      t = new Date(t.getTime() - b * 86400000);
+      var y = new Date(new Date(t).getTime() + 7 * 86400000);
+      y = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 23, 59, 59);
+      d = d.getTime();
+      t = t.getTime();
+      y = y.getTime();
+      if(d > t && d <= y){
+        $(this).parent().parent().show();
+      }
+      else{
+        $(this).parent().parent().hide();
+      }
+    }
+  });
+  $('.delete').each(function(){
+    $(this).parent().hide();
+  });
+  $('.remove').each(function(){
+    $(this).parent().hide();
+  });
+  planner_filter('week');
+}
+
+function planner_show_starred(){
+  $('#planner_items_list li').show();
+  $('.delete').each(function(){
+    $(this).parent().hide();
+  });
+  $('.remove').each(function(){
+    $(this).parent().hide();
+  });
+  $('.birthday').each(function(){
+    $(this).parent().hide();
+  });
+  $('.nostar').each(function(){
+    $(this).parent().hide();
+  });
+  planner_filter('starred');
+}
+
+function planner_show_done(){
+  $('.done').each(function(){
+    $(this).parent().hide();
+  });
+  $('.remove').each(function(){
+    $(this).parent().hide();
+  });
+  $('.birthday').each(function(){
+    $(this).parent().hide();
+  });
+  $('.nostar').each(function(){
+    $(this).parent().hide();
+  });
+  $('.star').each(function(){
+    $(this).parent().hide();
+  });
+  $('.delete').each(function(){
+    $(this).parent().show();
+  });
+  planner_filter('done');
+}
+
+function planner_show_deleted(){
+  $('#planner_items_list li').hide();
+  $('.remove').each(function(){
+    $(this).parent().show();
+  });
+  planner_filter('deleted');
+}
+
+function planner_show_overdue_count(){
+  var count = 0;
+  $('.datetime').each(function(){
+    var d = new Date($(this).prev().prev().val());
+    if(d){
+      var t = new Date();
+      d = d.getTime();
+      t = t.getTime();
+      if(d < t && !$(this).parent().hasClass('birthday') && $(this).parent().prev().hasClass('done')){
+        count ++;
+      }
+    }
+  });
+  if(count > 0 && !rcmail.env.planner_blink){
+    rcmail.env.planner_blink = true;
+    $('#overdue_count').blink(
+      {
+        delay: 1500
+      }
+    );
+  }
+  if(count == rcmail.env.planner_counts['overdue']){
+    clearInterval(blink_timer);
+    rcmail.env.planner_blink = false;
+    $('#overdue_count').css('visibility','visible');
+  }
+  else{
+    $('#overdue_count').html(count);
+  }
+  if(count > rcmail.env.planner_counts['overdue']){
+    // HTML5
+    try {
+      var elem = $('<audio src="plugins/planner/sound.wav" />');
+      elem.get(0).play();
+    }
+    // old method
+    catch (e) {
+      var elem = $('<embed id="sound" src="plugins/planner/sound.wav" hidden=true autostart=true loop=false />');
+      elem.appendTo($('body'));
+      window.setTimeout("$('#sound').remove()", 5000);
+    }
+  }
+}
+
+function planner_sort(){
+  $('#planner_items_list li').sortElements(function(a, b){
+    var dt1 = $(a).children().next().next().children().next().next().next().val();
+    if(!dt1){
+      dt1 = $(a).children().next().children().next().next().next().val();
+      if(!dt1)
+        dt1 = 0;
+    }
+    dt1 = new Date(dt1).getTime();
+    var dt2 = $(b).children().next().next().children().next().next().next().val();
+    if(!dt2){
+      dt2 = $(b).children().next().children().next().next().next().val();
+      if(!dt2)
+        dt2 = 0;
+    }
+    var text1 = $(a).children().next().next().children().next().next().next().text();
+    if(!text1)
+      text1 = $(a).children().next().next().children().text();
+    var text2 = $(b).children().next().next().children().next().next().next().text();
+    if(!text2)
+      text2 = $(b).children().next().next().children().text();
+    var created1 = '0000000000000';
+    var created2 = '0000000000000';
+    if(dt1 == 0){
+      // show newest ToDo on top of list
+      created1 = new Date().getTime() - parseInt($(a).children().next().next().children().find('.created').val()) + '';
+      created2 = new Date().getTime() - parseInt($(b).children().next().next().children().find('.created').val()) + '';
+    }
+    while(created1.length < 13)
+      created1 = '0' + created1;
+    while(created2.length < 13)
+      created2 = '0' + created2;
+    dt2 = new Date(dt2).getTime();
+    dt1 = dt1 + created1 + text1.toLowerCase();
+    dt2 = dt2 + created2 + text2.toLowerCase();
+    return dt1 > dt2 ? 1 : -1;
+  });
+}
+
+function planner_filter(view){
+  if(view){
+    planner_items = 0;
+    $('#planner_items_list li').each(function(){
+      if($(this).css('display') != 'none'){
+        planner_items ++;
+      }
+    });
+    $('#' + view + '_count').html(planner_items);
+    rcmail.env.planner_counts[view] = planner_items;
+  }
+  switch(rcmail.env.planner_filter){
+    case 'all':
+      break;
+    case 'todos':
+      $('.datetime').each(function(){
+        $(this).parent().parent().hide();
+      });
+      break;
+    case 'plans':
+      $('.nodate').each(function(){
+        $(this).parent().parent().hide();
+      });
+      break;
+    case 'birthdays':
+      $('.nodate').each(function(){
+        $(this).parent().parent().hide();
+      });
+      $('.datetime').each(function(){
+        if(!$(this).parent().hasClass('birthday')){
+          $(this).parent().parent().hide();
+        }
+      });
+      break;
+  }
+  if(rcmail.env.planner_items != 'deleted'){
+    $('#expunge_bar').hide();
+  }
+  else if(planner_items > 1){
+    $('#expunge_bar').show();
+  }
+  window.setTimeout("planner_dialog_adjust_gui()",100);
+}
+
+function planner_drag(){
+
+  // sortable
+  $('#planner_items_list').sortable({
+    revert: false,
+    containment: "window",
+    scroll: false,
+    helper: "clone",
+    cursor: "move",
+    items: 'li.drag_nodate',
+    stop: function(event, ui){
+      var id = ui.item.find('.drag_id').val();
+      var created = $('#' + id).prev().find('.created').val();
+      var prev = $('#' + id).prev();
+      if(prev.hasClass('drag_datetime') || prev.hasClass('drag_birthday')){
+        planner_sort();
+      }
+      else{
+        if(!created)
+          created = new Date().getTime();
+        else
+          created = created - 1000;
+        $('#' + id).prev().find('.created').val(created);
+        planner_overlay_toggle(true);
+        rcmail.http_post('plugin.planner_created', '_id=' + id + '&_c=' + Math.round(created / 1000));
+      }
+      planner_drag();
+    },
+    appendTo: '#planner_drag_list',
+    zIndex: 999999
+  });
+  
+  // sticky notes drag & drop (function is bundled with sticky_notes plugin)
+  if(typeof planner_drag_notes == 'function'){
+    planner_drag_notes();
+  }
+  // calendar events drag & drop (function is bundled with calendar plugin)
+  if(typeof planner_drag_events == 'function'){
+    planner_drag_events();
+  }
+  // birthdays drag & drop (function is bundled with compose_in_taskbar plugin)
+  if(typeof planner_drag_birthdays == 'function'){
+    planner_drag_birthdays();
+  }
+  else{
+    var $list = $('#planner_items'),
+    $mail_icon = $('.button-mail');
+
+    $("li.drag_birthday", $list).draggable({
+      cancel: "a.ui-icon",
+      revert: "invalid",
+      containment: "window",
+      scroll: false,
+      helper: "clone",
+      cursor: "move",
+      appendTo: '#planner_drag_list',
+      zIndex: 999999
+    });
+
+    $mail_icon.droppable({
+      accept: "#planner_items_list > li.drag_birthday",
+      activeClass: "ui-state-highlight",
+      tolerance: "touch",
+      drop: function(event,ui){
+        var bd = new Date(ui.draggable.find('.time').next().val()).getTime() + 3600000 * 7;
+        bd = Math.round(bd / 1000);
+        if(new Date(bd * 1000) < new Date()){
+          bd = new Date(bd * 1000);
+          bd = new Date((bd.getMonth() + 1) + '/' + bd.getDate() + '/' + (bd.getFullYear() + 1) + ' 08:00:00').getTime();
+          bd = Math.round(bd / 1000);
+        }
+        var append = '&_date=' + bd;
+        var email = ui.draggable.find('.drag_email').val();
+        var oldtask = rcmail.env.task;
+        rcmail.env.task='mail';
+        if(rcmail.env.compose_newwindow){
+          composenewwindowcommandcaller('compose', email + '?subject=' + rcmail.gettext('planner.happybirthday') + append, this);
+        }
+        else{
+          rcmail.command('compose', email + '?subject=' + rcmail.gettext('planner.happybirthday') + append, this);
+        }
+        $('#planner_help').hide();
+        rcmail.env.task = oldtask;
+      }
+    });
+  }
+  
+  var $list = $('#planner_items');
+  $("li.drag_birthday", $list).draggable({
+    cancel: "a.ui-icon",
+    revert: "invalid",
+    containment: "window",
+    scroll: false,
+    helper: "clone",
+    cursor: "move",
+    appendTo: '#planner_drag_list',
+    zIndex: 999999
+  });
+  $("li.drag_datetime", $list).draggable({
+    cancel: "a.ui-icon",
+    revert: "invalid",
+    containment: "window",
+    scroll: false,
+    helper: "clone",
+    cursor: "move",
+    appendTo: '#planner_drag_list',
+    zIndex: 999999
+  });
+  
+  var $target = $('.ddate');
+  $target.droppable({
+    accept: function(d){
+      if(d.children().hasClass('edit')){ 
+          return true;
+      }
+    },
+    activeClass: "ui-state-highlight",
+    tolerance: "pointer",
+    drop: function(event,ui){
+      planner_overlay_toggle(true);
+      var text = ui.draggable.find('.datetime').text();
+      if(!text)
+        text = ui.draggable.text();
+      var id = $(this).attr('id');
+      var base = new Date(Math.round((new Date().getTime() + 60 * 60 * 1000) / (15 * 60 * 1000)) * 15 * 60 * 1000);
+      var time = ui.draggable.find('.datetime').prev().prev().val();
+      if(time){
+        var temparr = time.split(' ');
+        temparr = temparr[1].split(':');
+        time = temparr[0] + ':' + temparr[1];
+      }
+      else{
+        time = base.getHours() + ':' + base.getMinutes();
+      }
+      switch(id){
+        case 'today':
+        case 'ctoday':
+          rcmail.http_post('plugin.planner_edit', '_id=' + ui.draggable.find('.drag_id').val() + '&_t=' + encodeURIComponent(text) + '&_d=' + encodeURIComponent(new Date(base).format('mm/dd/yyyy') + ' ' + time));
+          break;
+        case 'tomorrow':
+        case 'ctomorrow':
+          base = new Date(new Date(base).getTime() + 86400000);
+          time = ui.draggable.find('.datetime').prev().prev().val();
+          if(time){
+            var temparr = time.split(' ');
+            temparr = temparr[1].split(':');
+            time = temparr[0] + ':' + temparr[1];
+          }
+          else{
+            time = base.getHours() + ':' + base.getMinutes();
+          }
+          rcmail.http_post('plugin.planner_edit', '_id=' + ui.draggable.find('.drag_id').val() + '&_t=' + encodeURIComponent(text) + '&_d=' + encodeURIComponent(new Date(base).format('mm/dd/yyyy') + ' ' + time));
+          break;
+        case 'week':
+        case 'cweek':
+          planner_overlay_toggle(false);
+          ui.draggable.find('.nodate').trigger('click');
+          $('#planner_datetimepicker').datepicker('setDate', base);
+          $('.ui-state-highlight').trigger('click');
+          break;
+      }
+    }
+  });
+  
+  $('#planner_items_list').disableSelection();
+  $('.date').attr('title', rcmail.gettext('planner.remove_date'));
+  $('.date').on('mousedown', function(event) {
+    if(event.which == 3){ // && !$(this).parent().hasClass('birthday')){
+      var text = $(this).parent().find('.datetime').text();
+      var id = $(this).parent().find('.drag_id').val();
+      planner_overlay_toggle(true);
+      var created = $(this).parent().find('.created').val();
+      $(this).parent().parent().removeClass('today');
+      $(this).parent().parent().removeClass('highlight');
+      $(this).parent().parent().removeClass('drag_datetime');
+      $(this).parent().parent().addClass('drag_nodate');
+      rcmail.http_post('plugin.planner_edit', '_id=' + id + '&_c=' + created + '&_t=' + encodeURIComponent(text));
+    }
+  });
+}

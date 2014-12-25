@@ -1,4 +1,23 @@
 VERSION                COMMENT
----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
 1.0                    - Initial release
 1.0.1                  - Added log option to CalDAV client
+1.0.2                  - Added date.js toolbox
+                         (http://www.mattkruse.com/javascript/date)
+1.0.3                  - Added sync interval property to caldav sync client
+1.0.4                  - Moved ical_sync to libgpl
+1.0.5                  - Include querystring.js for tasklist
+1.0.6                  - Replace the big close button in jquery dialogs
+1.0.7 - 1.0.9          - Fetch reminders almost immediately after page
+                         initialization and not with a delay of 1 minute
+1.0.10 - 1.0.12        - Include jquery contexmenu
+                         (http://medialize.github.io/jQuery-contextMenu/demo.html)
+1.0.13                 - Include date.js for sticky_notes
+1.0.14                 - Larry skin improvements
+1.0.15                 - Implement contextmenu for sticky_notes
+1.0.16                 - Include fancybox
+1.0.17                 - Re-organize folder structure
+1.0.18                 - Clean up larry skin images
+1.0.19                 - Include jquery timepicker
+1.0.20                 - Include http_request
+1.0.21                 - Make sure jqueryui plugin is loaded first of all

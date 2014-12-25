@@ -19,7 +19,6 @@ $labels['planner'] = 'Planer';
 $labels['pluginname'] = 'Planer';
 $labels['plugindescription'] = 'To jest hybryda pomiędzy prostym kalendarzem a lista do zrobienia.';
 $labels['incompatiblebrowser'] = 'Aby używać Planera , proszę uzywać IE 9 lub innej przeglądarki.';
-$labels['plan'] = 'Stwórz';
 $labels['view'] = 'Widok';
 $labels['select_view'] = 'Wybierz Widok';
 $labels['flags'] = 'Flagi';

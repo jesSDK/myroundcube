@@ -1,45 +1,17 @@
 <?php
-/**
- * planner
- *
- * @version 3.0.20 - 23.06.2014
- * @author Roland 'rosali' Liebl (forked from: see below)
- * @website http://myroundcube.com
- *
- **/
-/*
- +-------------------------------------------------------------------------+
- | Roundcube Planner plugin                                                |
- | @version @package_version@                                              |
- |                                                                         |
- | Copyright (C) 2011, Lazlo Westerhof.                                    |
- |                                                                         |
- | This program is free software; you can redistribute it and/or modify    |
- | it under the terms of the GNU General Public License version 2          |
- | as published by the Free Software Foundation.                           |
- |                                                                         |
- | This program is distributed in the hope that it will be useful,         |
- | but WITHOUT ANY WARRANTY; without even the implied warranty of          |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           |
- | GNU General Public License for more details.                            |
- |                                                                         |
- | You should have received a copy of the GNU General Public License along |
- | with this program; if not, write to the Free Software Foundation, Inc., |
- | 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.             |
- |                                                                         |
- +-------------------------------------------------------------------------+
- | Author: Lazlo Westerhof <roundcube@lazlo.me>                            |
- +-------------------------------------------------------------------------+
-*/
-
-/**
- * Roundcube Planner plugin
- *
- * Plugin that adds a hybrid between a 
- * todo-listand a calendar to Roundcube.
- *
- * @author Lazlo Westerhof
- */
+# 
+# This file is part of MyRoundcube "panner" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (C) 2011, Lazlo Westerhof
+# Lazlo Westerhof <roundcube@lazlo.me> 
+# Copyright (C) 2014 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 class planner extends rcube_plugin
 {
   public $task = '?(?!login|logout).*';
@@ -56,17 +28,17 @@ class planner extends rcube_plugin
   static private $plugin = 'planner';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/planner-plugin" target="_blank">Documentation</a>';
-  static private $version = '3.0.20';
-  static private $date = '23-06-2014';
+  static private $version = '3.0.26';
+  static private $date = '20-12-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'Roundcube' => '1.0',
     'PHP' => '5.3',
     'required_plugins' => array(
       'db_version' => 'require_plugin',
-      'jqueryui' => 'require_plugin',
-      'timepicker' => 'require_plugin',
+      'libgpl' => 'require_plugin',
       'qtip' => 'require_plugin',
+      'myrc_sprites' => 'require_plugin',
     ),
   );
   static private $sqladmin = array('db_dsnw', 'planner');
@@ -92,7 +64,7 @@ class planner extends rcube_plugin
     $this->add_texts('localization/', true);
     
     // required plugins
-    $this->require_plugin('jqueryui');
+    $this->require_plugin('libgpl');
     $this->require_plugin('qtip');
 
     // register actions
@@ -123,10 +95,11 @@ class planner extends rcube_plugin
     }
     
     // add planner button to taskbar
+    $this->require_plugin('myrc_sprites');
     $this->add_button(array(
       'name'    => 'planner',
       'class'   => 'button-planner',
-      'content'   => html::tag('span', array('class' => 'button-inner'), $this->gettext('planner.planner')),
+      'content'   => html::tag('span', array('class' => 'button-inner myrc_sprites'), $this->gettext('planner.planner')),
       'href'    => './?_task=dummy&_action=plugin.planner',
       'id'      => 'planner_button',
       'style'   => 'display: none;'
@@ -208,7 +181,6 @@ class planner extends rcube_plugin
     $this->include_script('planner.class.js');
     $this->include_script('planner.gui.js');
     $this->include_script('date.format.js'); // third party
-    $this->require_plugin('timepicker');
 
     // pass date and time formats to the GUI
     $this->rc->output->set_env('rc_date_format', $this->rc->config->get('date_format', 'm/d/Y'));
@@ -606,27 +578,28 @@ class planner extends rcube_plugin
     // starred plan
     if(isset($plan['starred'])) {
       if($plan['starred']) {
-        $html .= html::a(array('class' => 'star', 'title' => $this->getText('unstar_plan')), "");
+        $html .= html::a(array('class' => 'myrc_sprites star', 'title' => $this->getText('unstar_plan')), "");
       }
       else {
-        $html .= html::a(array('class' => 'nostar', 'title' => $this->getText('star_plan')), "");
+        $html .= html::a(array('class' => 'myrc_sprites nostar', 'title' => $this->getText('star_plan')), "");
       }
     }
     
     // finished plan // moved to here to solve ellipsis problem
     if($plan['deleted']) {
-      $html .= html::a(array('class' => 'remove', 'title' => $this->getText('remove')), "");
+      $html .= html::a(array('class' => 'myrc_sprites remove', 'title' => $this->getText('remove')), "");
     }
     elseif($plan['done']) {
-      $html .= html::a(array('class' => 'delete', 'title' => $this->getText('delete')), "");
+      $html .= html::a(array('class' => 'myrc_sprites delete', 'title' => $this->getText('delete')), "");
     }
     // not finished plan
     elseif(isset($plan['starred'])) {
-      $html .= html::a(array('class' => 'done', 'title' => $this->getText('done_plan')), "");
+      $html .= html::a(array('class' => 'myrc_sprites done', 'title' => $this->getText('done_plan')), "");
     }
     // birthday
     else{
-      $html .= html::a(array('class' => 'nostar'), "");
+      $html .= html::a(array('class' => 'myrc_sprites nostar'), "");
+      $html .= html::a(array('class' => 'myrc_sprites birthday'), "");
     }
     
     $content = "";
@@ -647,8 +620,8 @@ class planner extends rcube_plugin
         }
       }
       $content .= html::span('date', date('d', $plan['timestamp']) . " ");
-      $content .= html::span('bdate ' . date('M', $plan['timestamp']), date('M', $plan['timestamp']));
-      $content .= html::span('time', '');
+      $content .= html::span('date ' . date('M', $plan['timestamp']), date('M', $plan['timestamp']));
+      $content .= html::span('time', date($this->rc->config->get('time_format', 'H:i'), mktime(0,0,0)));
       $input = new html_inputfield(array('type' => 'hidden'));
       $date = date('m/d/Y H:i:s', $plan['timestamp']);
       $content .= $input->show($date);
@@ -681,7 +654,7 @@ class planner extends rcube_plugin
     }
     if(!isset($plan['starred'])) {
       $liclass = 'drag_birthday';
-      $html .= html::span('birthday', $content);
+      $html .= html::span('', $content);
     }
     else {
       $html .= html::span('edit', $content);

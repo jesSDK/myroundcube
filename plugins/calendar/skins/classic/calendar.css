@@ -1221,10 +1221,14 @@ fieldset #calendarcategories div {
 
 /* Invitation UI in mail */
 
+
 #messagemenu li a.calendarlink {
 	background-image: url(images/calendars.png);
 	background-position: 7px -109px;
 	background-repeat: no-repeat;
+}
+ul.toolbarmenu li a {
+  padding: 1px 12px 3px 28px !important;
 }
 
 div.calendar-invitebox {

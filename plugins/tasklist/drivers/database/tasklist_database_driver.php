@@ -44,7 +44,6 @@ class tasklist_database_driver extends tasklist_driver
   private $db_attachments = 'vtodo_attachments';
   private $task_uid;
 
-
   /**
    * Default constructor
    */
@@ -80,7 +79,7 @@ class tasklist_database_driver extends tasklist_driver
           $arr['active'] = ($arr['tasks'] < 2) ? true : false;
           $arr['name'] = html::quote($arr['name']);
           $arr['listname'] = html::quote($arr['name']);
-          $arr['editable'] = true;
+          $arr['editable'] = $arr['readonly'] ? false : true;
           $this->lists[$arr['id']] = $arr;
           $list_ids[] = $this->rc->db->quote($arr['id']);
         }
@@ -721,7 +720,9 @@ class tasklist_database_driver extends tasklist_driver
         else {
             $ts_created = date(self::DB_DATE_FORMAT);
         }
-
+        
+        $prop['recurrence'] = is_array($prop['recurrence']) ? $this->serialize_recurrence($prop['recurrence']) : null;
+        
         if($this->task_uid != $prop['uid']) { // Mod by Rosali
           $this->task_uid = $prop['uid'];
           $notify_at = $this->_get_notification($prop);
@@ -746,7 +747,7 @@ class tasklist_database_driver extends tasklist_driver
             strval($prop['description']),
             join(',', (array)$prop['tags']),
             $prop['alarms'],
-            is_array($prop['recurrence']) ? $this->serialize_recurrence($prop['recurrence']) : null,
+            $prop['recurrence'],
             $notify_at
           );
           if ($result) {
@@ -880,6 +881,10 @@ class tasklist_database_driver extends tasklist_driver
   {
     if (!$prop['recurrence_id']) {
       $prop['recurrence_id'] = 0;
+    }
+
+    if (isset($prop['children_detach']) && $prop['children_detach'] == 1) { // detach children from parent
+      $prop['parent_id'] = false;
     }
 
     $prop['complete'] = $prop['complete'] ? $prop['complete'] : 0;
@@ -1099,6 +1104,8 @@ class tasklist_database_driver extends tasklist_driver
         return;
       }
       
+      $task['recurrence'] = is_string($task['recurrence']) ? $this->unserialize_recurrence($task['recurrence']) : array();
+      
       // mark existing recurrence exceptions for deletion
       $this->rc->db->query(
         "UPDATE " . $this->db_tasks . "
@@ -1308,7 +1315,12 @@ class tasklist_database_driver extends tasklist_driver
       if (!$task['startdate']) {
         return $task;
       }
-
+      
+      if(serialize(func_get_args()) == $_SESSION['tasks_recurrences_request']){
+        unset($_SESSION['tasks_recurrences_request']);
+        return $_SESSION['tasks_recurrences_cache'];
+      }
+      
       $recurrences = array();
       
       $start = $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime']) : '');
@@ -1336,7 +1348,7 @@ class tasklist_database_driver extends tasklist_driver
         unset($rrule['EXDATE']); // we have our own exdate records
                                   // Horde seems not to work properly if start and exdate have different timezones;
       }
-      
+
       $engine->init($rrule, $task['start']->format('Y-m-d H:i:s'));
       $clones = array();
       while ($next = $engine->next()) {
@@ -1379,7 +1391,10 @@ class tasklist_database_driver extends tasklist_driver
           $clones[] = $this->_read_postprocess($clone);
         }
       }
-      // ToDo: implement cache (method is called twice for tasks and counts)
+
+      $_SESSION['tasks_recurrences_request'] = serialize(func_get_args());
+      $_SESSION['tasks_recurrences_cache'] = $clones;
+
       return $clones;
     }
     

@@ -16,3 +16,6 @@ VERSION                COMMENT
 2.0.17                 - Implement rcube_db::limitquery
 2.0.18                 - Add a link to Jappix registration form
 2.0.19                 - Add option to display taskbar Chat icon
+2.0.20                 - Implement myrc_sprites plugin
+2.0.21                 - Remove gibberish plugin from required plugins
+                       - Remove http_requiest from required pluings

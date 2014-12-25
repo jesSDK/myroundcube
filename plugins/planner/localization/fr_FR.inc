@@ -17,7 +17,6 @@ $labels['planner'] = 'Planning';
 $labels['pluginname'] = 'Planner';
 $labels['plugindescription'] = 'Plugin hybride entre un simple agenda et un liste de tâche';
 $labels['incompatiblebrowser'] = 'Pour accéder Planner, vous devez utilisez Internet Explorer 9 ou un autre naviguateur';
-$labels['plan'] = 'Créer';
 $labels['view'] = 'Voir';
 $labels['select_view'] = 'Choisir une vue';
 $labels['flags'] = 'Drapeaux';

@@ -32,8 +32,11 @@ fieldset
 a.ui-state-highlight{
   background: #111;
 }
+.ui-slider { 
+  border: 1px solid #AAA !important;
+}
 .buttonborder {
-  border: 1px solid #AAA;
+  border: 1px solid #AAA !important;
 }
 .nodate, .datetime {
   cursor: pointer;
@@ -69,9 +72,6 @@ a.ui-state-highlight{
   box-shadow: 0pt 1px 3px rgba(0, 0, 0, 0.1);
   z-index: 4000;
 }
-#taskbar a.button-planner span.button-inner{
-  background: #2c2c2c url(images/planner.png) 4px -45px no-repeat;
-}
 #taskbar a.button-planner{
   background-color: #2c2c2c;
 }
@@ -105,9 +105,7 @@ input#planner_raw {
   font-size: 17px;
 }
 #filter {
-  background-position: center;
-  background-image: url(images/filter.png);
-  background-repeat:no-repeat;
+  background-position: -16px -174px;
 }
 #filter_selector {
   display: none;
@@ -280,30 +278,17 @@ span.datetime {
   position: relative;
   left: -30px;
 }
-span.birthday span.date {
-  background: url('images/sprite.png') no-repeat 0px -145px;
-  font-size: 18px;
-  padding-left: 20px;
-  position: relative;
-  top: 0px;
-}
-span.bdate {
-  font-size: 18px;
-  position: relative;
-  top: 0px;
-}
-span.birthday span.datetime {
-  font-size: 18px;
-  position: relative;
-  left: 10px;
+a.birthday {
+  float: left;
+  background-position: -16px -152px;
 }
 a.star {
   float: left;
-  background: url('images/sprite.png') no-repeat 0 -25px;
+  background-position: -16px -32px;
 }
 a.pstar {
   float: left;
-  background: url('images/sprite.png') no-repeat 0 -25px;
+  background-position: -16px -32px;
 }
 a.pnostar,
 a.nostar {
@@ -311,36 +296,36 @@ a.nostar {
 }
 a.pnostar:hover,
 a.nostar:hover {
-  background: url('images/sprite.png') no-repeat;
+  background-position: -16px -8px;
 }
 a.delete {
   float: left;
-  background: url('images/sprite.png') no-repeat 0 -125px;
+  background-position: -16px -128px;
 }
 a.pdelete {
   float: left;
-  background: url('images/sprite.png') no-repeat 0 -100px;
+  background-position: -16px -104px;
 }
 a.delete:hover {
-  background-position: 0 -100px;
+  background-position: -16px -104px;
 }
 a.remove {
   float: left;
-  background: url('images/sprite.png') no-repeat 0 -125px;
+  background-position: -16px -128px;
 }
 a.remove:hover {
-  background-position: 0 -100px;
+  background-position: -16px -102px;
 }
 a.done { 
   float: left;
-  background: url('images/sprite.png') no-repeat 0 -75px;
+  background-position: -16px -79px;
 }
 a.pdone { 
   float: left;
-  background: url('images/sprite.png') no-repeat 0 -50px;
+  background-position: -16px -55px;
 }
 a.done:hover {
-  background-position: 0 -50px;
+  background-position: -16px -55px;
 }
 span.count {
    position: relative;

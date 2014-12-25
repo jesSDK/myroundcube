@@ -4,8 +4,10 @@
  * iCalendar driver for the Calendar plugin
  *
  * @author Daniel Morlock <daniel.morlock@awesome-it.de>
+ * @author Roland 'rosali' Liebl <dev-team@myroundcube.com>
  *
  * Copyright (C) 2013, Awesome IT GbR <info@awesome-it.de>
+ * Copyright (C) 2014, MyRoundcube.com <dev-team@myroundcube.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,14 +24,7 @@
  */
 
 require_once(dirname(__FILE__) . '/../database/database_driver.php');
-require_once(dirname(__FILE__) . '/ical_sync.php');
-
-/**
- * TODO
- * - Database constraint: obj_id, obj_type must be unique.
- * - Postgresql, Sqlite scripts.
- *
- */
+require_once (dirname(__FILE__).'/../../../libgpl/ical/ical_sync.php');
 
 class ical_driver extends database_driver
 {
@@ -58,8 +53,6 @@ class ical_driver extends database_driver
 
     private $sync_clients = array();
 
-    // Min. time period to wait until sync check.
-    private $sync_period = 86400; // seconds // ToDo: Make configurable on a per user level
 
     /**
      * Default constructor
@@ -116,8 +109,14 @@ class ical_driver extends database_driver
         if ($obj_type == 'ical')
         {
             $db_table = $this->db_calendars_ical_props;
-        } else {
+            $fields = " (obj_id, obj_type, url, user, pass, sync) ";
+            $values = "VALUES (?, ?, ?, ?, ?, ?)";
+        }
+        else
+        {
             $db_table = $this->db_events_ical_props;
+            $fields = " (obj_id, obj_type, url, user, pass) ";
+            $values = "VALUES (?, ?, ?, ?, ?)";
         }
         
         $this->_remove_ical_props($obj_id, $obj_type);
@@ -130,14 +129,16 @@ class ical_driver extends database_driver
         }
 
         $query = $this->rc->db->query(
-            "INSERT INTO " . $db_table . " (obj_id, obj_type, url, user, pass) " .
-            "VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO " . $db_table . $fields .
+            $values,
             $obj_id,
             $obj_type,
-            $props["url"],
-            isset($props["user"]) ? $props["user"] : null,
-            $password);
-
+            $props['url'],
+            isset($props['user']) ? $props['user'] : null,
+            $password,
+            $props['sync'] ? $props['sync'] : 60
+        );
+            
         return $this->rc->db->affected_rows($query);
     }
 
@@ -210,8 +211,8 @@ class ical_driver extends database_driver
     private function _is_synced($cal_id)
     {
         $now = date(self::DB_DATE_FORMAT);
-        $last = date(self::DB_DATE_FORMAT, time() - $this->sync_period);
-        
+        $last = date(self::DB_DATE_FORMAT, time() - $this->sync_clients[$cal_id]->sync * 60);
+
         // Atomic sql: Check for exceeded sync period and update last_change.
         $query = $this->rc->db->query(
             "UPDATE " . $this->db_calendars_ical_props . " " .
@@ -455,7 +456,18 @@ class ical_driver extends database_driver
             "value" => $input_ical_pass->show(null), // Don't send plain text password to GUI
             "id" => "ical_pass",
         );
-
+        
+        $select = new html_select(array('name' => 'sync', 'id' => $field_id));
+        $intervals = array(5 => 5, 10 => 10, 15 => 15, 30 => 30, 45 => 45, 60 => 60, 90 => 90, 120 => 120, 1800 => 1800, 3600 => 3600);
+        foreach($intervals as $interval => $text){
+          $select->add($text, $interval);
+        }
+        $formfields["sync_interval"] = array(
+            "label" => $this->cal->gettext("sync_interval"),
+            "value" => $select->show((int) ($props["sync"] ? $props['sync'] : 60)) . '&nbsp;' . $this->cal->gettext('minute_s'),
+            "id" => "sync_interval",
+        );
+        
         return parent::calendar_form($action, $calendar, $formfields);
     }
 
@@ -468,7 +480,10 @@ class ical_driver extends database_driver
     {
         $props['user'] = $prop['ical_user'];
         $props['pass'] = $prop['ical_pass'];
-        $props['url']  = $prop['ical_url'];
+        $props['url']  = self::_encode_url($prop['ical_url']);
+        $props['sync'] = $prop['sync'];
+        
+        $prop['readonly'] = $this->readonly ? 1 : 0;
         
         if(!$this->_check_connection($props)) {
           return false;
@@ -479,15 +494,8 @@ class ical_driver extends database_driver
             
         $result = false;
         if (($obj_id = parent::create_calendar($prop)) !== false) {
-            $props = array(
-                'url' => self::_encode_url($prop['ical_url']),
-                'user' => $prop['ical_user'],
-                'pass' => $prop['ical_pass']
-            );
-
             $result = $this->_set_ical_props($obj_id, self::OBJ_TYPE_ICAL, $props);
         }
-
         // Re-read calendars to internal buffer.
         $this->_read_calendars();
 
@@ -525,7 +533,8 @@ class ical_driver extends database_driver
             return $this->_set_ical_props($prop['id'], self::OBJ_TYPE_ICAL, array(
                 'url' => self::_encode_url($prop['ical_url']),
                 'user' => $prop['ical_user'],
-                'pass' => $prop['ical_pass']
+                'pass' => $prop['ical_pass'],
+                'sync' => $prop['sync'],
             ));
         }
 
@@ -626,7 +635,11 @@ class ical_driver extends database_driver
     {
         self::debug_log("Syncing calendar id \"$cal_id\".");
 
-        $cal_sync = $this->sync_clients[$cal_id];
+        if(! $cal_sync = $this->sync_clients[$cal_id]){
+            self::debug_log("No sync client for calendar id \"$cal_id\".");
+            return;
+        }
+
         $events = array();
 
         // Ignore recurrence events

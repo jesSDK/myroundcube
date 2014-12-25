@@ -33,7 +33,6 @@ function rcube_tasklist(settings)
     this.create_from_mail = create_from_mail;
     this.mail2taskdialog = mail2task_dialog;
 
-
     /**
      * Open a new task dialog prefilled with contents from the currently selected mail message
      */
