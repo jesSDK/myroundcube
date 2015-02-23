@@ -7480,7 +7480,7 @@ function rcube_webmail()
     request.abort();
 
     // don't display error message on page unload (#1488547)
-    if (this.unload)
+    if (this.unload || rcmail.env.framed)
       return;
 
     if (request.status && errmsg)
