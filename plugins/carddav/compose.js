@@ -1,1 +1,0 @@
-$(document).ready(function(){rcmail.addEventListener("responseafterlist-contacts",carddav_remove_noemail,!0);rcmail.addEventListener("responseaftersearch-contacts",carddav_remove_noemail,!0)});function carddav_remove_noemail(){$("#contacts-table span").each(function(){""==$(this).attr("title")&&$(this).parent().parent().remove()})};

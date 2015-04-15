@@ -1,6 +1,0 @@
-VERSION                COMMENT
--------------------------------------------------------------------------------
-1.0                    - Initial release:
-                         https://github.com/ivantcholakov/gibberish-aes-php
-                         https://github.com/mdp/gibberish-aes
-1.1                    - Roundcube 1.0 compatibility
