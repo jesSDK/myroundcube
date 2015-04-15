@@ -1,4 +1,4 @@
-# Database driver
+-- Database driver
 
 CREATE TABLE IF NOT EXISTS calendars (
   calendar_id integer NOT NULL PRIMARY KEY,
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS itipinvitations (
 );
 CREATE INDEX itipinvitations_user_event_idx ON itipinvitations (user_id, event_uid);
 
-# Kolab driver
+-- Kolab driver
 
 CREATE TABLE IF NOT EXISTS kolab_alarms (
   event_id varchar(255) NOT NULL PRIMARY KEY,
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS kolab_alarms (
   FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-# CalDAV driver
+-- CalDAV driver
 
 CREATE TABLE IF NOT EXISTS calendars_caldav_props (
   obj_id integer NOT NULL,
@@ -135,17 +135,10 @@ CREATE TABLE IF NOT EXISTS calendars_caldav_props (
   tag varchar(255) DEFAULT NULL,
   user varchar(255) DEFAULT NULL,
   pass varchar(1024) DEFAULT NULL,
-  last_change datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_change varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   CONSTRAINT calendars_caldav_props_ukey UNIQUE (obj_id, obj_type),
   FOREIGN KEY (obj_id) REFERENCES calendars (calendar_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE TRIGGER calendars_caldav_props_last_change
-	AFTER UPDATE ON calendars_caldav_props
-	FOR EACH ROW
-BEGIN
-	UPDATE calendars_caldav_props SET last_change = CURRENT_TIMESTAMP
-		WHERE obj_id = old.obj_id AND obj_type = old.obj_type;
-END;
 
 CREATE TABLE IF NOT EXISTS vevent_caldav_props (
   obj_id integer NOT NULL,
@@ -154,17 +147,10 @@ CREATE TABLE IF NOT EXISTS vevent_caldav_props (
   tag varchar(255) DEFAULT NULL,
   user varchar(255) DEFAULT NULL,
   pass varchar(1024) DEFAULT NULL,
-  last_change datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_change varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   CONSTRAINT vevent_caldav_props_ukey UNIQUE (obj_id, obj_type),
   FOREIGN KEY (obj_id) REFERENCES vevent (event_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE TRIGGER vevent_caldav_props_last_change
-	AFTER UPDATE ON vevent_caldav_props
-	FOR EACH ROW
-BEGIN
-	UPDATE vevent_caldav_props SET last_change = CURRENT_TIMESTAMP
-		WHERE obj_id = old.obj_id AND obj_type = old.obj_type;
-END;
 
 CREATE TABLE IF NOT EXISTS vtodo_caldav_props (
   obj_id integer NOT NULL,
@@ -173,19 +159,12 @@ CREATE TABLE IF NOT EXISTS vtodo_caldav_props (
   tag varchar(255) DEFAULT NULL,
   user varchar(255) DEFAULT NULL,
   pass varchar(1024) DEFAULT NULL,
-  last_change datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_change varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   CONSTRAINT vtodo_caldav_props_ukey UNIQUE (obj_id, obj_type),
   FOREIGN KEY (obj_id) REFERENCES vtodo (task_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE TRIGGER vtodo_caldav_props_last_change
-	AFTER UPDATE ON vtodo_caldav_props
-	FOR EACH ROW
-BEGIN
-	UPDATE vtodo_caldav_props SET last_change = CURRENT_TIMESTAMP
-		WHERE obj_id = old.obj_id AND obj_type = old.obj_type;
-END;
 
-# iCal driver
+-- iCal driver
 
 CREATE TABLE IF NOT EXISTS calendars_ical_props (
   obj_id integer NOT NULL,
@@ -193,17 +172,10 @@ CREATE TABLE IF NOT EXISTS calendars_ical_props (
   url varchar(255) NOT NULL,
   user varchar(255) DEFAULT NULL,
   pass varchar(1024) DEFAULT NULL,
-  last_change datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_change varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   CONSTRAINT calendars_ical_props_ukey UNIQUE (obj_id, obj_type),
   FOREIGN KEY (obj_id) REFERENCES calendars (calendar_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE TRIGGER calendars_ical_props_last_change
-	AFTER UPDATE ON calendars_ical_props
-	FOR EACH ROW
-BEGIN
-	UPDATE calendars_ical_props SET last_change = CURRENT_TIMESTAMP
-		WHERE obj_id = old.obj_id AND obj_type = old.obj_type;
-END;
 
 CREATE TABLE IF NOT EXISTS vevent_ical_props (
   obj_id integer NOT NULL,
@@ -211,37 +183,25 @@ CREATE TABLE IF NOT EXISTS vevent_ical_props (
   url varchar(255) NOT NULL,
   user varchar(255) DEFAULT NULL,
   pass varchar(1024) DEFAULT NULL,
-  last_change datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_change varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   CONSTRAINT vevent_ical_props_ukey UNIQUE (obj_id, obj_type),
   FOREIGN KEY (obj_id) REFERENCES vevent (event_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE TRIGGER vevent_ical_props_last_change
-	AFTER UPDATE ON vevent_ical_props
-	FOR EACH ROW
-BEGIN
-	UPDATE vevent_ical_props SET last_change = CURRENT_TIMESTAMP
-		WHERE obj_id = old.obj_id AND obj_type = old.obj_type;
-END;
 
-# Google XML driver
+-- Google XML driver
 
 CREATE TABLE IF NOT EXISTS calendars_google_xml_props (
   obj_id integer NOT NULL,
   url varchar(255) NOT NULL,
-  last_change datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_change varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   CONSTRAINT calendars_google_xml_props_ukey UNIQUE (obj_id),
   FOREIGN KEY (obj_id) REFERENCES calendars (calendar_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE TRIGGER calendars_google_xml_props_last_change
-	AFTER UPDATE ON calendars_google_xml_props
-	FOR EACH ROW
-BEGIN
-	UPDATE calendars_google_xml_props SET last_change = CURRENT_TIMESTAMP
-		WHERE obj_id = old.obj_id;
-END;
 
 DELETE FROM system WHERE name = 'myrc_calendar';
 
 DELETE FROM plugin_manager WHERE conf = 'defaults_overwrite';
+
+DELETE FROM db_config WHERE env = 'calendar';
 
 INSERT INTO system (name, value) VALUES ('myrc_calendar', 'initial|20141113|20141122');

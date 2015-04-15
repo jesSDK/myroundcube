@@ -4,10 +4,10 @@
  | ./plugins/planner/localization/cs_CZ.inc
  |
  | Language file of MyRoundcube Plugins Bundle
- | Copyright (C) 2010-2014, Roland 'rosali' Liebl
+ | Copyright (C) 2010-2015, Roland 'rosali' Liebl
  |
  +-----------------------------------------------------------------------+
- | Author: tachec - 04/04/2014 14:14:08
+ | Author: tachec - 01/22/2015 08:09:44
  +-----------------------------------------------------------------------+
 */
 
@@ -16,6 +16,7 @@ $labels['planner'] = 'Plánovač';
 $labels['pluginname'] = 'Plánovač';
 $labels['plugindescription'] = 'Jde o hybrid mezi jednoduchým kalendářem a seznamem úkolů';
 $labels['incompatiblebrowser'] = 'Pro přístup k Plánovači použijte Internet Explorer 9 nebo alternativní prohlížeč.';
+$labels['plan'] = 'Povolit';
 $labels['view'] = 'Zobrazit';
 $labels['select_view'] = 'Vybrat pohled';
 $labels['flags'] = 'Příznaky';

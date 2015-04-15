@@ -1,18 +1,23 @@
 <?php
-/**
- * persistent_login (based on code by Manuel Freiholz)
- *
- * @version 1.2.6 - 16.02.2014
- * @author Roland 'rosali' Liebl, Matthias Krauser
- * @website http://myroundcube.com 
- */
- 
+# 
+# This file is part of MyRoundcube "persistent_login" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+#
+# Forked from https://github.com/mfreiholz/Roundcube-Persistent-Login-Plugin/
 /**
  * Plugin which provides a persistent login functionality.
  * Also known as "remembery me" or "stay logged in" function.
  *
+ * @version @package_version@
  * @author insaneFactory, Manuel Freiholz
- * @website http://manuel.insanefactory.com/
+ * @website http://www.insanefactory.com/
 */
 class persistent_login extends rcube_plugin
 {
@@ -32,11 +37,11 @@ class persistent_login extends rcube_plugin
   static private $plugin = 'persistent_login';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/persistent_login-plugin" target="_blank">Documentation</a>';
-  static private $version = '1.2.6';
-  static private $date = '16-02-2014';
+  static private $version = '1.2.9';
+  static private $date = '12-03-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3',
     'required_plugins' => array(
       'db_version' => 'require_plugin',
@@ -47,10 +52,10 @@ class persistent_login extends rcube_plugin
   static private $config_dist = false;
   static private $tables = array('auth_tokens');
   static private $db_version = array('initial');
-	
-	function init()
-	{
-		$rcmail = rcmail::get_instance();
+
+  function init()
+  {
+    $rcmail = rcmail::get_instance();
     
     /* DB versioning */
     if(is_dir(INSTALL_PATH . 'plugins/db_version')){
@@ -62,6 +67,11 @@ class persistent_login extends rcube_plugin
     
     // we need task binding to 'mail' for db versioning only
     if($rcmail->task == 'mail'){
+      return;
+    }
+    
+    // Skip about request
+    if($rcmail->task == 'settings' && $rcmail->action == 'about'){
       return;
     }
     
@@ -164,7 +174,7 @@ class persistent_login extends rcube_plugin
 		if ($this->use_auth_tokens) {
 		
 			// remove all expired tokens from database.
-			$rcmail->get_dbh()->query("DELETE FROM " . get_table_name('auth_tokens') . " WHERE expires < NOW()");
+			$rcmail->get_dbh()->query("DELETE FROM " . get_table_name('auth_tokens') . " WHERE expires < ?", date('Y-m-d H:i:s'));
 		
 			// 0 - user-id
 			// 1 - auth-token
@@ -196,9 +206,6 @@ class persistent_login extends rcube_plugin
 				$args['pass'] = $rcmail->decrypt($data['user_pass']);
 				$args['cookiecheck'] = false;
 				$args['valid'] = true;
-				
-				// remove token from db.
-				$rcmail->get_dbh()->query("DELETE FROM " . get_table_name('auth_tokens') . " WHERE token=? AND user_id=?", $token_parts[1], $token_parts[0]);
 			}
 			else {
 				// seems like the token is invalid.

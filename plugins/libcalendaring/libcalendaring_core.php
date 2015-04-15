@@ -76,10 +76,10 @@ class libcalendaring_core extends rcube_plugin
 
         // set user's timezone
         try {
-            $this->timezone = new DateTimeZone($this->rc->config->get('timezone', 'GMT'));
+            $this->timezone = new DateTimeZone($this->rc->config->get('timezone', 'UTC'));
         }
         catch (Exception $e) {
-            $this->timezone = new DateTimeZone('GMT');
+            $this->timezone = new DateTimeZone('UTC');
         }
 
         $now = new DateTime('now', $this->timezone);
@@ -354,7 +354,7 @@ class libcalendaring_core extends rcube_plugin
         if (preg_match('/@(\d+)/', $trigger, $m)) {
             $text .= ' ' . $rcube->gettext(array(
                 'name' => 'libcalendaring.alarmat',
-                'vars' => array('datetime' => $rcube->format_date($m[1]))
+                'vars' => array('datetime' => $rcube->format_date($m[1] ? $m[1] : '1970-01-01 00:00:00')) // Mod by Rosali (don't pass 0 because format_date returns '' in this case)
             ));
         }
         else if ($val = self::parse_alaram_value($trigger)) {
@@ -387,7 +387,6 @@ class libcalendaring_core extends rcube_plugin
 
         if (!$rec['end'])
             $rec['end'] = $rec['start'];
-
 
         // TODO: handle multiple alarms (currently not supported)
         list($trigger, $action) = explode(':', $rec['alarms'], 2);
@@ -1047,12 +1046,22 @@ class libcalendaring_core extends rcube_plugin
             $k = strtoupper($k);
             switch ($k) {
             case 'UNTIL':
-                $val = $val->format('Ymd\THis');
+                $val->setTimezone(new DateTimezone('UTC')); // Mod by Rosali (Convert to UTC http://www.kanzaki.com/docs/ical/rrule.html)
+                $val = $val->format('Ymd\THis\Z');          //                           -"-
                 break;
             case 'RDATE':
             case 'EXDATE':
-                foreach ((array)$val as $i => $ex)
-                    $val[$i] = $ex->format('Ymd\THis');
+                foreach ((array)$val as $i => $ex) {
+                    // Begin mod by Rosali
+                    if (is_a($ex, 'DateTime')) {
+                        $ex->setTimezone(new DateTimezone('UTC')); // Mod by Rosali (Convert to UTC http://www.kanzaki.com/docs/ical/rrule.html)
+                        $val[$i] = $ex->format('Ymd\THis\Z');      //                           -"-
+                    }
+                    else {
+                        $val[$i] = $ex;
+                    }
+                    // End mod by Rosali
+                }
                 $val = join(',', (array)$val);
                 break;
             case 'EXCEPTIONS':
@@ -1060,7 +1069,6 @@ class libcalendaring_core extends rcube_plugin
             }
             $rrule .= $k . '=' . $val . ';';
         }
-
         return rtrim($rrule, ';');
     }
 

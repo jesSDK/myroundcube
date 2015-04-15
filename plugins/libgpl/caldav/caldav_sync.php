@@ -49,19 +49,18 @@ class caldav_sync
      *  ctag: Caldav ctag for calendar.
      * @param boolean verify SSL Cert // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
      */
-    public function __construct($cal_id, $props, $verifyPeer, $env)
+    public function __construct($cal_id, $props, $verifySSL, $env)
     {
         $this->env = $env;
         $this->cal_id = $cal_id;
         
         $this->url = $props["url"];
-        
         $this->ctag = isset($props["tag"]) ? $props["tag"] : null;
         $this->user = isset($props["user"]) ? $props["user"] : null;
         $this->pass = isset($props["pass"]) ? $props["pass"] : null;
         $this->sync = isset($props["sync"]) ? $props["sync"] : 0;
         
-        $this->caldav = new caldav_client($this->url, $this->user, $this->pass, $verifyPeer); // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
+        $this->caldav = new caldav_client($this->url, $this->user, $this->pass, $verifySSL); // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
     }
 
     /**
@@ -113,7 +112,6 @@ class caldav_sync
         {
             $this->ctag = $ctag;
             $etags = $this->caldav->get_etags();
-
             list($updates, $synced_event_ids) = $this->_get_event_updates($events, $caldav_props, $etags);
             return array($this->_get_event_data($updates), $synced_event_ids);
         }
@@ -215,8 +213,21 @@ class caldav_sync
                 $update["remote_event"] = $events[$url];
                 $update["remote_event"]["calendar"] = $this->cal_id;
             }
+            else{ // SoGo fix
+                $url = str_replace(urlencode('@'), '@', $url);
+                if($events[$url]) {
+                    $update["remote_event"] = $events[$url];
+                    $update["remote_event"]["calendar"] = $this->cal_id;
+                }
+                else{
+                    $url = str_replace('@', urlencode('@'), $url);
+                    if($events[$url]) {
+                        $update["remote_event"] = $events[$url];
+                        $update["remote_event"]["calendar"] = $this->cal_id;
+                    }
+                }
+            }
         }
-
         return $updates;
     }
 

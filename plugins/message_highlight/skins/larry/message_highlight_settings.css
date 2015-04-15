@@ -1,9 +1,9 @@
 #sections-table #rcmrowmh_preferences td.section {
-  background: url(highlight.png) 10px 4px no-repeat;
+  background: url(highlight.png) 8px 4px no-repeat;
 }
 
 #sections-table #rcmrowmh_preferences.selected td.section{
-  background: url(highlight.png) 10px -21px no-repeat;
+  background: url(highlight.png) 8px -21px no-repeat;
 }
 
 table.propform td.title {

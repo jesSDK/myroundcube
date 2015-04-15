@@ -1,13 +1,15 @@
 <?php
-
-/**
- * imap_hooks
- *
- * @version 1.0 - 01.06.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- */
-
+# 
+# This file is part of MyRoundcube "imap_hooks" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 class imap_hooks extends rcube_plugin
 {
   public $task = 'mail';
@@ -15,13 +17,12 @@ class imap_hooks extends rcube_plugin
   /* unified plugin properties */
   static private $plugin = 'imap_hooks';
   static private $author = 'myroundcube@mail4us.net';
-  static private $authors_comments = '<a onclick="alert(\'This plugin requires Roundcube Core Patches.\')" href="#pmu_Roundcube_Core_Patches"><font color="red">IMPORTANT</font></a><br /><a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?imap_hooks" target="_blank">Documentation</a>';
-  static private $version = '1.0';
-  static private $date = '01-06-2014';
+  static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?imap_hooks" target="_blank">Documentation</a>';
+  static private $version = '2.0';
+  static private $date = '23-02-2015';
   static private $licence = 'All Rights reserved';
   static private $requirements = array(
-    'extra' => '<span style="color: #ff0000;">IMPORTANT</span> &#8211;&nbsp;<div style="display: inline">Plugin requires Roundcube core files patches</span></div>',
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3'
   );
   static private $prefs = array(
@@ -29,6 +30,10 @@ class imap_hooks extends rcube_plugin
   static private $config_dist = null;
 
   function init(){
+    /* Pre-condidition check */
+    if(!class_exists('rcube')){
+      return;
+    }
     $rcmail = rcube::get_instance();
     if($rcmail->task == 'mail'){
       require_once INSTALL_PATH . 'plugins/imap_hooks/rcube_imap_hooks_generic.php';

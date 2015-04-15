@@ -1,0 +1,13 @@
+VERSION                COMMENT
+---------------------------------------------------------------------------------
+1.0                    - Initial release
+1.0.1                  - Merge calendars and addressbooks sharing tokens
+1.0.2 - 1.0.3          - Force sabredav_migrate
+1.0.4                  - Catch inbox/outbox requests on shared calendars
+1.0.5                  - Implement iMip invitations
+1.0.6 - 1.0.7          - Implement ".well-known" requests
+1.0.8                  - Few CSS adjustments
+1.0.9                  - dav-rw and dav-r authentication was broken
+1.1                    - Roundcube 1.1 compatibility
+1.1.1                  - Fix sharing for iPad/iPhone
+1.1.2                  - Fix PostgreSQL migration issue

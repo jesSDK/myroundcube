@@ -1,15 +1,17 @@
 <?php
-
-/**
- * companyaddressbook_plus
- * - IMAP backend drivers for companyaddressbook plugin
- *
- * @version 1.2 - 02.01.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- */
-
-class companyaddressbook_plus extends rcube_plugin{
+# 
+# This file is part of MyRoundcube "companyaddressbook_plus" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
+class companyaddressbook_plus extends rcube_plugin
+{
   public $task = 'settings';
   public $noframe = true;
   public $noajax = true;
@@ -18,11 +20,11 @@ class companyaddressbook_plus extends rcube_plugin{
   static private $plugin = 'companyaddressbook_plus';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?companyaddressbook_plus" target="_blank">Documentation</a><br />This plugin requires <a href="#companyaddressbook" class="anchorLink">companyaddressbook</a> plugin.<br/>Currently supported drivers:<ol><li>hmail_com (hMailserver COM driver - Roundcube and hMailserver are running on the same Windows server and PHP COM is available)</li><li>hmail_db (hMailserver database driver - PHP COM is not available on Roundcube\'s server and Roundcube\'s server is able to connect to hMailserver database)</li></ol>';
-  static private $version = '1.2';
-  static private $date = '02-01-2014';
+  static private $version = '1.3';
+  static private $date = '24-02-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3'
   );
   static private $prefs = array(

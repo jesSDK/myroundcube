@@ -14,7 +14,7 @@
 $labels = array();
 $labels['pluginname'] = 'Jappix Chat';
 $labels['plugindescription'] = 'Intégrer Jappix Chat';
-$labels['jappixUsername'] = 'Utilisateur (laisser vide pour désactiver)';
+$labels['jappixUsername'] = 'Utilisateur';
 $labels['usernameinvalid'] = 'Le nom d\'utilisateur contient des caractères invalides';
 $labels['domaininvalid'] = 'Le nom de domaine contient des caractères invalides';
 $labels['useminijappix'] = 'Utiliser Mini Jappix';

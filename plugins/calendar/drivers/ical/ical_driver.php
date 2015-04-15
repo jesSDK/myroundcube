@@ -36,9 +36,10 @@ class ical_driver extends database_driver
     private $db_calendars_ical_props = 'calendars_ical_props';
     private $db_events = 'vevent';
     private $db_events_ical_props = 'vevent_ical_props';
+    private $db_users = 'users';
 
     private $cal;
-    private $rc;
+    protected $rc;
 
     static private $debug = null;
 
@@ -61,18 +62,11 @@ class ical_driver extends database_driver
     {
         $this->cal = $cal;
         $this->rc = $cal->rc;
-        $db = $this->rc->get_dbh();
         
         if(class_exists('calendar_plus'))
         {
             $this->freebusy = true;
         }
-
-        $this->db_calendars = $this->rc->config->get('db_table_calendars', $db->table_name($this->db_calendars));
-        $this->db_calendars_ical_props = $this->rc->config->get('db_table_calendars_ical_props', $db->table_name($this->db_calendars_ical_props));
-        $this->db_events = $this->rc->config->get('db_table_events', $db->table_name($this->db_events));
-        $this->db_events_ical_props = $this->rc->config->get('db_table_events_ical_props', $db->table_name($this->db_events_ical_props));
-        $this->db_attachments = $this->rc->config->get('db_table_attachments', $db->table_name($this->db_attachments));
 
         parent::__construct($cal);
 
@@ -106,17 +100,18 @@ class ical_driver extends database_driver
      */
     private function _set_ical_props($obj_id, $obj_type, array $props)
     {
+        $now = date(self::DB_DATE_FORMAT);
         if ($obj_type == 'ical')
         {
-            $db_table = $this->db_calendars_ical_props;
-            $fields = " (obj_id, obj_type, url, user, pass, sync) ";
-            $values = "VALUES (?, ?, ?, ?, ?, ?)";
+            $db_table = $this->_get_table($this->db_calendars_ical_props);
+            $fields = " (obj_id, obj_type, url, " . $this->rc->db->quote_identifier('user') . ", pass, sync, last_change) ";
+            $values = "VALUES (?, ?, ?, ?, ?, ?, ?)";
         }
         else
         {
-            $db_table = $this->db_events_ical_props;
-            $fields = " (obj_id, obj_type, url, user, pass) ";
-            $values = "VALUES (?, ?, ?, ?, ?)";
+            $db_table = $this->_get_table($this->db_events_ical_props);
+            $fields = " (obj_id, obj_type, url, " . $this->rc->db->quote_identifier('user') . ", pass, last_change) ";
+            $values = "VALUES (?, ?, ?, ?, ?, ?)";
         }
         
         $this->_remove_ical_props($obj_id, $obj_type);
@@ -136,7 +131,8 @@ class ical_driver extends database_driver
             $props['url'],
             isset($props['user']) ? $props['user'] : null,
             $password,
-            $props['sync'] ? $props['sync'] : 60
+            $props['sync'] ? $props['sync'] : 60,
+            $now
         );
             
         return $this->rc->db->affected_rows($query);
@@ -156,9 +152,9 @@ class ical_driver extends database_driver
     {
         if ($obj_type == 'ical')
         {
-            $db_table = $this->db_calendars_ical_props;
+            $db_table = $this->_get_table($this->db_calendars_ical_props);
         } else {
-            $db_table = $this->db_events_ical_props;
+            $db_table = $this->_get_table($this->db_events_ical_props);
         }
         
         $result = $this->rc->db->query(
@@ -190,9 +186,9 @@ class ical_driver extends database_driver
     {
         if ($obj_type == 'ical')
         {
-            $db_table = $this->db_calendars_ical_props;
+            $db_table = $this->_get_table($this->db_calendars_ical_props);
         } else {
-            $db_table = $this->db_events_ical_props;
+            $db_table = $this->_get_table($this->db_events_ical_props);
         }
         
         $query = $this->rc->db->query(
@@ -215,7 +211,7 @@ class ical_driver extends database_driver
 
         // Atomic sql: Check for exceeded sync period and update last_change.
         $query = $this->rc->db->query(
-            "UPDATE " . $this->db_calendars_ical_props . " " .
+            "UPDATE " . $this->_get_table($this->db_calendars_ical_props) . " " .
             "SET last_change = ? " .
             "WHERE obj_id = ? AND obj_type = ? " .
             "AND last_change <= ?",
@@ -240,25 +236,25 @@ class ical_driver extends database_driver
      * @param array Indexed array user, pass, url
      * @return boolean true or false
      */
-    private function _check_connection($prop)
+    protected function _check_connection($prop)
     {
-        $prop['url'] = self::_encode_url($prop['url']);
-        
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $prop['url']);
         curl_setopt($ch, CURLOPT_USERPWD, $prop['user'] . ':' . $prop['pass']);
-        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+        //curl_setopt($ch, CURLOPT_NOBODY, true);
         curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
         curl_exec($ch);
         if(!curl_errno($ch))
         {
             $info = curl_getinfo($ch);
             $code = $info['http_code'];
-            if(substr($code, 0, 1) == 2)
+            if(substr($code, 0, 1) == 2 && isset($info['url']))
             {
-                $success = true;
+                $success = $info['url'];
             }
             else
             {
@@ -328,7 +324,7 @@ class ical_driver extends database_driver
      * @param string Unencoded URL to be encoded.
      * @return Encoded URL.
      */
-    private static function _encode_url($url)
+    protected static function _encode_url($url)
     {
         // Don't encode if "%" is already used.
         if (strstr($url, "%") === false) {
@@ -363,6 +359,7 @@ class ical_driver extends database_driver
                     $ical_info = $this->_get_ical_props($cal['id'], self::OBJ_TYPE_ICAL);
                     if (stripos($ical_info['url'], self::_encode_url($props['ical_url'])) === 0) {
                         $found = true;
+                        break;
                     }
                 }
                 if (!$found) {
@@ -387,16 +384,50 @@ class ical_driver extends database_driver
     {
         $cal_id = $calendar["id"];
         $props = $this->_get_ical_props($cal_id, self::OBJ_TYPE_ICAL);
-
+        $protected = array();
+        $preinstalled_calendars = $this->rc->config->get('calendar_preinstalled_calendars', array());
+        foreach($preinstalled_calendars as $idx => $properties)
+        {
+            if($properties['driver'] == 'ical')
+            {
+                $url = str_replace('@', urlencode('@'), str_replace('%u', $this->rc->get_user_name(), $properties['ical_url']));
+                if(stripos($props['url'], $url) === 0)
+                {
+                    $protected = $properties['protected'];
+                    break;
+                }
+            }
+        }
+        
+        if($protected['name'])
+        {
+            $formfields['name'] = str_replace('<input ', '<input readonly="readonly" ', $formfields['name']);
+        }
+        
+        if($protected['color'])
+        {
+            unset($formfields['color']);
+        }
+        
+        if($protected['showalarms'])
+        {
+            $formfields['showalarms'] = str_replace('<input ', '<input disabled="disabled" ', $formfields['showalarms']);
+        }
+        
         if($this->freebusy)
         {
-            $enabled = $this->calendars[$cal_id]['freebusy'];
-            $input_freebusy = new html_checkbox(array(
+            $enabled = ($action == 'form-new') ? true : $this->calendars[$cal_id]['freebusy'];
+            $readonly = array();
+            if($protected['freebusy'])
+            {
+                $readonly = array('disabled' => 'disabled');
+            }
+            $input_freebusy = new html_checkbox(array_merge(array(
                 "name" => "freebusy",
                 "title" => $this->cal->gettext("allowfreebusy"),
                 "id" => "chbox_freebusy",
                 "value" => 1,
-            ));
+            ), $readonly));
         
             $formfields['freebusy'] = array(
               "label" => $this->cal->gettext('freebusy'),
@@ -405,25 +436,39 @@ class ical_driver extends database_driver
             );
         }
         
-        $enabled = $this->calendars[$cal_id]['tasks'];
-        $input_tasks = new html_checkbox(array(
-            "name" => "tasks",
-            "id" => "chbox_tasks",
-            "value" => 1,
-        ));
+        if(!$this->rc->config->get('calendar_disable_tasks', false))
+        {
+            $enabled = ($action == 'form-new') ? true : $this->calendars[$cal_id]['tasks'];
+            $readonly = array();
+            if($protected['tasks'])
+            {
+                $readonly = array('disabled' => 'disabled');
+            }
+            $input_tasks = new html_checkbox(array_merge(array(
+                "name" => "tasks",
+                "id" => "chbox_tasks",
+                "value" => 1,
+            ), $readonly));
         
-        $formfields["tasks"] = array(
-            "label" => $this->cal->gettext("tasks"),
-            "value" => $input_tasks->show($enabled?1:0),
-            "id" => "tasks",
-        );
-        
-        $input_ical_url = new html_inputfield(array(
+            $formfields["tasks"] = array(
+                "label" => $this->cal->gettext("tasks"),
+                "value" => $input_tasks->show($enabled?1:0),
+                "id" => "tasks",
+            );
+        }
+
+        if($protected['ical_url']){
+          $readonly = array('readonly' => 'readonly');
+        }
+        else{
+          $readonly = array();
+        }
+        $input_ical_url = new html_inputfield(array_merge(array(
             "name" => "ical_url",
-            "id" => "ical_url",
+            "id" => "ical_url_input",
             "size" => 45,
             "placeholder" => "http://dav.mydomain.tld/calendars/john.doh@mydomain.tld",
-        ));
+        ), $readonly));
 
         $formfields["ical_url"] = array(
             "label" => $this->cal->gettext("url"),
@@ -431,12 +476,17 @@ class ical_driver extends database_driver
             "id" => "ical_url",
         );
 
-        $input_ical_user = new html_inputfield( array(
+        $readonly = array();
+        if($protected['ical_user'])
+        {
+            $readonly = array('readonly' => 'readonly');
+        }
+        $input_ical_user = new html_inputfield(array_merge(array(
             "name" => "ical_user",
-            "id" => "ical_user",
+            "id" => "ical_user_input",
             "size" => 30,
             "placeholder" => "john.doh@mydomain.tld",
-        ));
+        ), $readonly));
 
         $formfields["ical_user"] = array(
             "label" => $this->cal->gettext("username"),
@@ -444,12 +494,17 @@ class ical_driver extends database_driver
             "id" => "ical_user",
         );
 
-        $input_ical_pass = new html_passwordfield( array(
+        $readonly = array();
+        if($protected['ical_pass'])
+        {
+            $readonly = array('readonly' => 'readonly');
+        }
+        $input_ical_pass = new html_passwordfield(array_merge(array(
             "name" => "ical_pass",
-            "id" => "ical_pass",
+            "id" => "ical_pass_input",
             "size" => 30,
             "placeholder" => "******",
-        ));
+        ), $readonly));
 
         $formfields["ical_pass"] = array(
             "label" => $this->cal->gettext("password"),
@@ -457,7 +512,13 @@ class ical_driver extends database_driver
             "id" => "ical_pass",
         );
         
-        $select = new html_select(array('name' => 'sync', 'id' => $field_id));
+        $readonly = array();
+        if($protected['sync'])
+        {
+            $readonly = array('disabled' => 'disabled');
+        }
+        $field_id = 'sync_interval_select';
+        $select = new html_select(array_merge(array('name' => 'sync', 'id' => $field_id), $readonly));
         $intervals = array(5 => 5, 10 => 10, 15 => 15, 30 => 30, 45 => 45, 60 => 60, 90 => 90, 120 => 120, 1800 => 1800, 3600 => 3600);
         foreach($intervals as $interval => $text){
           $select->add($text, $interval);
@@ -480,14 +541,17 @@ class ical_driver extends database_driver
     {
         $props['user'] = $prop['ical_user'];
         $props['pass'] = $prop['ical_pass'];
-        $props['url']  = self::_encode_url($prop['ical_url']);
+        $props['url']  = str_ireplace('webcal://', 'http://', self::_encode_url($prop['ical_url']));
         $props['sync'] = $prop['sync'];
         
-        $prop['readonly'] = $this->readonly ? 1 : 0;
-        
-        if(!$this->_check_connection($props)) {
-          return false;
+        // Check connection and handle redirects
+        $props['url'] = $prop['url'] = $this->_check_connection($props);
+
+        if(!$props['url']) {
+            return false;
         }
+        
+        $prop['readonly'] = $this->readonly ? 1 : 0;
         
         if(!isset($props['color']))
             $props['color'] = 'cc0000';
@@ -513,11 +577,36 @@ class ical_driver extends database_driver
      */
     public function edit_calendar($prop)
     {
+        $protected = array();
+        $preinstalled_calendars = $this->rc->config->get('calendar_preinstalled_calendars', array());
+        foreach($preinstalled_calendars as $idx => $properties)
+        {
+            if($properties['driver'] == 'ical')
+            {
+                $url = str_replace('@', urlencode('@'), str_replace('%u', $this->rc->get_user_name(), $properties['ical_url']));
+                if(stripos($prop['ical_url'], $url) === 0)
+                {
+                    $protected = $properties['protected'];
+                    $protected['unsubscribe'] = isset($properties['unsubscribe']) ? $properties['unsubscribe'] : 1;
+                    foreach($protected as $key => $val)
+                    {
+                        if(($val && $key != 'ical_user' && $key != 'ical_pass' && $key != 'ical_url' && $key != 'name') || $key == 'unsubscribe')
+                        {
+                            $prop[$key] = $properties[$key];
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        
         $prev_prop = $this->_get_ical_props($prop['id'], self::OBJ_TYPE_ICAL);
         
         $props['user'] = $prop['ical_user'];
         $props['pass'] = $prop['ical_pass'] ? $prop['ical_pass'] : $prev_prop['pass'];
-        $props['url']  = $prop['ical_url'];
+        $props['url']  = str_ireplace('webcal://', 'http://', self::_encode_url($prop['ical_url']));
+        
+        $props['url'] = $prop['ical_url'] = $this->_check_connection($props);
         
         if(!$this->_check_connection($props)) {
           return false;
@@ -549,6 +638,24 @@ class ical_driver extends database_driver
     public function remove_calendar($prop)
     {
         $removed = $this->_get_ical_props($prop['id'], self::OBJ_TYPE_ICAL);
+        
+        $protected = array();
+        $preinstalled_calendars = $this->rc->config->get('calendar_preinstalled_calendars', array());
+        foreach($preinstalled_calendars as $idx => $properties)
+        {
+            if($properties['driver'] == 'ical')
+            {
+                $url = str_replace('@', urlencode('@'), str_replace('%u', $this->rc->get_user_name(), $properties['ical_url']));
+                if(stripos($removed['url'], $url) === 0)
+                {
+                    if(isset($properties['deleteable']) && !$properties['deleteable'])
+                    {
+                        $this->last_error = $this->rc->gettext('calendar.protected');
+                        return false;
+                    }
+                }
+            }
+        }
         
         if(is_array($removed))
         {
@@ -623,7 +730,8 @@ class ical_driver extends database_driver
      */
     private function _load_all_events($cal_id)
     {
-        return parent::load_events(0, PHP_INT_MAX, null, array($cal_id), 0);
+        $end = defined(PHP_INT_MAX) ? PHP_INT_MAX : strtotime('2029-12-31 00:00:00');
+        return parent::load_events(0, $end, null, array($cal_id), 0);
     }
 
     /**
@@ -679,14 +787,26 @@ class ical_driver extends database_driver
     public function load_events($start, $end, $query = null, $cal_ids = null, $virtual = 1, $modifiedsince = null, $force = false)
     {
         foreach ($this->sync_clients as $cal_id => $cal_sync) {
-            if ($force || !$this->_is_synced($cal_id))
-                $this->_sync_calendar($cal_id);
+            if($this->calendars[$cal_id]['active'])
+            {
+                if ($force || !$this->_is_synced($cal_id))
+                {
+                    $this->_sync_calendar($cal_id);
+                }
+            }
         }
         if ($force) {
             return true;
         }
         else {
-            return parent::load_events($start, $end, $query, $cal_ids, $virtual, $modifiedsince);
+            $events = parent::load_events($start, $end, $query, $cal_ids, $virtual, $modifiedsince);
+            $return = array();
+            foreach($events as $idx => $event)
+            {
+                $return[$idx] = $event;
+                $return[$idx]['readonly'] = $this->readonly;
+            }
+            return $return;
         }
     }
 
@@ -734,15 +854,15 @@ class ical_driver extends database_driver
     $calendars = array();
     
     if ($email != $this->rc->user->data['username']) {
-      $sql = "SELECT user_id FROM " . $this->db_users . " WHERE username = ? AND mail_host = ?";
+      $sql = "SELECT user_id FROM " . $this->_get_table($this->db_users) . " WHERE username = ? AND mail_host = ?";
       $result = $this->rc->db->limitquery($sql, 0, 1, $email, $this->rc->config->get('default_host', 'localhost'));
       if ($result) {
         $user = $this->rc->db->fetch_assoc($result);
         $user_id = $user['user_id'];
-        $sql = "SELECT calendar_id FROM " . $this->db_calendars . " WHERE user_id = ? AND freebusy = ?";
+        $sql = "SELECT calendar_id FROM " . $this->_get_table($this->db_calendars) . " WHERE user_id = ? AND freebusy = ?";
         $result = $this->rc->db->query($sql, $user_id, 1);
         while ($result && $calendar = $this->rc->db->fetch_assoc($result)) {
-          if ($props = $this->_get_google_xml_props($calendar['calendar_id'])) {
+          if ($props = $this->_get_ical_props($calendar['calendar_id'], self::OBJ_TYPE_ICAL)) {
             $calendar['id'] = $calendar['calendar_id'];
             unset($calendar['calendar_id']);
             $calendars[] = $calendar;
@@ -767,7 +887,7 @@ class ical_driver extends database_driver
       $end = $e->format(self::DB_DATE_FORMAT);
 
       foreach ($calendars as $calendar) {
-        $sql = "SELECT start, end FROM " . $this->db_events . " WHERE start <= ? AND end >= ? AND calendar_id = ? AND sensitivity = ?";
+        $sql = "SELECT " . $this->rc->db->quote_identifier('start') . ", " . $this->rc->db->quote_identifier('end') . ", free_busy FROM " . $this->_get_table($this->db_events) . " WHERE " . $this->rc->db->quote_identifier('start') . " <= ? AND " . $this->rc->db->quote_identifier('end') . " >= ? AND calendar_id = ? AND sensitivity = ?";
         $result = $this->rc->db->query($sql, $start, $end, $calendar['calendar_id'], 0);
         while ($result && $slot = $this->rc->db->fetch_assoc($result)) {
           $busy_start = new DateTime($slot['start'], $this->server_timezone);
@@ -797,4 +917,17 @@ class ical_driver extends database_driver
       
     return $this->cache_slots;
   }
+  
+  /**
+   * Get database table name
+   *
+   * @param string  default database table name
+   *
+   * @return string  database table named as configured (custom name / prefix)
+   */
+  private function _get_table($table)
+  {
+    return $this->rc->config->get('db_table_' . $table, $this->rc->db->table_name($table));
+  }
 }
+?>

@@ -6,7 +6,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # 
-# Copyright (c) 2014 Roland 'Rosali' Liebl
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
 # dev-team [at] myroundcube [dot] com
 # http://myroundcube.com
 # 
@@ -18,11 +18,12 @@ class libcalendaring extends libcalendaring_core
   static private $plugin = 'libcalendaring';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = 'This plugin is a fork of <a href="https://git.kolab.org/roundcubemail-plugins-kolab/tree/plugins/libcalendaring" target="_new">Kolab libcalendaring (core)</a>.<br /><a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?libcalendaring" target="_blank">Documentation</a>';
-  static private $version = '1.0';
-  static private $date = '10-11-2014';
+  static private $version = '1.0.10';
+  static private $date = '11-04-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
+    'PHP' => '5.3',
   );
   
   static public function about($keys = false){
@@ -56,6 +57,16 @@ class libcalendaring extends libcalendaring_core
       'licence' => self::$licence,
       'requirements' => $requirements,
     );
+  }
+  
+  function init(){
+    parent::init();
+    $this->add_hook('render_page', array($this, 'render_page_add_label'));
+  }
+  
+  function render_page_add_label($p){
+    rcube::get_instance()->output->add_label('libcalendaring.showmore');
+    return $p;
   }
 }
 ?>

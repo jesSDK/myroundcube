@@ -14,7 +14,7 @@
 $labels = array();
 $labels['pluginname'] = 'Jappix Chat';
 $labels['plugindescription'] = 'Vložený Jappix Chat.';
-$labels['jappixUsername'] = 'Uživatel (ponechte prázdné pro zakázání)';
+$labels['jappixUsername'] = 'Uživatel';
 $labels['usernameinvalid'] = 'Uživatelské jméno obsahuje neplatné znaky';
 $labels['domaininvalid'] = 'Doména obsahuje neplatné znaky';
 $labels['useminijappix'] = 'Použít Mini Chat';

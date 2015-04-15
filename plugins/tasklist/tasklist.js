@@ -1328,12 +1328,11 @@ function rcube_tasklist_ui(settings)
         
         // Begin mod by Rosali (make it possible to remove subtask property)
         var parent_id = me.selected_task.parent_id;
-        if (parent_id) {
+        if (typeof parent_id == 'string') {
           $('input[name="children_detach"]').prop('checked', true).val(0);
           $('#taskedit-is_subtask').show();
         }
         else{
-          $('input[name="children_detach"]').prop('checked', false).val(1);
           $('#taskedit-is_subtask').hide();
         }
         $('input[name="children_detach"]').click(function() {
@@ -1434,7 +1433,7 @@ function rcube_tasklist_ui(settings)
         $('#taskedit-tab-attachments')[(list.attachments||rec.attachments?'show':'hide')]();
 
         // activate the first tab
-        $('#taskedit').tabs('select', 0);
+        $('#taskedit').tabs('option', 'active', 0);
 
         // define dialog buttons
         var buttons = {};

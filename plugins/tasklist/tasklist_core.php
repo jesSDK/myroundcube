@@ -214,17 +214,17 @@ class tasklist_core extends rcube_plugin
                   $this->fetch_tasks($lists);
                   break;
                 default:
+                  $lists = (array) $this->_active_lists($this->driver->get_lists());
+                  $lists = implode(',', array_keys($lists));
                   if ($rec['recurrence']) {
-                    $lists = (array) $this->_active_lists($this->driver->get_lists());
-                    $lists = implode(',', array_keys($lists));
                     $this->fetch_tasks($lists);
                   }
                   else {
-                    if ($rec['children_detach']) {
+                    if ($rec['children_detach'] == 1) {
                       $this->fetch_tasks($lists);
                     }
                     else {
-                      $refresh[] = $this->driver->get_task($rec);
+                       $refresh[] = $this->driver->get_task($rec);
                     }
                   }
               }
@@ -331,7 +331,7 @@ class tasklist_core extends rcube_plugin
 
         // unlock client
         $this->rc->output->command('plugin.unlock_saving');
-        
+
         if ($refresh) {
             if ($refresh['id']) {
                 $this->encode_task($refresh);

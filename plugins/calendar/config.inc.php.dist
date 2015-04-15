@@ -27,9 +27,38 @@
  +-------------------------------------------------------------------------+
 */
 
-// backend type (database, caldav, ical)
-$config['calendar_driver'] = array('database');
-$config['calendar_driver_default'] = 'database';
+// Disallow modifications of calendar set
+  /*
+  Applies to:
+    - Addition, modification or removal of calendars
+    - Subscription or unsubscription to calendars
+    Note: Preinstalled calendars configuration has precedence over this setting.
+    See Preinstaled calendars section for more details.
+  */
+$config['calendar_protect'] = false;
+
+// Hide ICS access URL
+$config['calendar_hide_ics_url'] = false;
+
+// Disable tasks
+  /*
+  In order to disable tasks in installations where tasks were
+  previously enabled run against your database:
+  
+  UPDATE calendars SET tasks=0;
+  
+  */
+$config['calendar_disable_tasks'] = false;
+
+// Additional drivers (default driver is always database)
+$config['calendar_driver'] = array ( // don't change order
+  'ical',
+  'caldav_local', // requires calendar_plus
+  'caldav',
+  'birthdays',    // requires calendar_plus
+  'google_xml',   // requires calendar_plus
+  'database',     // must be always present
+);
 
 // default calendar view (agendaDay, agendaWeek, month)
 $config['calendar_default_view'] = "agendaWeek";
@@ -101,6 +130,20 @@ $config['calendar_default_alarm_offset'] = '-15M';
 // 3: category for outer, calendar for inner color
 $config['calendar_event_coloring'] = 0;
 
+// default event background color
+$config['calendar_events_default_background_color'] = 'c0c0c0';
+
+// readonly event background color
+$config['calendar_readonly_events_default_background_color'] = 'ff0000';
+
+// event font color dynamic calculation
+// 0: black/white according to brightness
+// 1: complementary color to content color
+// 2: always white // only recommended if users are not allowed to create
+                   // categories by "dont_override" directive
+// 3: always black //              -"-
+$config['calendar_event_font_color'] = 0;
+
 // event categories
 $config['calendar_categories'] = array(
   'Personal' => 'c0c0c0',
@@ -124,63 +167,178 @@ $config['calendar_itip_smtp_user'] = 'smtpauth';
 // SMTP password used to send (anonymous) itip messages
 $config['calendar_itip_smtp_pass'] = '123456';
 
-// Base URL to build fully qualified URIs to access calendars via CALDAV
-// The following replacement variables are supported:
-// %h - Current HTTP host
-// %u - Current webmail user name
-// %n - Calendar name
-// %i - Calendar UUID
-// $config['calendar_caldav_url'] = 'http://%h/iRony/calendars/%u/%i';
-
 // Crypt key to encrypt passwords for added iCAL/CalDAV calendars
 $config['calendar_crypt_key'] = "put some random string here";
+
+// Disallow adding or creating additional calendars
+$config['calendar_disallow_add'] = false;
+
+// Maximal number of calendars
+$config['calendar_maximal_calendars'] = false; // false = unlimited or a numeric value e.g: 5
 
 // Pre-installed calendars, added at first access to calendar section
 // $config['calendar_preinstalled_calendars'] = array(
 //   0 => array(
 //          'driver'          => 'database',
-//          'name'            => 'Personal',
+//          'name'            => 'Local',
 //          'color'           => 'cc0000',
 //          'showalarms'      => 1,
+//          'events'          => 1,
 //          'tasks'           => 1,
 //          'freebusy'        => 1,
+//          'is_default'      => 0,
+//          'deleteable'      => 1,     // allow users to delete the calendar
+//          'unsubscribe'     => 1,     // allow users to unsubscribe from the calendar
+//          'protected'       => array( // Prevent users from editing these properties
+//                                'name'        => 0,
+//                                'color'       => 0,
+//                                'showalarms'  => 0,
+//                                'tasks'       => 0,
+//                                'freebusy'    => 0,
+//                              ),
 //        ),
 //   1 => array(
 //          'driver'          => 'google_xml',
 //          'name'            => 'US Holidays',
 //          'google_xml_url'  => 'http://www.google.com/calendar/feeds/usa@holiday.calendar.google.com/public/basic',
 //          'color'           => 'cc0000',
-//          'showalarms'      => 1,
 //          'freebusy'        => 1,
+//          'deleteable'      => 1,     // allow users to delete the calendar
+//          'unsubscribe'     => 1,     // allow users to unsubscribe from the calendar
+//          'protected'       => array( // Prevent users from editing these properties
+//                                'name'        => 0,
+//                                'color'       => 0,
+//                                'freebusy'    => 0,
+//                              ),                   
 //       ),
 //   2 => array(
-//          'driver'      => 'caldav',
-//          'name'        => 'Events',
-//          'caldav_user' => '%u',
-//          'caldav_pass' => '%p', 
-//          'caldav_url'  => 'http://dav.mydomain.tld/calendars/%u/',
-//          'color'       => 'cccc00',
-//          'showalarms'  => 1,
-//          'tasks'       => 1,
-//          'freebusy'    => 1,
-//          'sync'        => 5, // every (x) minute(s)
-//        ),
+//          'driver'          => 'caldav_local',
+//          'name'            => 'Personal',
+//          'caldav_node'     => 'https://dav.mydomain.tld/calendars',
+//          'caldav_user'     => '%u',
+//          'caldav_pass'     => '%p',
+//          'menu'            => 'local CalDAV Calendar',
+//          'color'           => 'cccc00',
+//          'showalarms'      => 1,
+//          'events'          => 1,
+//          'tasks'           => 1,
+//          'freebusy'        => 1,
+//          'sync'            => 5,     // every (x) minute(s)
+//          'is_default'      => 0,     // that's the default calendar to save events
+//          'deleteable'      => 1,     // allow users to delete the calendar
+//          'unsubscribe'     => 1,     // allow users to unsubscribe from the calendar
+//          'protected'       => array( // Prevent users from editing these properties
+//                                 'name'        => 0,
+//                                 'color'       => 0,
+//                                 'showalarms'  => 0,
+//                                 'events'      => 0,
+//                                 'tasks'       => 0,
+//                                 'freebusy'    => 0,
+//                                 'sync'        => 0,
+//                               ),
+//       ),
 //   3 => array(
-//          'driver'      => 'ical',
-//          'name'        => 'Daylight',
-//          'ical_user' => '%u',
-//          'ical_pass' => '%p',
-//          'ical_url'  => 'http://ical.mydomain.tld/calendars/%u/',
-//          'color'       => 'cccc00',
-//          'showalarms'  => 1,
-//          'tasks'       => 1,
-//          'freebusy'    => 0,
-//          'sync'        => 3600, // every (x) minute(s)
+//          'driver'          => 'caldav',
+//          'name'            => 'Events',
+//          'caldav_user'     => '%u',
+//          'caldav_pass'     => '%p', 
+//          'caldav_url'      => 'http://dav.mydomain.tld/calendars/%u/',
+//          'color'           => 'cccc00',
+//          'showalarms'      => 1,
+//          'events'          => 1,
+//          'tasks'           => 1,
+//          'freebusy'        => 1,
+//          'sync'            => 5,     // every (x) minute(s)
+//          'autodiscover'    => 1,     // check if this node holds other calendars
+//          'is_default'      => 1,     // that's the default calendar to save events
+//          'deleteable'      => 1,     // allow users to delete the calendar
+//          'unsubscribe'     => 1,     // allow users to unsubscribe from the calendar
+//          'protected'       => array( // Prevent users from editing these properties
+//                                 'caldav_user' => 0,
+//                                 'caldav_pass' => 0,
+//                                 'caldav_url'  => 0,
+//                                 'name'        => 0,
+//                                 'color'       => 0,
+//                                 'showalarms'  => 0,
+//                                 'events'      => 0,
+//                                 'tasks'       => 0,
+//                                 'freebusy'    => 0,
+//                                 'sync'        => 0,
+//                               ),
+//        ),
+//   4 => array(
+//          'driver'          => 'ical',
+//          'name'            => 'Daylight',
+//          'ical_user'       => '%u',
+//          'ical_pass'       => '%p',
+//          'ical_url'        => 'http://ical.mydomain.tld/calendars/%u/',
+//          'color'           => 'cccc00',
+//          'showalarms'      => 1,
+//          'tasks'           => 1,
+//          'freebusy'        => 0,
+//          'sync'            => 3600,  // every (x) minute(s)
+//          'deleteable'      => 1,     // allow users to delete the calendar
+//          'unsubscribe'     => 1,     // allow users to unsubscribe from the calendar
+//          'protected'       => array( // Prevent users from editing these properties
+//                                 'ical_user'  => 0,
+//                                 'ical_pass'  => 0,
+//                                 'ical_url'   => 0,
+//                                 'name'       => 0,
+//                                 'color'      => 0,
+//                                 'showalarms' => 0,
+//                                 'tasks'      => 0,
+//                                 'freebusy'   => 0,
+//                                 'sync'       => 0,
+//                               ),
 //        ),
 // );
 
+// HINT
+      /*
+      By default %u is replaced by rcube::get_instance()->get_user_name() (usually equal to $_SESSION['username']).
+      If that does not fit your needs, this is the right place to replace %u by whatever you need.
+      Here follows an example on how to strip off the domain part of the user:
+      
+      $user = false;
+      // Try the regular method
+      if(!$user && class_exists('rcube')){
+        $user = rcube::get_instance()->get_user_name(); // get_user_email() is also available
+      }
+      // Try session
+      if(!$user && isset($_SESSION['username'])){
+        $user = $_SESSION['username'];
+      }
+      // Try GUI input
+      if(!$user && function_exists('get_input_value')){
+        $user = get_input_value('_user', RCUBE_INPUT_GPC);
+      }
+      // Yep! We have the user
+      if($user){
+        // Now parse the user (f.e. the part before "@")
+        $user = current(explode('@', $user, 2));
+        foreach($config['calendar_preinstalled_calendars'] as $key => $props){
+          if($config['calendar_preinstalled_calendars'][$key]['caldav_user'] == '%u'){
+            $config['calendar_preinstalled_calendars'][$key]['caldav_user'] = $user;
+            $config['calendar_preinstalled_calendars'][$key]['caldav_url'] = str_replace('%u', $user, $config['calendar_preinstalled_calendars'][$key]['caldav_url']);
+          }
+          if($config['calendar_preinstalled_calendars'][$key]['ical_user'] == '%u'){
+            $config['calendar_preinstalled_calendars'][$key]['ical_user'] = $user;
+            $config['calendar_preinstalled_calendars'][$key]['ical_url'] = str_replace('%u', $user, $config['calendar_preinstalled_calendars'][$key]['ical_url']);
+          }
+        }
+        // debug logging
+        if(function_exists('write_log')){
+          //write_log('debug', $config['calendar_preinstalled_calendars']);
+        }
+      }
+      else{
+        die("calendar plugin configuration: failed to detect username");
+      }
+      */
+
 /* Verify SSL Certs */
-$config['calendar_curl_verify_peer'] = false;
+$config['calendar_curl_verify_peer'] = true; // peer verification
+$config['calendar_curl_verify_host'] = true; // host name verification
 
 /* Reminders sounds */
    /* 
@@ -211,16 +369,31 @@ $config['calendar_reminders_sound'] = true;
 /* Disallow sharing */
 $config['calendar_disallow_sharing'] = false;
 
-/* Migration from old MyRoundcube calendar */
-/* Database */
-$config['old_calendar_database_dsn'] = 'mysql://dbuser:dbpassword@localhost/roundcubemail'; // Leave empty not to run migration routine
+// Enable debugging output for iCAL/CalDAV drivers
+$config['calendar_caldav_debug'] = false;
+$config['calendar_ical_debug'] = false;
 
-/* IMAP host */
-$config['old_calendar_mail_host'] = 'localhost'; // set this according to 'mail_host' field in 'users' table of your old calendar installation
+// Migration from old MyRoundcube calendar 
+   /* The following options are needed to migrate from MyRoundcube calendar version 18.x or older. Leave empty not to run migration routine (default) */
 
-/* 'users' table name */
-$config['old_calendar_users_table'] = 'users'; // set this according to 'users' table name (incl. database prefix) of your old calendar installation
+    // Database 
+       /* Define  database connection
+           MySQL: mysql://database_username:database_password@host/roundcube_database_name
+           PGSQL: pgsql://database_username:database_password@host/roundcube_database_name
+           sqLite3: sqlite:////full/path/to/roundcube_database.db?mode=0646
+       */
 
-/* 'events' table name */
-$config['old_calendar_events_table'] = 'events'; // set this according to 'events' table name (incl. database prefix) of your old calendar installation
+$config['old_calendar_database_dsn'] = ''; 
+
+     // IMAP host 
+       /* Set according to the 'mail_host' field in 'users' table of your old calendar installation */
+$config['old_calendar_mail_host'] = '127.0.0.1'; 
+
+     //'users' table name
+       /* Set according to the 'users' table name (including database prefix) of your old calendar installation */
+$config['old_calendar_users_table'] = 'users';
+
+     // 'events' table name 
+       /* Set  according to the 'events' table name (including database prefix) of your old calendar installation */
+$config['old_calendar_events_table'] = 'events'; 
 ?>

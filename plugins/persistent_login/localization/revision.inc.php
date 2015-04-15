@@ -2,9 +2,9 @@
 
 $ps_localization_update = serialize(
   array(
-    'translator' => 'Markku Virtanen',
-    'language ' => 'fi_FI',
-    'date' => '10/28/2014 14:50:20'
+    'translator' => 'intio.nl (info@intio.nl)',
+    'language ' => 'nl_NL',
+    'date' => '02/19/2015 13:10:57'
   )
 );
 

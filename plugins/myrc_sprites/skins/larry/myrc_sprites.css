@@ -3,19 +3,24 @@
 #mailboxlist li.mailbox.notes > a,
 #messagelist .notessmall,
 #messagemenu li a.notesaddlink span.notesadd,
-#rcm_messagemenu li a.notesaddlink span.notesadd,
-#sections-table #rcmrowaccountlink td.section {
-  background-image: url(images/myrc_sprites.png?v=1.0.4) !important;
+#rcm_messagemenu-menu ul.toolbarmenu li span.icon.notesadd,
+#rcm_messagelist ul.iconized li a.archive span.icon,
+#rcm_messagelist ul.iconized li a.markasjunk2 span.icon,
+#sections-table #rcmrowaccountlink td.section,
+#sections-table #rcmrowuserprofile td.section,
+#sections-table #rcmrowjabber td.section,
+#sections-table #rcmrowkeyboard_shortcuts td.section {
+  background-image: url(images/myrc_sprites.png?v=1.1.4) !important;
   background-repeat: no-repeat;
 }
 
 .myrc_loading {
-  background-image: url(images/myrc_loading.gif?v=1.0.4) !important;
+  background-image: url(images/myrc_loading.gif?v=1.1.4) !important;
   background-repeat: no-repeat;
 }
 
 .myrc_loading_small {
-  background-image: url(images/myrc_loading_small.gif?v=1.0.4) !important;
+  background-image: url(images/myrc_loading_small.gif?v=1.1.4) !important;
   background-repeat: no-repeat;
 }
 
@@ -26,4 +31,12 @@
 
 .myrc_sprites_core_buttons.deletebutton {
   background-position: -7px -380px;
+}
+
+#rcm_messagelist ul.iconized li a.archive span.icon {
+  background-position: -14px -2354px;
+}
+
+#rcm_messagelist ul.iconized li a.markasjunk2 span.icon {
+  background-position: -14px -2386px;
 }

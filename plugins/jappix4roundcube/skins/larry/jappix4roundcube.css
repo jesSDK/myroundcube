@@ -1,5 +1,9 @@
 ﻿#sections-table #rcmrowjabber td.section {
-  background-position: 6px -478px;
+  background-position: -10px -2198px;
+}
+
+#sections-table #rcmrowjabber.selected td.section {
+  background-position: -10px -2230px;
 }
 
 #taskbar a.button-jappix4roundcube span.button-inner {
@@ -8,7 +12,7 @@
 
 #taskbar a.button-jappix4roundcube:hover span.button-inner,
 #taskbar a.button-jappix4roundcube.button-selected span.button-inner {
-  background: -12px -845.5px;
+  background: -12px -846px;
 }
 
 #preferences-details .propform {

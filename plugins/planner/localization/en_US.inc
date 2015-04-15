@@ -4,11 +4,10 @@
  | ./plugins/planner/localization/en_US.inc
  |
  | Language file of MyRoundcube Plugins Bundle
- | Copyright (C) 2010-2012, Roland 'rosali' Liebl
- | Licensed under the GNU GPL
+ | Copyright (C) 2010-2015, Roland 'rosali' Liebl
  |
  +-----------------------------------------------------------------------+
- | Author: Yoni - 04/03/2012 07:19:59
+ | Author: Yoni - 01/11/2015 18:48:47
  +-----------------------------------------------------------------------+
 */
 
@@ -17,7 +16,7 @@ $labels['planner'] = 'Planner';
 $labels['pluginname'] = 'Planner';
 $labels['plugindescription'] = 'This is a hybrid between a simple calendar and a Todo-List.';
 $labels['incompatiblebrowser'] = 'To access the Planner, please use Internet Explorer 9 or an alternate browser.';
-$labels['plan'] = 'Acccept';
+$labels['plan'] = 'Accept';
 $labels['view'] = 'View';
 $labels['select_view'] = 'Select view';
 $labels['flags'] = 'Flags';

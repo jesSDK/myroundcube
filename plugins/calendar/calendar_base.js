@@ -90,7 +90,6 @@ rcube_calendar.add_event_from_mail = function(mime_id, obj, status) // Begin mod
     var calendar_text = $(obj).parent().find('option[value=' + calendar + ']').attr('selected','selected').text();
     $(calendar_obj.parent()).replaceWith('<input type="hidden" class="calendar-saveto" value="' + calendar + '" /><span>' + calendar_text + '</span>');
   }
-  
   if (!$.isNumeric(calendar)) {
     calendar = -1;
   }

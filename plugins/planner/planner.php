@@ -8,7 +8,7 @@
 # 
 # Copyright (C) 2011, Lazlo Westerhof
 # Lazlo Westerhof <roundcube@lazlo.me> 
-# Copyright (C) 2014 Roland 'Rosali' Liebl
+# Copyright (C) 2012 - 2015 Roland 'Rosali' Liebl
 # dev-team [at] myroundcube [dot] com
 # http://myroundcube.com
 # 
@@ -28,16 +28,15 @@ class planner extends rcube_plugin
   static private $plugin = 'planner';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/planner-plugin" target="_blank">Documentation</a>';
-  static private $version = '3.0.26';
-  static private $date = '20-12-2014';
+  static private $version = '3.0.28';
+  static private $date = '26-02-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3',
     'required_plugins' => array(
       'db_version' => 'require_plugin',
       'libgpl' => 'require_plugin',
-      'qtip' => 'require_plugin',
       'myrc_sprites' => 'require_plugin',
     ),
   );
@@ -65,7 +64,6 @@ class planner extends rcube_plugin
     
     // required plugins
     $this->require_plugin('libgpl');
-    $this->require_plugin('qtip');
 
     // register actions
     $this->register_action('plugin.planner', array($this, 'startup'));

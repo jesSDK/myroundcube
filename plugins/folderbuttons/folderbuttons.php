@@ -1,14 +1,15 @@
 <?php
-/**
- * folderbuttons
- *
- * Plugin to add expandall and collapseall links to mailboxoptions container
- *
- * @version 2.0 - 05.01.2014
- * @author Mike Maraghy, Roland 'rosali' Liebl (http://myroundcube.com)
- * 
- **/
- 
+# 
+# This file is part of MyRoundcube "folderbuttons" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 class folderbuttons extends rcube_plugin
 {
   public $task = 'mail|settings';
@@ -17,11 +18,11 @@ class folderbuttons extends rcube_plugin
   static private $plugin = 'folderbuttons';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/folderbuttons-plugin" target="_blank">Documentation</a>';
-  static private $version = '2.0';
-  static private $date = '05-01-2014';
+  static private $version = '2.0.1';
+  static private $date = '24-02-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3'
   );
   static private $prefs = null;

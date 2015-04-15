@@ -4,10 +4,10 @@
  | ./plugins/settings/localization/de_DE.inc
  |
  | Language file of MyRoundcube Plugins Bundle
- | Copyright (C) 2010-2013, Roland 'rosali' Liebl
+ | Copyright (C) 2010-2015, Roland 'rosali' Liebl
  |
  +-----------------------------------------------------------------------+
- | Author: myroundcube@mail4us.net - 05/08/2013 06:23:29
+ | Author: myroundcube@mail4us.net - 01/12/2015 09:37:42
  +-----------------------------------------------------------------------+
 */
 
@@ -21,7 +21,7 @@ $labels['classic'] = 'Standard';
 $labels['larry'] = 'Larry';
 $labels['remotefolders'] = 'Spezialordner';
 $labels['myroundcube'] = 'MyRoundCube';
-$labels['skin_preview'] = 'Vorschau Benutzerobfläche';
 $labels['serversettings.serversettings'] = 'Weitere Kontoeinstellungen';
+$labels['serversettings.description'] = 'Weitere Kontoeinstellungen';
 
 ?>

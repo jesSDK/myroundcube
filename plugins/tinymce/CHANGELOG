@@ -7,3 +7,4 @@ VERSION                COMMENT
                          HTML compose mode
 2.0.9                  - Follow http://trac.roundcube.net/ticket/1487014
 2.0.10                 - Revert contextmenu enabled by default
+2.0.11                 - Roundcube 1.1 compatibility

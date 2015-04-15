@@ -21,3 +21,34 @@ VERSION                COMMENT
 1.0.19                 - Include jquery timepicker
 1.0.20                 - Include http_request
 1.0.21                 - Make sure jqueryui plugin is loaded first of all
+1.0.22 - 1.0.23        - Include qtip
+1.0.24                 - Fix javascript error in libcalendaring.js if date format
+                         is undefined
+1.0.25                 - Move label overwrites to libgpl
+1.0.26                 - Add password.js overwrite
+1.0.27                 - CalDAV: Send User-Agent header
+1.0.28 - 1.0.29        - Implement gzip decompression in ical driver
+1.0.30                 - css fix: min-width for jqueryui dialogs (calendar/
+                         carddav plugins)
+1.0.31                 - CalDAV: Implemented digest authentication
+1.0.32 - 1.0.33        - CardDAV: Overwrite default subscribed label
+1.0.34                 - Header User-Agent: MyRoundcube-SabreDAV
+1.0.35                 - Move SabreDAV components to libcalendaring plugin
+1.0.36                 - CalDAV: Don't use gmdate for UTC timezone conversion
+1.0.37                 - CalDAV: Make cURL verify host configurable
+1.0.38                 - CalDAV: Implement DELETE request
+1.1                    - Roundcube 1.1 compatibility
+1.1.1                  - CalDAV: fix @ escape (SoGo)
+1.1.2                  - Add events label
+1.1.3                  - Include contextmenu js/css into all templates
+1.1.4                  - Flashclipboard: create function to force initialization
+1.1.5                  - Fix &mdash;
+1.1.6                  - Webcal label
+1.1.7                  - Fix alarms dialog
+1.1.8                  - Merge flashclipboard libraries
+1.1.9                  - Implement punicode javascript encoding
+1.1.10                 - Add "protected" label
+1.1.11 - 1.1.12        - Move CardDAV backend to "libgpl"
+1.1.13                 - CardDAV: Use PROPFIND for check_connection
+1.1.14                 - Move GPL parts of archivefolder plugin to libgpl
+1.1.15                 - Move vkeyboard GPL parts to libgpl

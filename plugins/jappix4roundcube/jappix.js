@@ -1,3 +1,27 @@
-jQuery(document).ready(function(){rcmail.env.jappix_login=0;rcmail.http_request("jappix.loginkey","");rcmail.jappix_loginkey=function(a){4>rcmail.env.jappix_login&&(GibberishAES.size(256),a=GibberishAES.dec(rcmail.env.jabber_enc,$.trim(a)),1!=rcmail.env.jabber_mini&&$(".jm_position").hide(),"function"==typeof JappixMini.process&&(rcmail.env.jabber_domain&&(rcmail.env.jabber_username&&a)&&JappixMini.process(rcmail.env.jabber_autologon,!0,rcmail.env.jabber_domain,rcmail.env.jabber_username,$.trim(a)),
-window.setTimeout("if($('.jm_error').get(0)){ rcmail.http_request('jappix.loginkey', ''); rcmail.env.jappix_login ++; } else { rcmail.env.jappix_login = 4; if($('.jm_counter').get(0)){ var iframe = 'jappixminiframe'; if(document.getElementById('tabbed_frame_1')){ iframe = 'tabbed_frame_1'; }; document.getElementById(iframe).contentWindow.rcmail.display_message(rcmail.gettext('jappix4roundcube.success').replace('%s', $('.jm_counter').text()), 'confirmation'); } }",2500)))};$(window).unload(function(){"function"==
-typeof JappixMini.disconnect&&JappixMini.disconnect();return!0})});
+jQuery(document).ready(function() {
+  rcmail.env.jappix_login = 0;
+  rcmail.http_request('jappix.loginkey', '');
+  rcmail.jappix_loginkey = function(key){
+    if(rcmail.env.jappix_login < 4){
+      GibberishAES.size(256);
+      var dec = GibberishAES.dec(rcmail.env.jabber_enc, $.trim(key));
+      if(rcmail.env.jabber_mini != 1){
+        $('.jm_position').hide();
+      }
+      if(typeof JappixMini.process == 'function'){
+        if(rcmail.env.jabber_domain && rcmail.env.jabber_username && dec){
+          JappixMini.process(rcmail.env.jabber_autologon, true, rcmail.env.jabber_domain, rcmail.env.jabber_username, $.trim(dec));
+        }
+        window.setTimeout("if($('.jm_error').get(0)){ rcmail.http_request('jappix.loginkey', ''); rcmail.env.jappix_login ++; } else { rcmail.env.jappix_login = 4; if($('.jm_counter').get(0)){ var iframe = 'jappixminiframe'; document.getElementById(iframe).contentWindow.rcmail.display_message(rcmail.gettext('jappix4roundcube.success').replace('%s', $('.jm_counter').text()), 'confirmation'); } }", 2500);
+      }
+    }
+  }
+  $(window).unload(
+    function () { 
+      if(typeof JappixMini.disconnect == 'function'){
+        JappixMini.disconnect();
+      }
+      return true;
+    }
+  );
+});

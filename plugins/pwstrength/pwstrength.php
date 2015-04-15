@@ -1,13 +1,15 @@
 <?php
-
-/**
- * pwstrength
- *
- * @version 1.0 - 20.08.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- */
-
+# 
+# This file is part of MyRoundcube "pwstrength" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 class pwstrength extends rcube_plugin
 {
   public $noajax = true;
@@ -16,11 +18,11 @@ class pwstrength extends rcube_plugin
   static private $plugin = 'pwstrength';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?pwstrength" target="_blank">Documentation</a>';
-  static private $version = '1.0';
-  static private $date = '20-08-2014';
+  static private $version = '1.0.2';
+  static private $date = '26-02-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3'
   );
   static private $prefs = array(
@@ -72,8 +74,8 @@ class pwstrength extends rcube_plugin
   }
   
   function render_page($p){
-    if($p['template'] == 'register.register'){
-      $rcmail = rcmail::get_instance();
+    $rcmail = rcmail::get_instance();
+    if($p['template'] == 'register.register' || $rcmail->action == 'plugin.password'){
       $rcmail->output->set_env('pwstrength_required', $rcmail->config->get('pwstrength', 50));
       $this->add_texts('localization/');
       $rcmail->output->add_label(
@@ -81,8 +83,15 @@ class pwstrength extends rcube_plugin
         'pwstrength.passwordweak',
         'pwstrength.continue'
       );
-      $rcmail->output->set_env('pwstrength_fieldname', '_pass');
-      $rcmail->output->set_env('pwstrength_fieldname_confirm', '_confirm_pass');
+      if($p['template'] == 'register.register'){
+        $rcmail->output->set_env('pwstrength_fieldname', '_pass');
+        $rcmail->output->set_env('pwstrength_fieldname_confirm', '_confirm_pass');
+      }
+      else{
+        $rcmail->output->set_env('pwstrength_fieldname', '_newpasswd');
+        $rcmail->output->set_env('pwstrength_fieldname_confirm', '_confpasswd');
+        $rcmail->output->add_script('$("input[name=\'_newpasswd\']").attr(\'data-display\', \'pwstrengthDisplay\');$("<tr><td class=\'title\'></td><td><span id=\'pwstrengthDisplay\' class=\'title\'></span><input type=\hidden\ value=\'0\' name=\'_pwstrength\'></td></tr>").insertAfter("tr:last");', 'foot');
+      }
       $this->include_script('pwstrength.js');
     }
     else if($p['template'] == 'hmail_password.hmail_password'){

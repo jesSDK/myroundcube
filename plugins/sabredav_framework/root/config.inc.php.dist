@@ -1,0 +1,109 @@
+<?php
+/***************************************************
+ *
+ * CONFIGURATION
+ *
+ ***************************************************/ 
+  
+// SabreDAV base:
+  /*
+     It is highly recommended to run SabreDAV
+     in a root folder.
+  */
+$baseUri = '/';
+
+// Database connection
+$dbtype = 'mysql';
+$dbhost = 'localhost';
+$dbport = 3306;
+$dbname = 'sabredav';
+$dbuser = 'root';
+$dbpass = 'password';
+
+/* SMTP iMip account credentials */
+$smtpauth = array(
+  'host' => 'localhost',
+  'port' => 25,
+  'user' => 'no-reply@mydomain.tld', // false in order to use PHP mail function
+  'pass' => 'password',              // false in order to use PHP mail function
+);
+
+// Mail recipient test
+$testrecipient = 'admin@mydomain.tld';
+
+// Enable sendmail test
+  /*
+  Browse to http(s)://dav.domain.tld/sendmail to debug sending iMip invitations
+  This function must remain disabled in production environments after conducting tests,
+  otherwise an attacker can spam the $testrecipient account with countless test messages
+  just by calling the http(s)://dav.domain.tld/sendmail URL.
+  */
+$testsendmail = false;
+
+// Authentication 
+  /*
+  'imap' requires PHP imap module. If not installed it defaults to 'digest'
+  */
+$authtype = 'imap'; // 'imap', 'basic' or 'digest'
+
+// IMAP authentication
+  /*
+  First argument of PHP function imap_open.
+  Details: - http://php.net/manual/en/function.imap-open.php 
+           - http://forum.myroundcube.com/#nabble-td4025600|a4025605
+  */
+$imap_open = '{localhost:143}';
+
+// Autoban
+  /*
+  If your IMAP server supports 'autoban', set values according to IMAP server configuration
+  */
+$autoban_db_table = 'autoban'; // false in order to disable autoban
+$autoban_attempts = 5;
+$autoban_interval = 30; // minutes
+
+// Access log file (Fail2Ban)
+$authentication_success_logfile = false; // e.g. '/var/log/sabredav_auth.log';
+$authentication_failure_logfile = false; // e.g. '/var/log/sabredav_auth.log';
+
+// cPanel
+$cpurl        = false; //'https://webmail.mydomain.tld:2096/login';
+$cpuser       = 'myroundcube@mydomain.tld';
+$cppass       = 'password';
+$cpcookiefile = '/var/tmp/cookie.txt'; // must be writeable !!!
+
+
+// Password encrytion realm
+  /*
+  NOTE: It must be the same as configured in Roundcube
+  */
+$realm = 'SabreDAV';
+
+// Sharing
+$readonly_subdomain = 'dav-r';
+$readwrite_subdomain = 'dav-rw';
+
+// Property positions
+  /*
+  http://dav-r.mydomain.tld/calendars/user@mydomain.tld/events
+  pos 0                    /dav-pos 1/user-pos 2       /resource-pos 3
+  */
+$dav_pos      = 1;
+$user_pos     = 2;
+$resource_pos = 3;
+
+// Only this user has full access to SabreDAV HTTP interface
+$http_admin = 'admin@mydomain.tld';
+
+// SabreDAV HTTP interface
+   /*
+   0: nobody has access
+   1: only admin has access
+   2: users have access to own properties, admin to all
+   */
+$http_interface = 0;
+                     
+// Roundcube URL
+$rcurl = 'http://here_resides_roundcube'; // no trailing backslash
+
+?>

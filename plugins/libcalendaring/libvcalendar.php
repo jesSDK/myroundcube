@@ -25,7 +25,7 @@ use \Sabre\VObject;
 
 // load Sabre\VObject classes
 if (!class_exists('\Sabre\VObject\Reader')) {
-    require_once __DIR__ . '/lib/Sabre/VObject/includes.php';
+    require_once __DIR__ . '/SabreDAV/lib/Sabre/VObject/includes.php';
 }
 
 /**
@@ -150,7 +150,6 @@ class libvcalendar implements Iterator
                     'file' => __FILE__, 'line' => __LINE__,
                     'message' => "iCal data parse error: " . $e->getMessage()),
                     true, false);
-                write_log('errors', $vcal);
             }
         }
 
@@ -889,16 +888,15 @@ class libvcalendar implements Iterator
             }
 
             // add EXDATEs each one per line (for Thunderbird Lightning)
-            if ($exdates) {
-                foreach ($exdates as $ex) {
-                    if ($ex instanceof \DateTime) {
-                        $exd = clone $ex; //$event['start']; // Mod by Rosali
-                        $exd->setDate($ex->format('Y'), $ex->format('n'), $ex->format('j'));
-                        $exd->setTimeZone(new \DateTimeZone('UTC'));
-                        $ve->add(new VObject\Property('EXDATE', $exd->format('Ymd\\THis\\Z')));
-                    }
-                }
+            // Begin mod by Rosali (handle EXDATE the same as RDATE)
+            if (!empty($exdates)) {
+              $exdates = array_values($exdates);
+              $sample = self::datetime_prop('EXDATE', $exdates[0]);
+              $edprop = new VObject\Property\MultiDateTime('EXDATE', null);
+              $edprop->setDateTimes($exdates, $sample->getDateType());
+              $ve->add($edprop);
             }
+            // End mod by Rosali
             // add RDATEs
             if (!empty($rdates)) {
                 $sample = self::datetime_prop('RDATE', $rdates[0]);

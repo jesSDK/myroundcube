@@ -1,8 +1,17 @@
 <?php
+/*
+ +-----------------------------------------------------------------------+
+ | ./plugins/calendar/localization/de_DE.inc
+ |
+ | Language file of MyRoundcube Plugins Bundle
+ | Copyright (C) 2010-2015, Roland 'rosali' Liebl
+ |
+ +-----------------------------------------------------------------------+
+ | Author: myroundcube@mail4us.net - 01/13/2015 15:45:07
+ +-----------------------------------------------------------------------+
+*/
 
 $labels = array();
-
-// preferences
 $labels['default_view'] = 'Ansicht';
 $labels['time_format'] = 'Zeitformatierung';
 $labels['timeslots'] = 'Zeitraster pro Stunde';
@@ -17,12 +26,7 @@ $labels['coloringmode0'] = 'Farbe des Kalenders';
 $labels['coloringmode1'] = 'Farbe der Kategorie';
 $labels['coloringmode2'] = 'Kalenderfarbe außen, Kategoriefarbe innen';
 $labels['coloringmode3'] = 'Kategoriefarbe außen, Kalenderfarbe innen';
-
-// calendar
 $labels['calendar'] = 'Kalender';
-$labels['calendar_kolab'] = 'Kolab Kalender';
-$labels['calendar_caldav'] = 'CalDAV Kalender';
-$labels['calendar_ical'] = 'iCAL Kalender';
 $labels['calendars'] = 'Kalender';
 $labels['category'] = 'Kategorie';
 $labels['categories'] = 'Kategorien';
@@ -53,6 +57,7 @@ $labels['exportrange'] = 'Termine ab';
 $labels['exportattachments'] = 'Mit Anhängen';
 $labels['customdate'] = 'Eigenes Datum';
 $labels['location'] = 'Ort';
+$labels['url'] = 'URL';
 $labels['date'] = 'Datum';
 $labels['start'] = 'Beginn';
 $labels['end'] = 'Ende';
@@ -83,8 +88,6 @@ $labels['nmonthsback'] = '$nr Monate zurück';
 $labels['showurl'] = 'URL anzeigen';
 $labels['showurldescription'] = 'Über die folgende Adresse können Sie mit einem beliebigen Kalenderprogramm Ihren Kalender abrufen (nur lesend), sofern dieses das iCal-Format unterstützt.';
 $labels['caldavurldescription'] = 'Benutzen Sie folgende Addresse in einer <a href="http://de.wikipedia.org/wiki/CalDAV" target="_blank">CalDAV</a>-Anwendung (wie z.B. Evolution oder Mozilla Thunderbird) um diesen spezifischen Kalender mit dem Computer oder Mobiltelefon zu synchronisieren.';
-
-// agenda view
 $labels['listrange'] = 'Angezeigter Bereich:';
 $labels['listsections'] = 'Unterteilung:';
 $labels['smartsections'] = 'Intelligent';
@@ -98,13 +101,9 @@ $labels['nextmonth'] = 'Nächsten Monat';
 $labels['weekofyear'] = 'Woche';
 $labels['pastevents'] = 'Vergangene';
 $labels['futureevents'] = 'Zukünftige';
-
-// alarm/reminder settings
 $labels['showalarms'] = 'Erinnerungen anzeigen';
 $labels['defaultalarmtype'] = 'Standard-Erinnerungseinstellung';
 $labels['defaultalarmoffset'] = 'Standard-Erinnerungszeit';
-
-// attendees
 $labels['attendee'] = 'Teilnehmer';
 $labels['role'] = 'Rolle';
 $labels['availability'] = 'Verfüg.';
@@ -114,6 +113,10 @@ $labels['roleorganizer'] = 'Organisator';
 $labels['rolerequired'] = 'Erforderlich';
 $labels['roleoptional'] = 'Optional';
 $labels['rolechair'] = 'Vorsitz';
+$labels['cutypeindividual'] = 'Individuell';
+$labels['cutypegroup'] = 'Gruppe';
+$labels['cutyperesource'] = 'Resource';
+$labels['cutyperoom'] = 'Raum';
 $labels['availfree'] = 'Frei';
 $labels['availbusy'] = 'Gebucht';
 $labels['availunknown'] = 'Unbekannt';
@@ -129,28 +132,26 @@ $labels['prevslot'] = 'Vorheriger Vorschlag';
 $labels['nextslot'] = 'Nächster Vorschlag';
 $labels['noslotfound'] = 'Es konnten keine freien Zeiten gefunden werden';
 $labels['invitationsubject'] = 'Sie wurden zu "$title" eingeladen';
-$labels['invitationmailbody'] = "*\$title*\n\nWann: \$date\n\nTeilnehmer: \$attendees\n\nIm Anhang finden Sie eine iCalendar-Datei mit allen Details des Termins. Diese können Sie in Ihre Kalenderanwendung importieren.";
-$labels['invitationattendlinks'] = "Falls Ihr E-Mail-Programm keine iTip-Anfragen unterstützt, können Sie den folgenden Link verwenden, um den Termin zu bestätigen oder abzulehnen:\n\$url";
+$labels['invitationmailbody'] = '*$title*Wann: $dateTeilnehmer: $attendeesIm Anhang finden Sie eine iCalendar-Datei mit allen Details des Termins. Diese können Sie in Ihre Kalenderanwendung importieren.';
+$labels['invitationattendlinks'] = 'Falls Ihr E-Mail-Programm keine iTip-Anfragen unterstützt, können Sie den folgenden Link verwenden, um den Termin zu bestätigen oder abzulehnen:$url';
 $labels['eventupdatesubject'] = '"$title" wurde aktualisiert';
 $labels['eventupdatesubjectempty'] = 'Termin wurde aktualisiert';
-$labels['eventupdatemailbody'] = "*\$title*\n\nWann: \$date\n\nTeilnehmer: \$attendees\n\nIm Anhang finden Sie eine iCalendar-Datei mit den aktualisiereten Termindaten. Diese können Sie in Ihre Kalenderanwendung importieren.";
+$labels['eventupdatemailbody'] = '*$title*Wann: $dateTeilnehmer: $attendeesIm Anhang finden Sie eine iCalendar-Datei mit den aktualisiereten Termindaten. Diese können Sie in Ihre Kalenderanwendung importieren.';
 $labels['eventcancelsubject'] = '"$title" wurde abgesagt';
-$labels['eventcancelmailbody'] = "*\$title*\n\nWann: \$date\n\nTeilnehmer: \$attendees\n\nDer Termin wurde von \$organizer abgesagt.\n\nIm Anhang finden Sie eine iCalendar-Datei mit den Termindaten.";
-
-// invitation handling
+$labels['eventcancelmailbody'] = '*$title*Wann: $dateTeilnehmer: $attendeesDer Termin wurde von $organizer abgesagt.Im Anhang finden Sie eine iCalendar-Datei mit den Termindaten.';
 $labels['itipinvitation'] = 'Einladung zu';
-$labels['itipreply'] = 'Antwort zu';
 $labels['itipupdate'] = 'Aktialisiert:';
 $labels['itipcancellation'] = 'Abgesagt:';
+$labels['itipreply'] = 'Antwort zu';
 $labels['itipaccepted'] = 'Akzeptieren';
 $labels['itiptentative'] = 'Mit Vorbehalt';
 $labels['itipdeclined'] = 'Ablehnen';
 $labels['itipsubjectaccepted'] = 'Einladung zu "$title" wurde von $name angenommen';
 $labels['itipsubjecttentative'] = 'Einladung zu "$title" wurde von $name mit Vorbehalt angenommen';
 $labels['itipsubjectdeclined'] = 'Einladung zu "$title" wurde von $name abgelehnt';
-$labels['itipmailbodyaccepted'] = "\$sender hat die Einladung zum folgenden Termin angenommen:\n\n*\$title*\n\nWann: \$date\n\nTeilnehmer: \$attendees";
-$labels['itipmailbodytentative'] = "\$sender hat die Einladung mit Vorbehalt zum folgenden Termin angenommen:\n\n*\$title*\n\nWann: \$date\n\nTeilnehmer: \$attendees";
-$labels['itipmailbodydeclined'] = "\$sender hat die Einladung zum folgenden Termin abgelehnt:\n\n*\$title*\n\nWann: \$date\n\nTeilnehmer: \$attendees";
+$labels['itipmailbodyaccepted'] = '$sender hat die Einladung zum folgenden Termin angenommen:*$title*Wann: $dateTeilnehmer: $attendees';
+$labels['itipmailbodytentative'] = '$sender hat die Einladung mit Vorbehalt zum folgenden Termin angenommen:*$title*Wann: $dateTeilnehmer: $attendees';
+$labels['itipmailbodydeclined'] = '$sender hat die Einladung zum folgenden Termin abgelehnt:*$title*Wann: $dateTeilnehmer: $attendees';
 $labels['itipdeclineevent'] = 'Möchten Sie die Einladung zu diesem Termin ablehnen?';
 $labels['declinedeleteconfirm'] = 'Möchten Sie den abgelehnten Termin ebenfalls aus Ihrem Kalender löschen?';
 $labels['importtocalendar'] = 'In Kalender übernehmen';
@@ -163,20 +164,17 @@ $labels['youhavedeclined'] = 'Sie haben die Einladung abgelehnt';
 $labels['notanattendee'] = 'Sie sind nicht in der Liste der Teilnehmer aufgeführt';
 $labels['eventcancelled'] = 'Der Termin wurde vom Organisator abgesagt';
 $labels['saveincalendar'] = 'speichern in';
-
-// event dialog tabs
 $labels['tabsummary'] = 'Übersicht';
 $labels['tabrecurrence'] = 'Wiederholung';
 $labels['tabattendees'] = 'Teilnehmer';
 $labels['tabattachments'] = 'Anhänge';
 $labels['tabsharing'] = 'Freigabe';
-
-// messages
 $labels['deleteventconfirm'] = 'Möchten Sie diesen Termin wirklich löschen?';
 $labels['deletecalendarconfirm'] = 'Möchten Sie diesen Kalender mit allen Terminen wirklich löschen?';
 $labels['deletecalendarconfirmrecursive'] = 'Möchten Sie diesen Kalender mit allen Terminen und Unter-Kalendern wirklich löschen?';
 $labels['savingdata'] = 'Speichere Daten...';
 $labels['errorsaving'] = 'Fehler beim Speichern.';
+$labels['connectionfailed'] = 'Die Verbindung konnte nicht hergestellt werden. Bitte Überprüfen Sie die Daten.';
 $labels['operationfailed'] = 'Die Aktion ist fehlgeschlagen.';
 $labels['invalideventdates'] = 'Ungültige Daten eingegeben! Bitte überprüfen Sie die Eingaben.';
 $labels['invalidcalendarproperties'] = 'Ungültige Kalenderinformationen! Bitte geben Sie einen Namen ein.';
@@ -191,13 +189,13 @@ $labels['importedsuccessfully'] = 'Der Termin wurde erfolgreich in \'$calendar\'
 $labels['attendeupdateesuccess'] = 'Teilnehmerstatus erfolgreich aktualisiert';
 $labels['itipsendsuccess'] = 'Einladung an Teilnehmer versendet.';
 $labels['itipresponseerror'] = 'Die Antwort auf diese Einladung konnte nicht versendet werden';
+$labels['itipinvalidrequest'] = 'Die Einladung ist nicht mehr gültig';
 $labels['sentresponseto'] = 'Antwort auf diese Einladung erfolgreich an $mailto gesendet';
 $labels['localchangeswarning'] = 'Änderungen an diesem Termin werden nur in Ihrem Kalender gespeichert und nicht an den Organisator des Termins gesendet.';
 $labels['importsuccess'] = 'Es wurden $nr Termine erfolgreich importiert';
 $labels['importnone'] = 'Keine Termine zum Importieren gefunden';
 $labels['importerror'] = 'Fehler beim Importieren';
-
-// recurrence form
+$labels['aclnorights'] = 'Sie haben keine Administratorenrechte für diesen Kalender.';
 $labels['repeat'] = 'Wiederholung';
 $labels['frequency'] = 'Wiederholung';
 $labels['never'] = 'nie';

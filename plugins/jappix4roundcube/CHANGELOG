@@ -19,3 +19,7 @@ VERSION                COMMENT
 2.0.20                 - Implement myrc_sprites plugin
 2.0.21                 - Remove gibberish plugin from required plugins
                        - Remove http_requiest from required pluings
+2.0.22                 - Roundcube 1.1 compatibility
+2.0.23 - 2.0.24        - Fix logout issue
+2.0.25                 - Implement better settings list icons
+2.0.26                 - Implement myrc_navigation compatibility

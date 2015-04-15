@@ -1,4 +1,4 @@
-# Database driver
+-- Database driver
 
 CREATE TABLE IF NOT EXISTS `calendars` (
   `calendar_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS `vevent_attachments` (
   `filename` varchar(255) NOT NULL DEFAULT '',
   `mimetype` varchar(255) NOT NULL DEFAULT '',
   `size` int(11) NOT NULL DEFAULT '0',
-  `data` longtext NOT NULL DEFAULT '',
+  `data` longtext,
   PRIMARY KEY(`attachment_id`),
   CONSTRAINT `fk_attachments_event_id` FOREIGN KEY (`event_id`)
     REFERENCES `vevent`(`event_id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS `vtodo_attachments` (
   `filename` varchar(255) NOT NULL DEFAULT '',
   `mimetype` varchar(255) NOT NULL DEFAULT '',
   `size` int(11) NOT NULL DEFAULT '0',
-  `data` longtext NOT NULL DEFAULT '',
+  `data` longtext,
   PRIMARY KEY(`attachment_id`),
   CONSTRAINT `fk_attachments_task_id` FOREIGN KEY (`task_id`)
     REFERENCES `vtodo`(`task_id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS `itipinvitations` (
     REFERENCES `users`(`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) /*!40000 ENGINE=INNODB */ /*!40101 CHARACTER SET utf8 COLLATE utf8_general_ci */;
 
-# Kolab driver
+-- Kolab driver
 
 CREATE TABLE IF NOT EXISTS `kolab_alarms` (
   `event_id` VARCHAR(255) NOT NULL,
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS `kolab_alarms` (
     REFERENCES `users`(`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) /*!40000 ENGINE=INNODB */;
 
-# CalDAV driver
+-- CalDAV driver
 
 CREATE TABLE IF NOT EXISTS `calendars_caldav_props` (
   `obj_id` int(11) unsigned NOT NULL,
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS `calendars_caldav_props` (
   `tag` varchar(255) DEFAULT NULL,
   `user` varchar(255) DEFAULT NULL,
   `pass` varchar(1024) DEFAULT NULL,
-  `last_change` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_change` varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   UNIQUE KEY `obj_id` (`obj_id`,`obj_type`),
   CONSTRAINT `fk_caldav_calendar_obj_id_calendar_id` FOREIGN KEY (`obj_id`)
     REFERENCES `calendars` (`calendar_id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS `vevent_caldav_props` (
   `tag` varchar(255) DEFAULT NULL,
   `user` varchar(255) DEFAULT NULL,
   `pass` varchar(1024) DEFAULT NULL,
-  `last_change` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_change` varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   UNIQUE KEY `obj_id` (`obj_id`,`obj_type`),
   CONSTRAINT `fk_caldav_event_obj_id_calendar_id` FOREIGN KEY (`obj_id`)
     REFERENCES `vevent` (`event_id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -177,13 +177,13 @@ CREATE TABLE IF NOT EXISTS `vtodo_caldav_props` (
   `tag` varchar(255) DEFAULT NULL,
   `user` varchar(255) DEFAULT NULL,
   `pass` varchar(1024) DEFAULT NULL,
-  `last_change` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_change` varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   UNIQUE KEY `obj_id` (`obj_id`,`obj_type`),
   CONSTRAINT `fk_caldav_task_obj_id_calendar_id` FOREIGN KEY (`obj_id`)
     REFERENCES `vtodo` (`task_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) /*!40000 ENGINE=INNODB */ /*!40101 CHARACTER SET utf8 COLLATE utf8_general_ci */;
 
-# iCal driver
+-- iCal driver
 
 CREATE TABLE IF NOT EXISTS `calendars_ical_props` (
   `obj_id` int(11) unsigned NOT NULL,
@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS `calendars_ical_props` (
   `url` varchar(255) NOT NULL,
   `user` varchar(255) DEFAULT NULL,
   `pass` varchar(1024) DEFAULT NULL,
-  `last_change` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_change` varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   UNIQUE KEY `obj_id` (`obj_id`,`obj_type`),
   CONSTRAINT `fk_ical_calendar_obj_id_calendar_id` FOREIGN KEY (`obj_id`)
     REFERENCES `calendars` (`calendar_id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -203,24 +203,26 @@ CREATE TABLE IF NOT EXISTS `vevent_ical_props` (
   `url` varchar(255) NOT NULL,
   `user` varchar(255) DEFAULT NULL,
   `pass` varchar(1024) DEFAULT NULL,
-  `last_change` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_change` varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   UNIQUE KEY `obj_id` (`obj_id`,`obj_type`),
   CONSTRAINT `fk_ical_event_obj_id_calendar_id` FOREIGN KEY (`obj_id`)
     REFERENCES `vevent` (`event_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) /*!40000 ENGINE=INNODB */ /*!40101 CHARACTER SET utf8 COLLATE utf8_general_ci */;
 
-# Google XML driver
+-- Google XML driver
 
 CREATE TABLE IF NOT EXISTS `calendars_google_xml_props` (
   `obj_id` int(11) unsigned NOT NULL,
   `url` varchar(255) NOT NULL,
-  `last_change` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_change` varchar(19) NOT NULL DEFAULT '1000-12-31 00:00:00',
   UNIQUE KEY `obj_id`(`obj_id`),
   CONSTRAINT `fk_google_xml_calendar_obj_id_calendar_id` FOREIGN KEY (`obj_id`)
     REFERENCES `calendars` (`calendar_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) /*!40000 ENGINE=INNODB */ /*!40101 CHARACTER SET utf8 COLLATE utf8_general_ci */;
 
 DELETE FROM `system` WHERE `name` = 'myrc_calendar';
+
+DELETE FROM db_config WHERE env = 'calendar';
 
 DELETE FROM `plugin_manager` WHERE `conf` = 'defaults_overwrite';
 

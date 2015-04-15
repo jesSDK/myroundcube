@@ -4,23 +4,24 @@
  | ./plugins/settings/localization/fr_FR.inc
  |
  | Language file of MyRoundcube Plugins Bundle
- | Copyright (C) 2010-2012, Roland 'rosali' Liebl
+ | Copyright (C) 2010-2015, Roland 'rosali' Liebl
  |
  +-----------------------------------------------------------------------+
- | Author: Thomas Parvais - 12/11/2012 12:10:07
+ | Author: Olivier Zolli - 01/20/2015 17:59:37
  +-----------------------------------------------------------------------+
 */
 
 $labels = array();
 $labels['pluginname'] = 'Paramètres';
-$labels['plugindescription'] = 'Ce plugin est nécessaire pour le bon fonctionnement d\'autres plugin (par exmple tous les hmail* plugins)';
+$labels['plugindescription'] = 'Ce plugin est nécessaire pour le bon fonctionnement d\'autres plugins (par exemple tous les hmail* plugins)';
 $labels['menu'] = 'Menu';
 $labels['managefolders'] = 'Gestion des dossiers';
 $labels['account'] = 'Administration du compte';
-$labels['classic'] = 'Default';
+$labels['classic'] = 'Classic';
+$labels['larry'] = 'Larry';
 $labels['remotefolders'] = 'Dossiers spéciaux';
 $labels['myroundcube'] = 'MyRoundCube';
-$labels['skin_preview'] = 'Prévisualisation de l\'apparence';
-$labels['larry'] = 'Larry';
+$labels['serversettings.serversettings'] = 'Autres paramètres de compte';
+$labels['serversettings.description'] = 'Autres paramètres de compte';
 
 ?>

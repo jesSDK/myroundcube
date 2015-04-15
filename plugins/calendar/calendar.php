@@ -6,10 +6,15 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # 
-# Copyright (c) 2014 Roland 'Rosali' Liebl
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
 # dev-team [at] myroundcube [dot] com
 # http://myroundcube.com
 # 
+
+if(!ini_get('date.timezone')){
+  @date_default_timezone_set('UTC');
+}
+
 require_once(INSTALL_PATH . 'plugins/calendar/calendar_core.php');
 
 class calendar extends calendar_core
@@ -17,13 +22,13 @@ class calendar extends calendar_core
   /* unified plugin properties */
   static private $plugin = 'calendar';
   static private $author = 'myroundcube@mail4us.net';
-  static private $authors_comments = 'This plugin is a fork of <a href="https://git.kolab.org/roundcubemail-plugins-kolab/tree/plugins/calendar" target="_new">Kolab calendar (core)</a> and <a href="https://gitlab.awesome-it.de/kolab/roundcube-plugins/tree/feature_caldav" target="_new">Awesome Information technology CalDAV/iCal drivers implementation</a>.<br /><a href="http://myroundcube.com/myroundcube-plugins/calendar-beta-plugin" target="_blank">Documentation</a>';
-  static private $version = '19.0.20';
-  static private $date = '19-12-2014';
+  static private $authors_comments = 'This plugin is a fork of <a href="https://git.kolab.org/roundcubemail-plugins-kolab/tree/plugins/calendar" target="_new">Kolab calendar (core)</a> and <a href="https://gitlab.awesome-it.de/kolab/roundcube-plugins/tree/feature_caldav" target="_new">Awesome Information technology CalDAV/iCal drivers implementation</a>.<br /><a href="https://myroundcube.com/myroundcube-plugins/calendar-plugin-19" target="_blank">Documentation</a>';
+  static private $version = '21.0.12';
+  static private $date = '14-04-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
     'extra' => '<span style="color: #ff0000;">IMPORTANT</span> &#8211;&nbsp;<div style="display: inline">Plugin requires Roundcube core files patches</span></div>',
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3 + cURL',
     'required_plugins' => array(
       'settings' => 'require_plugin',
@@ -67,6 +72,13 @@ class calendar extends calendar_core
     '20141123',
     '20141125',
     '20141205',
+    '20141231',
+    '20150107',
+    '20150128',
+    '20150206',
+    '20150228',
+    '20150319',
+    '20150329',
   );
   static private $sqladmin = array('db_dsnw', 'calendars');
 
@@ -114,6 +126,7 @@ class calendar extends calendar_core
   
   public function init()
   {
+
     /* DB versioning */
     if(is_dir(INSTALL_PATH . 'plugins/db_version')){
       $this->require_plugin('db_version');
@@ -121,8 +134,9 @@ class calendar extends calendar_core
         return;
       }
     }
-    
     parent::init();
+    
+    $this->add_hook('render_page', array($this, 'render_page'));
     
     /* Calenar plus */
     if(is_dir(INSTALL_PATH . 'plugins/calendar_plus'))
@@ -135,6 +149,61 @@ class calendar extends calendar_core
     $this->require_plugin('tasklist');
   }
   
+  public function render_page($p)
+  {
+    if($p['template'] == 'calendar.calendar'){
+      $tz = $this->rc->config->get('timezone', 'UTC');
+      if($tz == 'auto'){
+        $tz = 'UTC';
+      }
+      $sql = 'SELECT * FROM ' . get_table_name('system') . ' WHERE name=?';
+      $result = $this->rc->db->query($sql, 'myrc_calendar_migrate');
+      $result = $this->rc->db->fetch_assoc($result);
+      if(!is_array($result) || version_compare(self::$version, '21.0', '<')){
+        $sql = 'SELECT * FROM ' . get_table_name('calendars') . ' WHERE user_id=?';
+        $calendars = array();
+        $result = $this->rc->db->query($sql, $this->rc->user->ID);
+        while($result && $calendar = $this->rc->db->fetch_assoc($result)){
+          $calendars[] = $calendar['calendar_id'];
+        }
+        $sql = 'UPDATE ' . get_table_name('vevent') . ' SET tzname=? WHERE calendar_id IN (%s) AND tzname is NULL';
+        $res = $this->rc->db->query(sprintf($sql, implode(',', $calendars)), $tz);
+        $sql = 'INSERT INTO ' . get_table_name('system') . ' (name, value) VALUES (?, ?)';
+        $this->rc->db->query($sql, 'myrc_calendar_migrate', self::$version);
+      }
+      if($count = $this->rc->config->get('calendar_maximal_calendars', false)){
+        $sql = 'SELECT COUNT(*) FROM ' . get_table_name('calendars') . ' WHERE user_id=?';
+        $res = $this->rc->db->query($sql, $this->rc->user->ID);
+        $calendars = $this->rc->db->fetch_assoc($res);
+        if($calendars['COUNT(*)'] >= $count){
+          $this->rc->output->add_script('$("#calendarcreatemenulink").hide();', 'foot');
+        }
+      }
+      if($this->rc->config->get('calendar_disallow_add', false) || $this->rc->config->get('calendar_protect', false)){
+        $this->rc->output->add_script('$("#calendarcreatemenulink").remove();', 'foot');
+      }
+      if($this->rc->config->get('calendar_hide_ics_url', false)){
+        $this->rc->output->add_script('$("#calendaroptionsmenu li").first().next().next().remove();', 'foot');
+      }
+      if($this->rc->config->get('calendar_protect', false)){
+        $this->rc->output->add_script(
+          '$("#calendaroptionsmenu li").first().next().remove();' . "\r\n" .
+          '$("#calendaroptionsmenu li").first().remove();' . "\r\n" .
+          '$("#calendarslist li").unbind("dblclick");' . "\r\n" .
+          '$("#calendarslist li input").prop("disabled", true);' . "\r\n", 'docready'
+        );
+      }
+      $sql = 'SELECT calendar_id, unsubscribe FROM ' . get_table_name('calendars') . ' WHERE user_id=?';
+      $result = $this->rc->db->query($sql, $this->rc->user->ID);
+      while($result && $props = $this->rc->db->fetch_assoc($result)){
+        if(is_array($props) && $props['unsubscribe'] == 0){
+          $this->rc->output->add_script('$("#rcmlical' . $props['calendar_id'] . ' input[value=\'' . $props['calendar_id'] . '\']").first().prop("disabled", true);', 'foot');
+        }
+      }
+    }
+    return $p;
+  }
+  
   /**
    * See parent::load_drivers
    */
@@ -143,12 +212,14 @@ class calendar extends calendar_core
     if($this->_drivers == null)
     {
       $this->_drivers = array();
-
+      
+      require_once(INSTALL_PATH . 'plugins/calendar/drivers/calendar_driver.php');
+      
       foreach($this->get_driver_names() as $driver_name)
       {
         $driver_name = trim($driver_name);
         $driver_class = $driver_name . '_driver';
-        require_once(INSTALL_PATH . 'plugins/calendar/drivers/calendar_driver.php');
+
         if (file_exists(INSTALL_PATH . 'plugins/calendar/drivers/' . $driver_name . '/' . $driver_class . '.php')) {
           require_once(INSTALL_PATH . 'plugins/calendar/drivers/' . $driver_name . '/' . $driver_class . '.php');
           $driver = $this->_load_driver($driver_class, $driver_name);
@@ -157,12 +228,36 @@ class calendar extends calendar_core
           require_once(INSTALL_PATH . 'plugins/calendar_plus/drivers/' . $driver_name . '/' . $driver_class . '.php');
           $driver = $this->_load_driver($driver_class, $driver_name);
         }
-        else {
-          require_once(INSTALL_PATH . 'plugins/calendar/drivers/database/database_driver.php');
-          $driver = $this->_load_driver('database_driver', 'database');
-        }
       }
     }
+  }
+  
+  /*
+   * Helper method to get configured driver names.
+   * @return List of driver names.
+   */
+  public function get_driver_names()
+  {
+    $driver_names = $this->rc->config->get('calendar_driver', array());
+
+    if (!is_array($driver_names)) {
+      $driver_names = array($driver_names);
+    }
+    if ($idx = array_search('database', $driver_names)) {
+      unset($driver_names[$idx]);
+    }
+    $driver_names = array_merge(array('database'), $driver_names);
+    return $driver_names;
+  }
+  
+  /**
+   * Helper function to retrieve the default driver
+   *
+   * @return mixed Driver object or null if no default driver could be determined.
+   */
+  public function get_default_driver()
+  {
+    return $this->get_driver_by_name('database');
   }
   
   /**

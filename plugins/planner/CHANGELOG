@@ -20,3 +20,5 @@ VERSION                COMMENT
 3.0.24                 - Implement myrc_sprites plugin
 3.0.25                 - Remove timepicker from required plugins
 3.0.26                 - Remove jqueryui from required plugins (loaded over libgpl)
+3.0.27                 - Remove qtip plugin from required plugins
+3.0.28                 - Roundcube 1.1 compatibility

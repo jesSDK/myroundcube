@@ -22,7 +22,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once (dirname(__FILE__).'/SabreDAV/vendor/autoload.php');
+require_once (dirname(__FILE__).'/../../libcalendaring/SabreDAV/vendor/autoload.php');
 require_once (dirname(__FILE__).'/vobject_sanitize.php');
 
 
@@ -36,6 +36,7 @@ class caldav_client extends Sabre\DAV\Client
     public $path;
     private $libvcal;
     private $rc;
+    private $user_agent;
 
     /**
      *  Default constructor for CalDAV client.
@@ -45,8 +46,9 @@ class caldav_client extends Sabre\DAV\Client
      * @param string Password for HTTP basic auth.
      * @param boolean Verify SSL cert. // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
      */
-    public function __construct($uri, $user = null, $pass = null, $verifyPeer = true) // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
+    public function __construct($uri, $user = null, $pass = null, $verifySSL = array(true, true)) // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
     {
+        $this->user_agent = 'MyRoundcube-SabreDAV/' . Sabre\DAV\Version::VERSION;
 
         // Include libvcalendar on demand ...
         if(!class_exists("libvcalendar"))
@@ -58,7 +60,6 @@ class caldav_client extends Sabre\DAV\Client
         $tokens = parse_url($uri);
         $this->base_uri = $tokens['scheme']."://".$tokens['host'].($tokens['port'] ? ":".$tokens['port'] : null);
         $this->path = $tokens['path'].($tokens['query'] ? "?".$tokens['query'] : null);
-        $this->verifyPeer = $verifyPeer;
         $settings = array(
             'baseUri' => $this->base_uri,
             'authType' => Sabre\DAV\Client::AUTH_BASIC
@@ -68,6 +69,10 @@ class caldav_client extends Sabre\DAV\Client
         if ($pass) $settings['password'] = $pass;
 
         parent::__construct($settings);
+
+        $this->verifyPeer = $verifySSL[0];
+        $this->verifyHost = $verifySSL[1];
+        $this->authType = CURLAUTH_BASIC | CURLAUTH_ANY;
     }
 
     /**
@@ -164,7 +169,9 @@ class caldav_client extends Sabre\DAV\Client
             foreach ($vcals as $path => $response)
             {
                 $vcal = $response[self::CLARK_CALDATA];
-                $vobject_sanitize = new vobject_sanitize($vcal, array('CATEGORIES'));
+                $vobject_sanitize = new vobject_sanitize($vcal, array('CATEGORIES'), 'serialize');
+                $vcal = $vobject_sanitize->vobject;
+                $vobject_sanitize = new vobject_sanitize($vcal, array('RDATE'), 'unserialize');
                 $vcal = $vobject_sanitize->vobject;
                 foreach ($this->libvcal->import($vcal) as $event) {
                     $events[$path] = $event;
@@ -198,6 +205,8 @@ class caldav_client extends Sabre\DAV\Client
      */
     public function prop_report($url, array $properties, array $event_urls = array(), $depth = 1)
     {
+        $url = slashify($url); // iCloud
+        
         $parent_tag = sizeof($event_urls) > 0 ? "c:calendar-multiget" : "d:propfind";
         $method = sizeof($event_urls) > 0 ? 'REPORT' : 'PROPFIND';
 
@@ -244,7 +253,8 @@ class caldav_client extends Sabre\DAV\Client
 
         $response = $this->request($method, $url, $body, array(
             'Depth' => $depth,
-            'Content-Type' => 'application/xml'
+            'Content-Type' => 'application/xml',
+            'User-Agent' => $this->user_agent
         ));
 
         $result = $this->parseMultiStatus($response['body']);
@@ -279,17 +289,20 @@ class caldav_client extends Sabre\DAV\Client
     {
         try
         {
-            $headers = array("Content-Type" => "text/calendar; charset=utf-8");
+            $headers = array(
+              'Content-Type' => 'text/calendar; charset=utf-8',
+              'User-Agent' => $this->user_agent
+            );
             if ($etag) $headers["If-Match"] = '"'.$etag.'"';
 
             // Temporarily disable error reporting since libvcal seems not checking array key properly.
             // TODO: Remove this todo if we could ensure that those errors come not from incomplete event properties.
-            $err_rep = error_reporting(E_ERROR);
+            //$err_rep = error_reporting(E_ERROR);
             $vcal = $this->libvcal->export(array($event));
             if (is_array($vcal))
                 $vcal = array_shift($vcal);
-            error_reporting($err_rep);
 
+            //error_reporting($err_rep);
             $response = $this->request('PUT', $path, $vcal, $headers);
 
             // Following http://code.google.com/p/sabredav/wiki/BuildingACalDAVClient#Creating_a_calendar_object, the
@@ -326,9 +339,25 @@ class caldav_client extends Sabre\DAV\Client
      **/
     public function remove_event($path, $etag = null)
     {
+        return $this->delete_request($path, $etag);
+    }
+    
+    /**
+     * Fires a DELETE request to a given URL.
+     *
+     * @see http://code.google.com/p/sabredav/wiki/BuildingACalDAVClient#Deleting_a_calendar_object
+     * @param string Path.
+     * @param string Current etag to match against server data or null.
+     * @return True on success, -1 if precondition failed i.e. local etag is not up to date, false on error.
+     **/
+    public function delete_request($path, $etag = null)
+    {
         try
         {
-            $headers = array("Content-Type" => "text/calendar; charset=utf-8");
+            $headers = array(
+              'Content-Type' => 'text/calendar; charset=utf-8',
+              'User-Agent' => $this->user_agent
+            );
             if ($etag) $headers["If-Match"] = '"'.$etag.'"';
 
             $response = $this->request('DELETE', $path, null, $headers);
@@ -403,7 +432,8 @@ class caldav_client extends Sabre\DAV\Client
         
         try {
             $response = $this->request('MKCOL', $url, $body, array(
-                'Content-Type' => 'application/xml'
+                'Content-Type' => 'application/xml',
+                'User-Agent' => $this->user_agent
             ));
         }
         catch(Sabre\DAV\Exception $err)
@@ -431,6 +461,7 @@ class caldav_client extends Sabre\DAV\Client
         return $this->request('REPORT', $path, $body, array(
             'Content-Type' => 'application/xml',
             'Depth' => 1,
+            'User-Agent' => $this->user_agent
         ));
     }
 };

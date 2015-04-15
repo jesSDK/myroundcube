@@ -6,7 +6,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # 
-# Copyright (c) 2014 Roland 'Rosali' Liebl
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
 # dev-team [at] myroundcube [dot] com
 # http://myroundcube.com
 # 
@@ -16,11 +16,11 @@ class myrc_sprites extends rcube_plugin
   static private $plugin = 'myrc_sprites';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?myrc_sprite" target="_blank">Documentation</a>';
-  static private $version = '1.0.5';
-  static private $date = '25-12-2014';
+  static private $version = '1.1.4';
+  static private $date = '13-04-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0.3',
+    'Roundcube' => '1.1',
     'PHP' => '5.3'
   );
   
@@ -32,6 +32,11 @@ class myrc_sprites extends rcube_plugin
   );
 
   function init(){
+    /* Pre-condidition check */
+    if(!class_exists('rcube')){
+      return;
+    }
+
     $skin = rcube::get_instance()->config->get('skin', 'larry');
     if(file_exists(INSTALL_PATH . 'plugins/myrc_sprites/skins/' . $skin . '/myrc_sprites.css')){
       $this->include_stylesheet('skins/' . $skin . '/myrc_sprites.css');

@@ -4,10 +4,10 @@
  | ./plugins/settings/localization/cs_CZ.inc
  |
  | Language file of MyRoundcube Plugins Bundle
- | Copyright (C) 2010-2014, Roland 'rosali' Liebl
+ | Copyright (C) 2010-2015, Roland 'rosali' Liebl
  |
  +-----------------------------------------------------------------------+
- | Author: tachec - 08/13/2014 15:21:10
+ | Author: tachec - 01/20/2015 12:34:00
  +-----------------------------------------------------------------------+
 */
 
@@ -21,7 +21,7 @@ $labels['classic'] = 'Výchozí';
 $labels['larry'] = 'Larry';
 $labels['remotefolders'] = 'Speciální složky';
 $labels['myroundcube'] = 'MyRoundCube';
-$labels['serversettings_serversettings'] = 'Další nastavení účtu';
-$labels['serversettings_description'] = 'Další nastavení účtu';
+$labels['serversettings.serversettings'] = 'Další nastavení účtu';
+$labels['serversettings.description'] = 'Další nastavení účtu';
 
 ?>

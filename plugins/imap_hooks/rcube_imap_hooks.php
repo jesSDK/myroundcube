@@ -3,6 +3,7 @@ class rcube_imap_hooks extends rcube_imap
 {
     public function __construct()
     {
+        $this->plugins = rcube::get_instance()->plugins;
         $this->conn = new rcube_imap_hooks_generic();
 
         // Set namespace and delimiter from session,

@@ -616,7 +616,7 @@ function rcube_calendar_ui(settings)
         });
         $('input.edit-recurring-savemode[value="all"]').click(function(){
           if ($(this).prop('checked')) {
-            $('#eventtabs').tabs('option', 'disabled', [0]);
+            $('#eventtabs').tabs('option', 'disabled', []);
           }
         });
       }
@@ -819,7 +819,7 @@ function rcube_calendar_ui(settings)
       $('#edit-tab-attachments')[(calendar.attachments?'show':'hide')]();
 
       // activate the first tab
-      $('#eventtabs').tabs('select', 0);
+      $('#eventtabs').tabs('option', 'active', 0);
       
       // hack: set task to 'calendar' to make all dialog actions work correctly
       var comm_path_before = rcmail.env.comm_path;
@@ -1820,6 +1820,10 @@ function rcube_calendar_ui(settings)
     /*** fullcalendar event handlers ***/
 
     var fc_event_render = function(event, element, view) {
+      var client_tz = new Date().getTimezoneOffset() / 60;
+      var server_tz = rcmail.env.libcal_settings.timezone;
+      var adjust_tz = 2 * client_tz + server_tz;
+
       // Begin mod by Rosali
       if (event.exdate && event.parent) {
         window.setTimeout(function() { fc.fullCalendar('removeEvents', event._id); }, 10);
@@ -2110,8 +2114,9 @@ function rcube_calendar_ui(settings)
             $('.ui-dialog-buttonpane button', $dialog.parent()).button('enable');
 
             // display error message if no sophisticated response from server arrived (e.g. iframe load error)
-            if (me.import_succeeded === null)
+            if (me.import_succeeded === null) {
               rcmail.display_message(rcmail.get_label('importerror', 'calendar'), 'error');
+            }
           });
 
           // display upload indicator (with extended timeout)
@@ -2154,8 +2159,15 @@ function rcube_calendar_ui(settings)
       rcmail.set_busy(false, null, me.saving_lock);
       rcmail.gui_objects.importform.reset();
 
-      if (p.refetch)
-        this.refresh(p);
+      if (p.refetch) {
+        if($('.button.refresh').get(0)){
+          $('.button.refresh').trigger('click');
+        }
+        else{
+          rcmail.refresh(); // Mod by Rosali (We skip sync on import events task so it has to be trigged on finish)
+        }
+        //this.refresh(p);
+      }
     };
 
     // callback from server to report errors on import
@@ -2489,8 +2501,8 @@ function rcube_calendar_ui(settings)
         id: id
       }, cal);
       
-      this.calendars[id].color = settings.event_coloring % 2  ? '' : '#' + cal.color;
-      
+      this.calendars[id].color = settings.event_coloring % 2 ? '' : '#' + cal.color;
+       
       if ((active = cal.active || false)) {
         event_sources.push(this.calendars[id]);
       }
@@ -2809,7 +2821,7 @@ function rcube_calendar_ui(settings)
       // scroll to current time
       var $this = $(this);
       var widget = $this.autocomplete('widget');
-      var menu = $this.data('autocomplete').menu;
+      var menu = $this.data('ui-autocomplete').menu;
       var amregex = /^(.+)(a[.m]*)/i;
       var pmregex = /^(.+)(a[.m]*)/i;
       var val = $(this).val().replace(amregex, '0:$1').replace(pmregex, '1:$1');
@@ -2910,24 +2922,26 @@ function rcube_calendar_ui(settings)
         .autocomplete({
           delay: 100,
           minLength: 1,
+          appendTo: '#eventedit',
           source: autocomplete_times,
           open: autocomplete_open,
           change: event_times_changed,
           select: function(event, ui) {
-            $(this).val(ui.item[0]);
+            $(this).val(ui.item[0]).change();
             return false;
           }
         })
         .click(function() {  // show drop-down upon clicks
           $(this).autocomplete('search', $(this).val() ? $(this).val().replace(/\D.*/, "") : " ");
         }).each(function(){
-          $(this).data('autocomplete')._renderItem = function(ul, item) {
+          $(this).data('ui-autocomplete')._renderItem = function(ul, item) {
             return $('<li>')
-              .data('item.autocomplete', item)
+              .data('ui-autocomplete-item', item)
               .append('<a>' + item[0] + item[1] + '</a>')
               .appendTo(ul);
             };
         });
+
 
       // register events on alarm fields
       init_alarms_edit('#eventedit');

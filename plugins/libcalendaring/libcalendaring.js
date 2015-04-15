@@ -405,7 +405,7 @@ function rcube_libcalendaring(settings)
             resizable: true,
             closeOnEscape: false,
             dialogClass: 'alarm',
-            title: '<span class="ui-icon ui-icon-alarms" style="float:left; margin:0 4px 0 0"></span>' + rcmail.gettext('alarmtitle','libcalendaring'),
+            title: rcmail.gettext('alarmtitle','libcalendaring'),
             buttons: buttons,
             close: function() {
               $('#alarm-snooze-dropdown').hide();

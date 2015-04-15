@@ -1,21 +1,29 @@
 <?php
 
-/* TinyMCE gzip compression */
-$config['tinymce_gzip'] = true;
+// TinyMCE full featured editor
+  /* TinyMCE v4 plugins */
+$config['tinymce4_full_plugins'] = 'autolink charmap code colorpicker directionality emoticons link image media nonbreaking paste table tabfocus textcolor searchreplace';
 
-/* TinyMCE plugins */
-$config['tinymce_plugins_compose'] = 'if(typeof config == "undefined"){config = a};' .
-  '"Jsvk,paste,emotions,inlinepopups,media,nonbreaking,table,searchreplace,visualchars,directionality,tabfocus"' .
-  ' + (config.spellcheck ? ",spellchecker" : "")';
-$config['tinymce_plugins_identity'] = "'paste,tabfocus,inlinepopups,emotions'";
+  /* TinyMCE v4 toolbar */
+$config['tinymce4_full_toolbar'] = 'bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent ltr rtl blockquote | forecolor backcolor | fontselect fontsizeselect | link unlink table | emoticons charmap image media | code searchreplace undo redo';
 
-/* TinyMCE button rows */
-$config['tinymce_buttons_compose_row1'] = "'bold,italic,underline,|,justifyleft,justifycenter,justifyright," .
-  "justifyfull,|,bullist,numlist,outdent,indent,ltr,rtl,blockquote,|,forecolor,backcolor,fontselect,fontsizeselect'";
-$config['tinymce_buttons_compose_row2'] = "if(typeof config == 'undefined'){config = a};'Jsvk,|,link,unlink," .
-  "table,|,emotions,charmap,image,media,|,code,search' + (config.spellcheck ? ',spellchecker' : '') + ',undo,redo'";
-$config['tinymce_buttons_identity_row1'] = "'bold,italic,underline,strikethrough,justifyleft,justifycenter," .
-  "justifyright,justifyfull,separator,outdent,indent,hr,link,unlink,code,forecolor'";
-$config['tinymce_buttons_identity_row2'] = "'fontselect,fontsizeselect,|,emotions,charmap,image'";
+  /* TinyMCE v4 other config options (http://www.tinymce.com/wiki.php/Configuration) */
+$config['tinymce4_full_etc'] = array(
+  'forced_root_block' => '',
+  'force_p_newlines' => false,
+  'force_br_newlines' => true,
+);
 
-?>
+// TinyMCE minmal featured editor
+  /* TinyMCE v4 plugins */
+$config['tinymce4_minimal_plugins'] = 'autolink charmap code colorpicker hr image link paste tabfocus textcolor';
+
+  /* TinyMCE v4 toolbar */
+$config['tinymce4_minimal_toolbar'] = 'bold italic underline alignleft aligncenter alignright alignjustify | outdent indent charmap hr link unlink image code forecolor | fontselect fontsizeselect';
+
+  /* TinyMCE v4 other config options (http://www.tinymce.com/wiki.php/Configuration) */
+$config['tinymce4_minimal_etc'] = array(
+  'forced_root_block' => '',
+  'force_p_newlines' => false,
+  'force_br_newlines' => true,
+);

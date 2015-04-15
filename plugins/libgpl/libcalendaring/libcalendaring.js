@@ -37,7 +37,7 @@ function rcube_libcalendaring(settings)
     // general datepicker settings
     var datepicker_settings = {
         // translate from fullcalendar format to datepicker format
-        dateFormat: settings.date_format.replace(/M/g, 'm').replace(/mmmmm/, 'MM').replace(/mmm/, 'M').replace(/dddd/, 'DD').replace(/ddd/, 'D').replace(/yy/g, 'y'),
+        dateFormat: settings.date_format ? settings.date_format.replace(/M/g, 'm').replace(/mmmmm/, 'MM').replace(/mmm/, 'M').replace(/dddd/, 'DD').replace(/ddd/, 'D').replace(/yy/g, 'y') : 'yy-mm-dd',
         firstDay : settings.first_day,
         dayNamesMin: settings.days_short,
         monthNames: settings.months,
@@ -69,15 +69,15 @@ function rcube_libcalendaring(settings)
       var fromto, duration = event.end.getTime() / 1000 - event.start.getTime() / 1000;
       if (event.allDay && !event.allDayfake) {
         fromto = this.format_datetime(event.start, 1)
-          + (duration > 86400 || event.start.getDay() != event.end.getDay() ? ' &mdash; ' + this.format_datetime(event.end, 1) : '');
+          + (duration > 86400 || event.start.getDay() != event.end.getDay() ? ' - ' + this.format_datetime(event.end, 1) : ''); // Mod by Rosali
       }
       else if (duration < 86400 && event.start.getDay() == event.end.getDay()) {
         fromto = this.format_datetime(event.start, 0)
-          + (duration > 0 ? ' &mdash; ' + this.format_datetime(event.end, 2) : '');
+          + (duration > 0 ? ' - ' + this.format_datetime(event.end, 2) : ''); // Mod by Rosali
       }
       else {
         fromto = this.format_datetime(event.start, 0)
-          + (duration > 0 ? ' &mdash; ' + this.format_datetime(event.end, 0) : '');
+          + (duration > 0 ? ' - ' + this.format_datetime(event.end, 0) : ''); // Mod by Rosali
       }
 
       return fromto;
@@ -405,7 +405,7 @@ function rcube_libcalendaring(settings)
             resizable: true,
             closeOnEscape: false,
             dialogClass: 'alarm',
-            title: '<span class="ui-icon ui-icon-alarms" style="float:left; margin:0 4px 0 0"></span>' + rcmail.gettext('alarmtitle','libcalendaring'),
+            title: rcmail.gettext('alarmtitle','libcalendaring'),
             buttons: buttons,
             close: function() {
               $('#alarm-snooze-dropdown').hide();
@@ -669,8 +669,8 @@ window.rcmail && rcmail.addEventListener('init', function(evt) {
   if (rcmail.env.libcal_settings) {
     var libcal = new rcube_libcalendaring(rcmail.env.libcal_settings);
     rcmail.addEventListener('plugin.display_alarms', function(alarms){ libcal.display_alarms(alarms); });
-    if (!rcmail.env.framed && !rcmail.env.extwin && rcmail.env.username) {
-      window.setTimeout("rcmail.http_post('refresh', '');", 1000); // Mod by Rosali (fetch reminders almost immediately)
+    if (!rcmail.env.framed && !rcmail.env.extwin) {
+      //window.setTimeout("rcmail.refresh();", 1000); // Mod by Rosali (fetch reminders almost immediately)
     }
   }
 });

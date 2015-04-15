@@ -1,43 +1,26 @@
 <?php
-
-/**
- * Save password plugin
- *
- *
- * @version 3.0.2 - 10.08.2014
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- *
- **/
- 
-/**
- *
- * Usage: http://myroundcube.com
- *
- *        Get the password when user is not logged in:
- *     
- *        $password = savepassword::getpw("myuser@mydomain.com");
- *
- * NOTICE:
- * main.inc.php:
- * $rcmail_config['des_key'] = 'rcmail-!24ByteDESkey*Str';
- *
- * If you change the key after first time usage, saved passwords gets invalid !!!
- * Also make sure to use same key on server rcube installation with access to a common database
- * 
- **/
- 
+# 
+# This file is part of MyRoundcube "savepassword" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+# 
 class savepassword extends rcube_plugin
 {
     /* unified plugin properties */
     static private $plugin = 'savepassword';
     static private $author = 'myroundcube@mail4us.net';
     static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?savepassword" target="_blank">Documentation</a>';
-    static private $version = '3.0.2';
-    static private $date = '10-08-2014';
+    static private $version = '3.0.3';
+    static private $date = '26-02-2015';
     static private $licence = 'GPL';
     static private $requirements = array(
-      'Roundcube' => '1.0',
+      'Roundcube' => '1.1',
       'PHP' => '5.3',
       'required_plugins' => array(
         'db_version' => 'require_plugin',

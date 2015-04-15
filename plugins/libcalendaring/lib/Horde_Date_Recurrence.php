@@ -437,7 +437,6 @@ class Horde_Date_Recurrence
         if ($this->recurInterval == 0 && empty($this->rdates)) {
             return false;
         }
-
         switch ($this->getRecurType()) {
         case self::RECUR_DAILY:
             $diff = $this->start->diff($after);
@@ -574,10 +573,9 @@ class Horde_Date_Recurrence
             // If we're starting past this month's recurrence of the event,
             // look in the next month on the day the event recurs.
             if ($after->mday > $start->mday) {
+                $after->mday = $start->mday; // Mod by Rosali (increase month after day - otherwise if we are on 30th and increase the day we are already in the next month)
                 ++$after->month;
-                $after->mday = $start->mday;
             }
-
             // Adjust $start to be the first match.
             $offset = ($after->month - $start->month) + ($after->year - $start->year) * 12;
             $offset = floor(($offset + $this->recurInterval - 1) / $this->recurInterval) * $this->recurInterval;
@@ -793,7 +791,9 @@ class Horde_Date_Recurrence
                 $next->year  = $rdate->year;
                 $next->month = $rdate->month;
                 $next->mday  = $rdate->mday;
-                if ($next->compareDateTime($after) >= 0) {
+                // Mod by Rosali ($next->compareDateTime return month+1 ! Why?)
+                $compareDateTime = clone $next;
+                if ($compareDateTime->compareDateTime($after) >= 0) {
                     return $next;
                 }
             }
@@ -1585,7 +1585,6 @@ class Horde_Date_Recurrence
 
         $hash = array('interval' => $this->getRecurInterval());
         $start = $this->getRecurStart();
-
         switch ($this->getRecurType()) {
         case self::RECUR_DAILY:
             $hash['cycle'] = 'daily';

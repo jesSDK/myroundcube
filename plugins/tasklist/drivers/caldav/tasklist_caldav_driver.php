@@ -64,8 +64,8 @@ class tasklist_caldav_driver extends tasklist_database_driver
      */
     static public function debug_log($msg)
     {
-        if(self::$debug === true)
-            rcmail::console(__CLASS__.': '.$msg);
+      if (self::$debug === true)
+        rcmail::console(__CLASS__.': '.$msg);
     }
 
     /**
@@ -84,7 +84,11 @@ class tasklist_caldav_driver extends tasklist_database_driver
             if($props !== false) {
                 $this->_expand_pass($props);
                 self::debug_log("Initialize sync client for calendar ".$cal_id);
-                $this->sync_clients[$cal_id] = new caldav_sync($cal_id, $props, $this->rc->config->get('calendar_curl_verify_peer', true), 'tasklist_caldav_driver');
+                $sslverify = array(
+                  $this->rc->config->get('calendar_curl_verify_peer', true),
+                  $this->rc->config->get('calendar_curl_verify_host', true)
+                );
+                $this->sync_clients[$cal_id] = new caldav_sync($cal_id, $props, $sslverify, 'tasklist_caldav_driver');
             }
         }
     }
@@ -101,7 +105,6 @@ class tasklist_caldav_driver extends tasklist_database_driver
         
         $num_created = 0;
         $num_updated = 0;
-
         foreach($updates as $update)
         {
             if($update['remote_event']['_type'] == 'task')
@@ -172,8 +175,10 @@ class tasklist_caldav_driver extends tasklist_database_driver
                         $update['remote_event']['date'] = $due[0];
                         $updete['remote_event']['time'] = $due[1];
                     }
+                    
+                    
                     $task_id = parent::create_task($update['remote_event']);
-                
+
                     if($task_id)
                     {
                         self::debug_log("Created event \"$task_id\".");
@@ -227,7 +232,7 @@ class tasklist_caldav_driver extends tasklist_database_driver
         if($callback && $this->rc->action == 'refresh')
         {
             $this->events = new caldav_driver($this->plugin, false);
-            
+
             foreach($updates as $idx => $update)
             {
                 if($local_event = $this->events->get_event($update['remote_event']['uid']))
@@ -240,7 +245,6 @@ class tasklist_caldav_driver extends tasklist_database_driver
             if(is_array($this->updates))
             {
                 list($this->updates, $synced_event_ids) = $this->updates;
-                
                 $events = array();
                 foreach($this->events->load_all_events($this->current_cal_id) as $event)
                 {
@@ -251,8 +255,8 @@ class tasklist_caldav_driver extends tasklist_database_driver
                 }
                 foreach($events as $event)
                 {
-                    if(array_search($event['id'], $updated_event_ids) === false && // No updated task
-                        array_search($task['id'], $synced_event_ids) === false) // No in-sync task
+                    if(array_search($event['id'], $updated_event_ids) === false && // No updated event
+                        array_search($event['id'], $synced_event_ids) === false) // No in-sync event
                     {
                         // Assume: Event not in sync and not updated, so delete!
                         $this->events->remove_event($event, true);
@@ -346,13 +350,16 @@ class tasklist_caldav_driver extends tasklist_database_driver
      */
     private function _is_synced($cal_id)
     {
+        $now = date(self::DB_DATE_FORMAT);
+        $last = date(self::DB_DATE_FORMAT, time() - $this->sync_clients[$cal_id]->sync * 60);
+
         // Atomic sql: Check for exceeded sync period and update last_change.
         $query = $this->rc->db->query(
             "UPDATE " . $this->db_lists_caldav_props ." " .
-            "SET last_change = CURRENT_TIMESTAMP " .
+            "SET last_change = ? " .
             "WHERE obj_id = ? AND obj_type = ? " .
-            "AND last_change <= (CURRENT_TIMESTAMP - ?);",
-        $cal_id, self::OBJ_TYPE_VCAL, $this->sync_period);
+            "AND last_change <= ?",
+            $now, $cal_id, self::OBJ_TYPE_VCAL, $last);
 
         if($query->rowCount() > 0)
         {
@@ -697,6 +704,7 @@ class tasklist_caldav_driver extends tasklist_database_driver
                 
                 if(is_array($props))
                 {
+                    $task = $this->_save_preprocess($task);
                     $success = $sync_client->update_event($task, $props);
                 }
                 else
@@ -785,6 +793,7 @@ class tasklist_caldav_driver extends tasklist_database_driver
                 $task['parent_id'] = $parent_task['uid'] . ($ts ? ('-' . $ts) : '');
             }
             $sync_client = $this->sync_clients[$cal_id];
+            $task = $this->_save_preprocess($task);
             $props = $sync_client->create_event($task);
             if($props === false)
             {
@@ -863,7 +872,6 @@ class tasklist_caldav_driver extends tasklist_database_driver
                      if(isset($this->sync_clients[$cal_id]))
                      {
                         $success = $this->_edit_task($task_id, $cal_id);
-                        
                         if($success === true)
                         {
                             self::debug_log("Successfully updated task \"$task_id\".");
@@ -909,7 +917,20 @@ class tasklist_caldav_driver extends tasklist_database_driver
         $task = parent::get_master(array('id' => $task_id));
         $task['priority'] = $task['flagged'] ? intval($task['flagged']) : 0;
         $task['_type'] = 'task';
-
+        if($task['parent_id'])
+        {
+            $parent_task = parent::get_task(array('id' => $task['parent_id']));
+            $temp = explode('-', $task['parent_id']);
+            if(count($temp) > 1)
+            {
+                $ts = end($temp);
+            }
+            else
+            {
+                $ts = false;
+            }
+            $task['parent_id'] = $parent_task['uid'] . ($ts ? ('-' . $ts) : '');
+        }
         if($task['tags'])
         {
             $task['categories'] = $task['tags'];
@@ -923,7 +944,7 @@ class tasklist_caldav_driver extends tasklist_database_driver
             }
             if(strtotime($time))
             {
-                $task['start'] = new DateTime($time, $this->plugin->timezon);
+                $task['start'] = new DateTime($time, $this->plugin->timezone);
             }
         }
         if($task['date'])
@@ -974,22 +995,10 @@ class tasklist_caldav_driver extends tasklist_database_driver
         $sync_client = $this->sync_clients[$cal_id];
         $prop_id = $task['current']['recurrence_id'] ? (int)$task['current']['recurrence_id'] : $task_id;
         $props = $this->_get_caldav_props($prop_id, self::OBJ_TYPE_VTODO);
-        if($task['parent_id'])
-        {
-            $parent_task = parent::get_task(array('id' => $task['parent_id']));
-            $temp = explode('-', $task['parent_id']);
-            if(count($temp) > 1)
-            {
-                $ts = end($temp);
-            }
-            else
-            {
-                $ts = false;
-            }
-            $task['parent_id'] = $parent_task['uid'] . ($ts ? ('-' . $ts) : '');
-        }
+
         if(is_array($props))
         {
+            $task = $this->_save_preprocess($task);
             $success = $sync_client->update_event($task, $props);
         }
         else
@@ -1022,68 +1031,96 @@ class tasklist_caldav_driver extends tasklist_database_driver
      */
     public function delete_task($prop, $force = true)
     {
-        $prop = $this->_get_id($prop);
-        $task_id = (int) $prop['id'];
-        $cal_id = (int) $prop['list'];
-
-        if($prop['isclone'] && $prop['mode'] == 2)
-        {
-            $task = parent::get_task($prop);
-            if($success = parent::delete_task($prop, true))
-            {
-                $task = parent::get_master($prop);
-                if($success = $this->edit_task($task))
-                {
-                    $success = $this->_edit_task($task_id, $cal_id);
-                }
-            }
+      $prop = $this->_get_id($prop);
+      $task = (array) parent::get_task($prop);
+      $master = parent::get_master($prop);
+      $task_id = (int) $task['id'];
+      $cal_id = (int) ($prop['list'] ? $prop['list'] : $task['list']);
+      $success = false;
+      if ($prop['isclone'] && $prop['mode'] == 2) { // create EXCEPTION
+        if ($success = parent::delete_task($prop, true)) {
+          if ($props = $this->_get_caldav_props($task_id, self::OBJ_TYPE_VTODO)) {
+            $success = $this->_edit_task($task_id, $cal_id);
+          }
         }
-        else
-        {
-            $subtasks = $prop['mode'];
-            $delete_subtasks = $subtasks == 4 ? true : false;
-            $props = $this->_get_caldav_props($task_id, self::OBJ_TYPE_VTODO);
-            $task = parent::get_master($prop);
-            $task_id = (int) $task['id'];
-            $children = (array) parent::get_childs($prop, true);
-            if($success = parent::delete_task($task, true, $delete_subtasks))
-            {
-                if(isset($this->sync_clients[$cal_id]))
-                {
-                    $sync_client = $this->sync_clients[$cal_id];
-                    $success = $sync_client->remove_event($props);
-                    foreach($children as $child_id)
-                    {
-                        $child_props = $this->_get_caldav_props($child_id, self::OBJ_TYPE_VTODO);
-                        if(is_array($child_props))
-                        {
-                            if($subtasks == 3)
-                            {
-                                $child = $this->get_master($child_id);
-                                $sync_client->update_event($child, $child_props);
-                            }
-                            else if($subtasks == 4)
-                            {
-                                $sync_client->remove_event($child_props);
-                            }
-                        }
-                    }
-
-                    if($success === true)
-                    {
-                        self::debug_log("Successfully removed task \"$task_id\".");
-                    }
-                    else
-                    {
-                        self::debug_log("Unkown error while removing caldav task \"$task_id\", force sync of calendar \"$task_id\"!");
-                    }
-                    // Trigger calendar sync to update ctags and etags.
-                    $this->_sync_calendar($cal_id);
-                }
+      }
+      else if (!$prop['isclone'] && $prop['mode'] == 3) { // delete parent and remove relation from subtasks
+        if (isset($this->sync_clients[$cal_id])) {
+          $sync_client = $this->sync_clients[$cal_id];
+          $children = (array) parent::get_childs($prop, true);
+          foreach ($children as $child_id) { // process childs
+            $child_props = $this->_get_caldav_props($child_id, self::OBJ_TYPE_VTODO);
+            if (is_array($child_props)) {
+              if ($child = $this->get_master(array('id' => $child_id))) {
+                unset($child['parent_id']);
+                $child = $this->_save_preprocess($child);
+                $sync_client->update_event($child, $child_props);
+              }
             }
+          }
+          $props = $this->_get_caldav_props($task_id, self::OBJ_TYPE_VTODO);
+          if ($success = parent::delete_task($prop, true)) {
+            $success = $sync_client->remove_event($props);
+          }
         }
-        
-        return $success;
+        else {
+          $success = parent::delete_task($prop, true);
+        }
+      }
+      else if (!$prop['isclone'] && $prop['mode'] == 4) { // delete parent and subtasks
+        if (isset($this->sync_clients[$cal_id])) {
+          $sync_client = $this->sync_clients[$cal_id];
+          $children = (array) parent::get_childs($prop, true);
+          foreach ($children as $child_id) { // process childs
+            $child_props = $this->_get_caldav_props($child_id, self::OBJ_TYPE_VTODO);
+            if (is_array($child_props)) {
+              $task = $this->_save_preprocess($child_props);
+              $sync_client->remove_event($child_props);
+            }
+          }
+          $props = $this->_get_caldav_props($task_id, self::OBJ_TYPE_VTODO);
+          if ($success = parent::delete_task($prop, true)) { // process parent
+            $success = $sync_client->remove_event($props);
+          }
+        }
+        else {
+          $success = parent::delete_task($prop, true);
+        }
+      }
+      else {
+        $props = $this->_get_caldav_props($task_id, self::OBJ_TYPE_VTODO);
+        $props = $this->_get_caldav_props($task_id, self::OBJ_TYPE_VTODO);
+        if ($success = parent::delete_task($task)) {
+          if ($master['id'] != $prop['id']) { // delete EXCEPTION
+            if (isset($this->sync_clients[$cal_id])) {
+              $success = $this->_edit_task($master['id'], $cal_id);
+            }
+            $this->_reload_list();
+          }
+          else {
+            if (is_array($props)) {
+              if (isset($this->sync_clients[$cal_id])) {
+                $sync_client = $this->sync_clients[$cal_id];
+                $success = $sync_client->remove_event($props);
+              }
+            }
+          }
+        }
+      }
+      
+      if ($success === true) {
+        self::debug_log("Successfully removed task \"$task_id\".");
+      }
+      else {
+        self::debug_log("Unkown error while removing caldav task \"$task_id\", force sync of calendar \"$task_id\"!");
+      }
+      
+      // Trigger calendar sync to update ctags and etags.
+      if (isset($this->sync_clients[$cal_id])) {
+        $this->_sync_calendar($cal_id);
+      }
+      
+      return $success;
     }
 
     /**
@@ -1112,22 +1149,26 @@ class tasklist_caldav_driver extends tasklist_database_driver
 
       return null;
     }
+    
     /**
      * Reload list
      */
     private function _reload_list($task = null, $old_task = null)
     {
-        $reload = true;
-        if ($task && $old_task)
+        if ($this->rc->task == 'tasks')
         {
-            if($task['status'] == 'COMPLETED' && $old_task['status'] != 'COMPLETED')
+            $reload = true;
+            if ($task && $old_task)
             {
-                $reload = false;
+                if ($task['status'] == 'COMPLETED' && $old_task['status'] != 'COMPLETED')
+                {
+                    $reload = false;
+                }
             }
-        }
-        if($reload)
-        {
-            $this->rc->output->command('plugin.reload_data');
+            if ($reload)
+            {
+                $this->rc->output->command('plugin.reload_data');
+            }
         }
     }
     
@@ -1147,6 +1188,89 @@ class tasklist_caldav_driver extends tasklist_database_driver
         }
       }
     
+      return $task;
+    }
+    
+    /**
+     * Final task modifications before passing to CalDAV client
+     *
+     * @param array  task
+     *
+     * @return array modified task
+     */
+    private function _save_preprocess($task)
+    {
+      $task['_type'] = 'task';
+      $tz = new DateTimezone('UTC');
+      if ($task['start']) {
+        if (is_array($task['start'])) {
+          $task['start'] = new DateTime($task['start']['date'], new DateTimeZone($task['start']['timezone'] ? $task['start']['timezone'] : $this->plugin->timezone));
+        }
+        $task['start']->setTimezone($tz);
+      }
+      if ($task['due']) {
+        if (is_array($task['due'])) {
+          $task['due'] = new DateTime($task['due']['date'], new DateTimeZone($task['due']['timezone'] ? $task['due']['timezone'] : $this->plugin->timezone));
+        }
+        $task['due']->setTimezone($tz);
+      }
+      if ($task['recurrence_date']) {
+        if (is_array($task['recurrence_date'])) {
+          $task['recurrence_date'] = new DateTime($task['recurrence_date']['date'], new DateTimeZone($task['recurrence_date']['timezone'] ? $task['recurrence_date']['timezone'] : $this->plugin->timezone));
+        }
+        $task['recurrence_date'] = $task['recurrence_date']->setTimezone($tz);
+      }
+      if (is_array($task['recurrence']) && is_array($task['recurrence']['RDATE'])) {
+        foreach ($task['recurrence']['RDATE'] as $idx => $rdate) {
+          if (is_array($task['recurrence']['RDATE'][$idx])) {
+            $task['recurrence']['RDATE'][$idx] = new DateTime($task['recurrence']['RDATE'][$idx]['date'], new DateTimeZone($task['recurrence']['RDATE'][$idx]['timezone'] ? $task['recurrence']['RDATE'][$idx]['timezone'] : $this->plugin->timezone));
+          }
+          $task['recurrence']['RDATE'][$idx] = $task['recurrence']['RDATE'][$idx]->setTimezone($tz);
+        }
+      }
+      if (is_array($task['recurrence']) && is_array($task['recurrence']['EXCEPTIONS'])) {
+        foreach ($task['recurrence']['EXCEPTIONS'] as $idx => $exception) {
+          $task['recurrence']['EXCEPTIONS'][$idx]['_type'] = 'task';
+          if ($task['recurrence']['EXCEPTIONS'][$idx]['created']) {
+            if (is_array($task['recurrence']['EXCEPTIONS'][$idx]['created'])) {
+              $task['recurrence']['EXCEPTIONS'][$idx]['created'] = new DateTime($task['recurrence']['EXCEPTIONS'][$idx]['created']['date'], new DateTimeZone($task['recurrence']['EXCEPTIONS'][$idx]['created']['timezone'] ? $task['recurrence']['EXCEPTIONS'][$idx]['created']['timezone'] : $this->plugin->timezone));
+            }
+            $task['recurrence']['EXCEPTIONS'][$idx]['created'] = $task['recurrence']['EXCEPTIONS'][$idx]['created']->setTimezone($tz);
+          }
+          if ($task['recurrence']['EXCEPTIONS'][$idx]['changed']) {
+            if (is_array($task['recurrence']['EXCEPTIONS'][$idx]['changed'])) {
+              $task['recurrence']['EXCEPTIONS'][$idx]['changed'] = new DateTime($task['recurrence']['EXCEPTIONS'][$idx]['changed']['date'], new DateTimeZone($task['recurrence']['EXCEPTIONS'][$idx]['changed']['timezone'] ? $task['recurrence']['EXCEPTIONS'][$idx]['changed']['timezone'] : $this->plugin->timezone));
+            }
+            $task['recurrence']['EXCEPTIONS'][$idx]['changed'] = $task['recurrence']['EXCEPTIONS'][$idx]['changed']->setTimezone($tz);
+          }
+          if ($task['recurrence']['EXCEPTIONS'][$idx]['recurrence_date']) {
+            if (is_array($task['recurrence']['EXCEPTIONS'][$idx]['recurrence_date'])) {
+              $task['recurrence']['EXCEPTIONS'][$idx]['recurrence_date'] = new DateTime($task['recurrence']['EXCEPTIONS'][$idx]['recurrence_date']['date'], new DateTimeZone($task['recurrence']['EXCEPTIONS'][$idx]['recurrence_date']['timezone'] ? $task['recurrence']['EXCEPTIONS'][$idx]['recurrence_date']['timezone'] : $this->plugin->timezone));
+            }
+            $task['recurrence']['EXCEPTIONS'][$idx]['recurrence_date'] = $task['recurrence']['EXCEPTIONS'][$idx]['recurrence_date']->setTimezone($tz);
+          }
+          if ($task['recurrence']['EXCEPTIONS'][$idx]['start']) {
+            if (is_array($task['recurrence']['EXCEPTIONS'][$idx]['start'])) {
+              $task['recurrence']['EXCEPTIONS'][$idx]['start'] = new DateTime($task['recurrence']['EXCEPTIONS'][$idx]['start']['date'], new DateTimeZone($task['recurrence']['EXCEPTIONS'][$idx]['start']['timezone'] ? $task['recurrence']['EXCEPTIONS'][$idx]['start']['timezone'] : $this->plugin->timezone));
+            }
+            $task['recurrence']['EXCEPTIONS'][$idx]['start'] = $task['recurrence']['EXCEPTIONS'][$idx]['start']->setTimezone($tz);
+          }
+          if ($task['recurrence']['EXCEPTIONS'][$idx]['due']) {
+            if (is_array($task['recurrence']['EXCEPTIONS'][$idx]['due'])) {
+              $task['recurrence']['EXCEPTIONS'][$idx]['due'] = new DateTime($task['recurrence']['EXCEPTIONS'][$idx]['due']['date'], new DateTimeZone($task['recurrence']['EXCEPTIONS'][$idx]['due']['timezone'] ? $task['recurrence']['EXCEPTIONS'][$idx]['due']['timezone'] : $this->plugin->timezone));
+            }
+            $task['recurrence']['EXCEPTIONS'][$idx]['due'] = $task['recurrence']['EXCEPTIONS'][$idx]['due']->setTimezone($tz);
+          }
+        }
+      }
+      if (is_array($task['recurrence']) && is_array($task['recurrence']['EXDATE'])) {
+        foreach ($task['recurrence']['EXDATE'] as $idx => $exdate) {
+          if (is_array($task['recurrence']['EXDATE'][$idx])) {
+            $task['recurrence']['EXDATE'][$idx] = new DateTime($task['recurrence']['EXDATE'][$idx]['date'], new DateTimeZone($task['recurrence']['EXDATE'][$idx]['timezone'] ? $task['recurrence']['EXDATE'][$idx]['timezone'] : $this->plugin->timezone));
+          }
+          $task['recurrence']['EXDATE'][$idx] = $task['recurrence']['EXDATE'][$idx]->setTimezone($tz);
+        }
+      }
       return $task;
     }
 }

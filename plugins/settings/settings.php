@@ -6,9 +6,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # 
-# Copyright (C) 2011, Lazlo Westerhof
-# Lazlo Westerhof <roundcube@lazlo.me> 
-# Copyright (C) 2014 Roland 'Rosali' Liebl
+# Copyright (C) 2012 - 2015 Roland 'Rosali' Liebl
 # dev-team [at] myroundcube [dot] com
 # http://myroundcube.com
 # 
@@ -17,17 +15,17 @@ class settings extends rcube_plugin
   public $task = 'settings';
   public $noajax = true;
   
-  private $sections = array('general', 'mailbox', 'compose', 'mailview', 'addressbook', 'folders', 'server');
+  private $sections = array('userprofile', 'general', 'mailbox', 'compose', 'mailview', 'addressbook', 'folders', 'server');
   
   /* unified plugin properties */
   static private $plugin = 'settings';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?settings" target="_blank">Documentation</a>';
-  static private $version = '5.0.3';
-  static private $date = '21-12-2014';
+  static private $version = '5.1.2';
+  static private $date = '04-04-2015';
   static private $licence = 'All Rights reserved';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3',
     'required_plugins' => array('myrc_sprites' => 'require_plugin'),
   );
@@ -36,7 +34,6 @@ class settings extends rcube_plugin
   function init(){
     $rcmail = rcmail::get_instance();
 
-    $this->require_plugin('qtip');
     $this->require_plugin('myrc_sprites');
 
     $this->register_handler('plugin.account_sections', array($this, 'account_sections'));
@@ -108,6 +105,7 @@ class settings extends rcube_plugin
       $temparr[$section] = $args['list'][$section];
       unset($args['list'][$section]);
     }
+    $args['list']['userprofile'] = $temparr['userprofile'];
     $args['list']['general'] = $temparr['general'];
     $args['list']['mailbox'] = $temparr['mailbox'];
     $args['list']['compose'] = $temparr['compose'];
@@ -116,7 +114,6 @@ class settings extends rcube_plugin
     $args['list']['keyboard_shortcuts'] = array();
     $args['list']['identitieslink'] = array();
     $args['list']['addressbook'] = $temparr['addressbook'];
-    $args['list']['addressbookcarddavs'] = array();
     $args['list']['addressbooksharing'] = array();
     $args['list']['jabber'] = array();
     $args['list']['folderslink'] = array();

@@ -14,9 +14,11 @@
 $labels = array();
 $labels['pluginname'] = 'Jappix Chat';
 $labels['plugindescription'] = 'Embed Jappix Chat.';
-$labels['jappixUsername'] = 'User (leave empty to disable)';
-$labels['usernameinvalid'] = 'Username contains invalid characters';
-$labels['domaininvalid'] = 'Domain contains invalid characters';
+$labels['enabled'] = 'Enabled';
+$labels['jappixUsername'] = 'User';
+$labels['usernameinvalid'] = 'Username contains invalid characters.';
+$labels['usernameempty'] = 'Username must not be empty.';
+$labels['domaininvalid'] = 'Domain contains invalid characters.';
 $labels['useminijappix'] = 'Use Mini Chat minimized';
 $labels['usefulljappix'] = 'Use full featured Chat';
 $labels['minijappixautologon'] = 'Mini Chat automatic login';

@@ -17,3 +17,10 @@ vcard_attachments   0016 x 1552
 vcard_send          0016 x 1648
 vkeyboard           0016 x 1720
 webmail_notifier    0016 x 1784
+keyboard_shortcuts  0016 x 1848
+contextmenu         0016 x 2080     16 x 16
+tasks-popup-menu    0016 x 2120
+jappix4roundcube    0016 x 2200     24 x 24
+userprifile         0016 x 2288    
+archive-contextmenu 0016 x 2360
+junk-contextmenu    0016 x 2392 

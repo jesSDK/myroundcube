@@ -41,24 +41,31 @@ class tasklist_ui
     {
         if ($this->ready)  // already done
             return;
+        
+        if (class_exists('calendar_plus')) {
+            $sql = 'SELECT * FROM ' . get_table_name('calendars') . ' WHERE tasks=? and user_id=?';
+            $result = $this->rc->db->limitquery($sql, 0, 1, 1, $this->rc->user->ID);
+        
+            if ($this->rc->db->fetch_assoc($result)) {
+                // let the client know that we have to handle tasks
+                $this->rc->output->set_env('tasks', true);
+          
+                // add taskbar button
+                $this->plugin->add_button(array(
+                    'command' => 'tasks',
+                    'class'   => 'button-tasklist',
+                    'classsel' => 'button-tasklist button-selected',
+                    'innerclass' => 'button-inner',
+                    'label'   => 'tasklist.navtitle',
+                ), 'taskbar');
 
-        // add taskbar button
-        $this->plugin->add_button(array(
-            'command' => 'tasks',
-            'class'   => 'button-tasklist',
-            'classsel' => 'button-tasklist button-selected',
-            'innerclass' => 'button-inner',
-            'label'   => 'tasklist.navtitle',
-        ), 'taskbar');
-
-        $this->plugin->include_stylesheet($this->plugin->local_skin_path() . '/tasklist.css');
-        $this->plugin->include_script('tasklist_base.js');
-
-        // copy config to client
-        // $this->rc->output->set_env('tasklist_settings', $settings);
-
+                $this->plugin->include_stylesheet($this->plugin->local_skin_path() . '/tasklist.css');
+                $this->plugin->include_script('tasklist_base.js');
+            }
+        }
+        
         $this->ready = true;
-  }
+    }
 
     /**
     * Register handler methods for the template engine

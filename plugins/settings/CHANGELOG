@@ -8,3 +8,7 @@ VERSION                COMMENT
 5.0                    - calendar plugin adjustments
 5.0.1 - 5.0.2          - Implement myrc_sprites plugin
 5.0.3                  - Removed depricated nabble code
+5.0.4                  - Removed qtip plugin
+5.1                    - Roundcube 1.1 compatibility
+5.1.1                  - Add section User Profile
+5.1.2                  - Remove carddav settings section

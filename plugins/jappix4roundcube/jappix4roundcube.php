@@ -6,38 +6,26 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # 
-# Copyright (C) 2011, Lazlo Westerhof
-# Lazlo Westerhof <roundcube@lazlo.me> 
-# Copyright (C) 2014 Roland 'Rosali' Liebl
+# Copyright (C) 2012 - 2015 Roland 'Rosali' Liebl
 # dev-team [at] myroundcube [dot] com
 # http://myroundcube.com
 # 
-/**
- * jappix4roundcube
- *
- * Plugin to integrate Mini jappix in roundcube
- * Mini jappix : https://mini.jappix.com/get
- *
- * @version 1.0
- * @author RD
- * @url https://code.google.com/p/jappix4roundcube/
- */
- 
-class jappix4roundcube extends rcube_plugin {
-
-  public $task = 'mail|settings|addressbook|jappix|dummy|logout';
-  
+class jappix4roundcube extends rcube_plugin
+{
+  public $task = '?(?!login|logout).*';
   public $ttl = 604800;
+  
+  private $rc;
   
   /* unified plugin properties */
   static private $plugin = 'jappix4roundcube';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/jappix4roundcube-plugin" target="_blank">Documentation</a>';
-  static private $version = '2.0.21';
-  static private $date = '19-12-2014';
+  static private $version = '2.0.26';
+  static private $date = '02-04-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3',
     'required_plugins' => array(
       'db_version' => 'require_plugin',
@@ -56,7 +44,12 @@ class jappix4roundcube extends rcube_plugin {
   static private $config_dist = 'config.inc.php.dist';
   
   function init() {
-    $rcmail = rcmail::get_instance();
+    /* Pre-condidition check */
+    if(!class_exists('rcube')){
+      return;
+    }
+    
+    $this->rc = rcube::get_instance();
     
     /* DB versioning */
     if(is_dir(INSTALL_PATH . 'plugins/db_version')){
@@ -66,7 +59,7 @@ class jappix4roundcube extends rcube_plugin {
       }
     }
     
-    if($rcmail->action == 'compose' && $_GET['_extwin'] == 1){
+    if($this->rc->action == 'compose' && $_GET['_extwin'] == 1){
       return;
     }
     
@@ -75,45 +68,45 @@ class jappix4roundcube extends rcube_plugin {
     $this->load_config();
     $this->add_texts('localization/', true);
     
-    if($rcmail->task == 'settings'){
-      $this->add_hook('preferences_sections_list', array($this, 'preferences_section'));
+    if($this->rc->task == 'settings'){
+      $this->add_hook('preferences_sections_list', array($this, 'preferences_sections_list'));
       $this->add_hook('preferences_list', array($this, 'preferences_list'));
       $this->add_hook('preferences_save', array($this, 'preferences_save'));
       $this->add_hook('password_change', array($this, 'password_change'));
     }
     
-    if($rcmail->action != 'jappix.loadmini'){
-      $this->include_stylesheet('skins/' . $rcmail->config->get('skin', 'larry') . '/jappix4roundcube.css');
+    if($this->rc->action != 'jappix.loadmini'){
+      $this->include_stylesheet('skins/' . $this->rc->config->get('skin', 'larry') . '/jappix4roundcube.css');
     }
 
     $this->register_task('jappix');
     $this->register_action('jappix.getfile', array($this, 'getfile'));
 
-    if($rcmail->config->get('jabber_domain') == '%d'){
-      $rcmail->config->set('jabber_domain', end(explode('@', $rcmail->user->data['username'])));
+    if($this->rc->config->get('jabber_domain') == '%d'){
+      $this->rc->config->set('jabber_domain', end(explode('@', $this->rc->user->data['username'])));
     }
-    if(!$rcmail->config->get('jabber_username') && $rcmail->config->get('jappix_inherit')){
-      $rcmail->config->set('jabber_username', current(explode('@', $rcmail->user->data['username'])));
+    if(!$this->rc->config->get('jabber_username') && $this->rc->config->get('jappix_inherit')){
+      $this->rc->config->set('jabber_username', current(explode('@', $this->rc->user->data['username'])));
     }
     
-    if(!$rcmail->config->get('jabber_enc') && $rcmail->config->get('jappix_inherit')){
+    if(!$this->rc->config->get('jabber_enc') && $this->rc->config->get('jappix_inherit')){
       libgpl::include_php('plugins/libgpl/gibberish/GibberishAES.php');
-      $key = md5($rcmail->user->data['username'] . ':' . $rcmail->decrypt($_SESSION['password']));
-      $rcmail->config->set('jabber_enc', GibberishAES::enc($rcmail->decrypt($_SESSION['password']), $key));
+      $key = md5($this->rc->user->data['username'] . ':' . $this->rc->decrypt($_SESSION['password']));
+      $this->rc->config->set('jabber_enc', GibberishAES::enc($this->rc->decrypt($_SESSION['password']), $key));
     }
 
-    if(!$rcmail->config->get('jabber_username') || !$rcmail->config->get('jabber_domain', 'jappix.com')){
+    if(!$this->rc->config->get('jappix_enabled') || !$this->rc->config->get('jabber_username') || !$this->rc->config->get('jabber_domain', 'jappix.com')){
       return;
     }
 
     $this->register_action('jappix.loadmini', array($this, 'loadmini'));
 
-    $skin = $rcmail->config->get('skin', 'larry');
+    $skin = $this->rc->config->get('skin', 'larry');
     $lg = explode('_', $_SESSION['language']);
     $lg = $lg[0];
-    $src  = unslashify($rcmail->config->get('jappix_url', 'https://jappix.com'));
+    $src  = unslashify($this->rc->config->get('jappix_url', 'https://jappix.com'));
     libgpl::include_js('gibberish/gibberish-aes.js');
-    $display = $rcmail->config->get('jappix_full', 0) ? '' : 'display:none';
+    $display = $this->rc->config->get('jappix_full', 0) ? '' : 'display:none';
 
     $this->require_plugin('myrc_sprites');
     $this->add_button(array(
@@ -121,8 +114,8 @@ class jappix4roundcube extends rcube_plugin {
       'type' => 'link',
       'onclick' =>"$.get('./', { _task : 'jappix', _action : 'jappix.return_loginkey' }, function(key){
             GibberishAES.size(256);
-            var dec = GibberishAES.dec('" . $rcmail->config->get('jabber_enc') . "', $.trim(key));
-            rcmail.open_window('" . $src . "?u=" . $rcmail->config->get('jabber_username') . '@' . $rcmail->config->get('jabber_domain') . "&q=' + dec + '&l=" . $lg . "&h=1');
+            var dec = GibberishAES.dec('" . $this->rc->config->get('jabber_enc') . "', $.trim(key));
+            rcmail.open_window('" . $src . "?u=" . $this->rc->config->get('jabber_username') . '@' . $this->rc->config->get('jabber_domain') . "&q=' + dec + '&l=" . $lg . "&h=1');
           });",
       'class' => 'button-jappix4roundcube',
       'classsel' => 'button-jappix4roundcube button-selected',
@@ -131,16 +124,15 @@ class jappix4roundcube extends rcube_plugin {
       'style' => $display,
     ), 'taskbar');
     
-    if($rcmail->action == 'jappix.loginkey'){
+    if($this->rc->action == 'jappix.loginkey'){
       $this->loginkey();
     }
     
-    if($rcmail->action == 'jappix.return_loginkey'){
+    if($this->rc->action == 'jappix.return_loginkey'){
       $this->return_loginkey();
     }
     
     $this->add_hook('render_page', array($this, 'redirect'));
-    $this->add_hook('logout_after', array($this, 'breakframe'));
   }
   
   static public function about($keys = false){
@@ -199,29 +191,9 @@ class jappix4roundcube extends rcube_plugin {
     }
   }
   
-  function breakframe($args){
-    if(class_exists('tabbed')){
-      return $p;
-    }
-    $rcmail = rcmail::get_instance();
-    $query = '?';
-    foreach($_GET as $key => $val){
-      $query .= $key . '=' . $val . '&';
-    }
-    $query = substr($query, 0, strlen($query) - 1);
-    $rcmail->output->add_script('parent.location.href="./' . $query . '";');
-    $rcmail->output->send('iframe');
-    exit;
-  }
-  
   function redirect($p){
-    if(class_exists('tabbed')){
-      $this->cache();
-      return $p;
-    }
-    $rcmail = rcmail::get_instance();
     if($p['template'] != 'summary.summary'){
-      if($rcmail->config->get('jappix_mini', true) && (
+      if($this->rc->config->get('jappix_mini', true) && (
                                                           $p['template'] == 'mail' ||
                                                           $p['template'] == 'addressbook' ||
                                                           $p['template'] == 'settings' ||
@@ -231,39 +203,39 @@ class jappix4roundcube extends rcube_plugin {
                                                           $p['template'] == 'planner.planner' ||
                                                           $p['template'] == 'jappix4roundcube.jappix4roundcube'
                                                                                                                 ) && !$_SESSION['jappixminiframe']){
-        if($rcmail->action != 'plugin.summary' && !isset($_GET['_framed'])){
+        if($this->rc->action != 'plugin.summary' && !isset($_GET['_framed'])){
           $_SESSION['jappixminiframe'] = true;
-          header('Location: ./?_task=jappix&_action=jappix.loadmini&_origtask=' . $rcmail->task . '&_origaction=' . $rcmail->action);
+          header('Location: ./?_task=jappix&_action=jappix.loadmini&_origtask=' . $this->rc->task . '&_origaction=' . $this->rc->action);
           exit;
         }
       }
       else if($p['template'] != 'login' && $p['template'] != 'jappix4roundcube.jappixmini4roundcube'){
-        $rcmail->output->add_script('function sync_parent(){ var t = document.title; t = t.replace("' . $rcmail->config->get('product_name', '') . ' :: ' . '", ""); parent.document.title = t; parent.rc_task = rcmail.env.task; parent.rc_action = rcmail.env.action; window.setTimeout("sync_parent();", 1000); }; sync_parent();');
+        $this->rc->output->add_script('function sync_parent(){ var t = document.title; t = t.replace("' . $this->rc->config->get('product_name', '') . ' :: ' . '", ""); parent.document.title = t; parent.rc_task = rcmail.env.task; parent.rc_action = rcmail.env.action; window.setTimeout("sync_parent();", 1000); }; sync_parent();');
       }
-      $rcmail->output->add_script("if(rcmail.env.task == 'jappix'){ parent.$('.jm_position').hide(); } else { if(parent.rcmail.env.jabber_mini == 1) { parent.$('.jm_position').show(); } };");
+      $this->rc->output->add_script("if(rcmail.env.task == 'jappix'){ parent.$('.jm_position').hide(); } else { if(parent.rcmail.env.jabber_mini == 1) { parent.$('.jm_position').show(); } };", 'head');
     }
+    $this->rc->output->add_script("if(parent.location.href != self.location.href){ $('.button-logout').attr('onclick', 'return parent.rcmail.command(\'switch-task\', \'logout\', this, event)'); };", 'foot');
     return $p;
   }
     
   function loadmini(){
-    $rcmail = rcmail::get_instance();
     if(!$_SESSION['jappixmini']){
       $this->cache();
     }
     if($_SESSION['jappixmini']){
       $lg = explode('_', $_SESSION['language']);
       $lg = $lg[0];
-      if($rcmail->config->get('jappix_cache')){
-        $rcmail->output->add_header(html::tag('script', array('type'=>'text/javascript', 'src' => 'https://' . $_SERVER['HTTP_HOST'] . '/?_task=jappix&_action=jappix.getfile&_file=mini.js&_l=' . $lg)));
+      if($this->rc->config->get('jappix_cache')){
+        $this->rc->output->add_header(html::tag('script', array('type'=>'text/javascript', 'src' => 'https://' . $_SERVER['HTTP_HOST'] . '/?_task=jappix&_action=jappix.getfile&_file=mini.js&_l=' . $lg)));
       }
       else{
-        $rcmail->output->add_header(html::tag('script', array('type'=>'text/javascript', 'src' => slashify($rcmail->config->get('jappix_url', 'https://jappix.com')) . 'php/get.php?l=' . $lg . '&t=js&g=mini.xml')));
+        $this->rc->output->add_header(html::tag('script', array('type'=>'text/javascript', 'src' => slashify($this->rc->config->get('jappix_url', 'https://jappix.com')) . 'php/get.php?l=' . $lg . '&t=js&g=mini.xml')));
       }
-      $rcmail->output->set_env('jabber_username', $rcmail->config->get('jabber_username'));
-      $rcmail->output->set_env('jabber_domain', $rcmail->config->get('jabber_domain'));
-      $rcmail->output->set_env('jabber_enc', $rcmail->config->get('jabber_enc'));
-      $rcmail->output->set_env('jabber_mini', $rcmail->config->get('jappix_mini', true) ? 1 : 0);
-      $rcmail->output->set_env('jabber_autologon', $rcmail->config->get('jappix_mini_autologon', true));
+      $this->rc->output->set_env('jabber_username', $this->rc->config->get('jabber_username'));
+      $this->rc->output->set_env('jabber_domain', $this->rc->config->get('jabber_domain'));
+      $this->rc->output->set_env('jabber_enc', $this->rc->config->get('jabber_enc'));
+      $this->rc->output->set_env('jabber_mini', $this->rc->config->get('jappix_mini', true) ? 1 : 0);
+      $this->rc->output->set_env('jabber_autologon', $this->rc->config->get('jappix_mini_autologon', true));
       $this->include_script('jappix.js');
       libgpl::include_js('gibberish/gibberish-aes.js');
       $file = 'mini.css';
@@ -271,39 +243,38 @@ class jappix4roundcube extends rcube_plugin {
       if($browser->ie && $browser->ver < 7){
         $file = 'mini-ie.css';
       }
-      if($rcmail->config->get('jappix_cache')){
+      if($this->rc->config->get('jappix_cache')){
         $this->include_stylesheet('https://' . $_SERVER['HTTP_HOST'] . '/?_task=jappix&_action=jappix.getfile&_file=' . $file . '&_l=' . $lg);
       }
       else{
-        $this->include_stylesheet(slashify($rcmail->config->get('jappix_url', 'https://jappix.com')) . 'php/get.php?l=' . $lg . '&t=css&f=' . $file);
+        $this->include_stylesheet(slashify($this->rc->config->get('jappix_url', 'https://jappix.com')) . 'php/get.php?l=' . $lg . '&t=css&f=' . $file);
       }
       $this->include_stylesheet('jappix.css');
     }
     else{
-      $rcmail->output->show_message('jappix4roundcube.failure', 'warning');
+      $this->rc->output->show_message('jappix4roundcube.failure', 'warning');
     }
-    if(!$rcmail->config->get('jappix_mini')){
-      $rcmail->output->add_script('parent.location.href="./?_task=' . $rcmail->task . '&_action=' . $rcmail->action . '"');
+    if(!$this->rc->config->get('jappix_mini')){
+      $this->rc->output->add_script('parent.location.href="./?_task=' . $this->rc->task . '&_action=' . $this->rc->action . '"');
     }
-    $rcmail->output->send('jappix4roundcube.jappixmini4roundcube');
+    $this->rc->output->send('jappix4roundcube.jappixmini4roundcube');
   }
   
   function getfile(){
-    $rcmail = rcmail::get_instance();
     $file = get_input_value('_file', RCUBE_INPUT_GET);
     $lang = get_input_value('_l', RCUBE_INPUT_GET);
     $sql = 'SELECT * FROM ' . get_table_name('jappix') . ' WHERE file=? AND lang=?';
-    $res = $rcmail->db->limitquery($sql, 0, 1, $file, $lang);
-    $content = $rcmail->db->fetch_assoc($res);
+    $res = $this->rc->db->limitquery($sql, 0, 1, $file, $lang);
+    $content = $this->rc->db->fetch_assoc($res);
     header('Content-Type: ' . $content['contenttype']);
     header('Content-Length: ' . strlen($content['content']));
-    $rcmail->output->future_expire_header(strtotime($content['ts']) - time() + $this->ttl);
+    $this->rc->output->future_expire_header(strtotime($content['ts']) - time() + $this->ttl);
     echo $content['content'];
     exit;
   }
 
-  function preferences_section($args){
-    if(!rcmail::get_instance()->config->get('jappix_lock_settings')){
+  function preferences_sections_list($args){
+    if(!$this->rc->config->get('jappix_lock_settings')){
       $args['list']['jabber'] = array(
         'id'      => 'jabber',
         'section' => Q($this->gettext('jappixSection'))
@@ -314,24 +285,30 @@ class jappix4roundcube extends rcube_plugin {
 
   function preferences_list($args){
     if($args['section'] == 'jabber'){
-      $rcmail = rcmail::get_instance();
+      $jabber_username = $this->rc->config->get('jabber_username');
+      $jabber_domain = $this->rc->config->get('jabber_domain', 'jappix.com');
+      $jabber_enc = $this->rc->config->get('jabber_enc');
       
-      $jabber_username = $rcmail->config->get('jabber_username');
-      $jabber_domain = $rcmail->config->get('jabber_domain', 'jappix.com');
-      $jabber_enc = $rcmail->config->get('jabber_enc');
-      
-      if((!$jabber_username || !$jabber_enc || !$jabber_domain) && $rcmail->config->get('jappix_register_url')){
+      if((!$jabber_username || !$jabber_enc || !$jabber_domain) && $this->rc->config->get('jappix_register_url')){
         $field_id = 'rcmfd_register';
         $args['blocks']['jabber']['options']['jappix_register'] = array(
           'title' => html::label($field_id, @($this->gettext('requirement'))),
-          'content' => html::tag('a', array('href' => $rcmail->config->get('jappix_register_url'), 'target' => '_blank'), $this->gettext('clickhere')) . ' ' . $this->gettext('registeraccount')
+          'content' => html::tag('a', array('href' => $this->rc->config->get('jappix_register_url'), 'target' => '_blank'), $this->gettext('clickhere')) . ' ' . $this->gettext('registeraccount')
         );
       }
+      
+      $jappix_enabled = $this->rc->config->get('jappix_enabled', 0);
+      $field_id = 'rcmfd_enabled';
+      $checkbox = new html_checkbox(array('name' => '_jappix_enabled', 'value' => 1, 'id' => $field_id, 'onclick' => "if($(this).prop('checked') == false || $('input[name=\'_jabber_username\']').val() != ''){ $('.mainaction').hide(); document.forms.form.submit(); };"));
+      $args['blocks']['jabber']['options']['jappix_enabled'] = array(
+        'title' => html::label($field_id, Q($this->gettext('enabled'))),
+        'content' => $checkbox->show($jappix_enabled ? 1:0),
+      );
       
       $field_id_user = 'rcmfd_username';
       $input_user = new html_inputfield(array('name' => '_jabber_username', 'id' => $field_id_user, 'size' => 25));
       if($jabber_domain == '%d'){
-        $jabber_domain = end(explode('@', $rcmail->user->data['username']));
+        $jabber_domain = end(explode('@', $this->rc->user->data['username']));
       }
       $field_id_domain = 'rcmfd_domain';
       $input_domain = new html_inputfield(array('name' => '_jabber_domain', 'id' => $field_id_domain, 'size' => 25));
@@ -347,25 +324,25 @@ class jappix4roundcube extends rcube_plugin {
         'content' => $input->show(),
       );
 
-      $jappix_full = $rcmail->config->get('jappix_full', 1);
+      $jappix_full = $this->rc->config->get('jappix_full', 1);
       $field_id = 'rcmfd_use_full';
-      $checkbox = new html_checkbox(array('name' => '_jappix_full', 'value' => 1, 'id' => $field_id, 'onclick' => "if(this.checked){ parent.$('.button-jappix4roundcube').show(); } else { parent.$('.button-jappix4roundcube').hide(); }; $('.mainaction').hide(); document.forms.form.submit()"));
+      $checkbox = new html_checkbox(array('name' => '_jappix_full', 'value' => 1, 'id' => $field_id, 'onclick' => "if(this.checked){ parent.$('.button-jappix4roundcube').show(); } else { parent.$('.button-jappix4roundcube').hide(); }; $('.mainaction').hide(); document.forms.form.submit();"));
       $args['blocks']['jabber']['options']['jappix_full'] = array(
         'title' => html::label($field_id, Q($this->gettext('usefulljappix'))),
         'content' => $checkbox->show($jappix_full ? 1:0),
       );
 
-      $jappix_mini = $rcmail->config->get('jappix_mini', 1);
+      $jappix_mini = $this->rc->config->get('jappix_mini', 1);
       $field_id = 'rcmfd_use_mini';
-      $checkbox = new html_checkbox(array('name' => '_jappix_mini', 'value' => 1, 'id' => $field_id, 'onclick' => "if(this.checked){ parent.parent.$('.jm_position').show(); } else { parent.parent.$('.jm_position').hide(); }; $('.mainaction').hide(); document.forms.form.submit()"));
+      $checkbox = new html_checkbox(array('name' => '_jappix_mini', 'value' => 1, 'id' => $field_id, 'onclick' => "if(this.checked){ parent.parent.$('.jm_position').show(); } else { parent.parent.$('.jm_position').hide(); }; $('.mainaction').hide(); document.forms.form.submit();"));
       $args['blocks']['jabber']['options']['jappix_mini'] = array(
         'title' => html::label($field_id, Q($this->gettext('useminijappix'))),
         'content' => $checkbox->show($jappix_mini ? 1:0),
       );
       
-      $jappix_mini_autologon = $rcmail->config->get('jappix_mini_autologon', 1);
+      $jappix_mini_autologon = $this->rc->config->get('jappix_mini_autologon', 1);
       $field_id = 'rcmfd_use_mini_autologon';
-      $checkbox = new html_checkbox(array('name' => '_jappix_mini_autologon', 'value' => 1, 'id' => $field_id, 'onclick' => "if(this.checked){ parent.parent.$('.jm_pane').trigger('click'); } else { if(parent.parent.JappixMini) parent.parent.JappixMini.disconnect(); }; $('.mainaction').hide(); document.forms.form.submit()"));
+      $checkbox = new html_checkbox(array('name' => '_jappix_mini_autologon', 'value' => 1, 'id' => $field_id, 'onclick' => "if(this.checked){ parent.parent.$('.jm_pane').trigger('click'); } else { if(parent.parent.JappixMini) parent.parent.JappixMini.disconnect(); }; $('.mainaction').hide(); document.forms.form.submit();"));
       $args['blocks']['jabber']['options']['jappix_mini_autologon'] = array(
         'title' => html::label($field_id, Q($this->gettext('minijappixautologon'))),
         'content' => $checkbox->show($jappix_mini_autologon ? 1:0),
@@ -375,7 +352,7 @@ class jappix4roundcube extends rcube_plugin {
       $field_id = 'rcmfd_use_manager';
       $args['blocks']['jabber']['options']['jabber_manager'] = array(
         'title' => html::label($field_id, Q($this->gettext('manager'))),
-        'content' => '<a target=\'_blank\' href=\''.$rcmail->config->get('jappix_url').'/?m=manager\'>'.Q($this->gettext('manager')).'</a>',
+        'content' => '<a target=\'_blank\' href=\''.$this->rc->config->get('jappix_url').'/?m=manager\'>'.Q($this->gettext('manager')).'</a>',
       );
       */
     }
@@ -385,36 +362,45 @@ class jappix4roundcube extends rcube_plugin {
   function preferences_save($args){
     if($args['section'] == 'jabber'){
       libgpl::include_php('plugins/libgpl/gibberish/GibberishAES.php');
-      $rcmail = rcmail::get_instance();
+      $enabled = get_input_value('_jappix_enabled', RCUBE_INPUT_POST);
       $username = trim(get_input_value('_jabber_username', RCUBE_INPUT_POST));
+      if(!$username && $enabled){
+        $this->rc->output->show_message('jappix4roundcube.usernameempty', 'error');
+        $args['abort'] = true;
+      }
       if(preg_match('/[@\/\\ ]/', $username)){
-        $rcmail->output->show_message('jappix4roundcube.usernameinvalid', 'error');
-        $rcmail->output->set_env('jabber_username', $rcmail->config->get('jabber_username', ''));
+        $this->rc->output->show_message('jappix4roundcube.usernameinvalid', 'error');
+        $this->rc->output->set_env('jabber_username', $this->rc->config->get('jabber_username', ''));
         $args['abort'] = true;
       }
       else{
         $args['prefs']['jabber_username'] = $username;
-        $rcmail->output->set_env('jabber_username', $args['prefs']['jabber_username']);
+        $this->rc->output->set_env('jabber_username', $args['prefs']['jabber_username']);
       }
       $domain = trim(get_input_value('_jabber_domain', RCUBE_INPUT_POST));
       if(!$this->is_valid_domain_name($domain)){
-        $rcmail->output->show_message('jappix4roundcube.domaininvalid', 'error');
-        $rcmail->output->set_env('jabber_domain', $rcmail->config->get('jabber_domain', 'jappix.com'));
+        $this->rc->output->show_message('jappix4roundcube.domaininvalid', 'error');
+        $this->rc->output->set_env('jabber_domain', $this->rc->config->get('jabber_domain', 'jappix.com'));
         $args['abort'] = true;
       }
       else{
         $args['prefs']['jabber_domain'] = $domain;
-        $rcmail->output->set_env('jabber_domain', $args['prefs']['jabber_domain']);
+        $this->rc->output->set_env('jabber_domain', $args['prefs']['jabber_domain']);
       }
       $password = trim(get_input_value('_jabber_password', RCUBE_INPUT_POST));
-      if(!$password && $rcmail->config->get('jappix_inherit')){
-        $password =  $rcmail->decrypt($_SESSION['password']);
+      if(!$password && $this->rc->config->get('jappix_inherit')){
+        $password =  $this->rc->decrypt($_SESSION['password']);
       }
       if($password){
-        $key = md5($rcmail->user->data['username'] . ':' . $rcmail->decrypt($_SESSION['password']));
+        $key = md5($this->rc->user->data['username'] . ':' . $this->rc->decrypt($_SESSION['password']));
         $enc = GibberishAES::enc($password, $key);
         $args['prefs']['jabber_enc'] = $enc;
-        $rcmail->output->set_env('jabber_enc', $enc);
+        $this->rc->output->set_env('jabber_enc', $enc);
+      }
+      $args['prefs']['jappix_enabled'] = $enabled;
+      $args['prefs']['jappix_enabled'] = $args['prefs']['jappix_enabled'] ? 1 : 0;
+      if($args['prefs']['jappix_enabled'] == 0){
+        $this->rc->session->remove('jappixminiframe');
       }
       $args['prefs']['jappix_full'] = get_input_value('_jappix_full', RCUBE_INPUT_POST);
       $args['prefs']['jappix_full'] = $args['prefs']['jappix_full'] ? 1 : 0;
@@ -422,40 +408,36 @@ class jappix4roundcube extends rcube_plugin {
       $args['prefs']['jappix_mini'] = $args['prefs']['jappix_mini'] ? 1 : 0;
       $args['prefs']['jappix_mini_autologon'] = get_input_value('_jappix_mini_autologon', RCUBE_INPUT_POST);
       $args['prefs']['jappix_mini_autologon'] = $args['prefs']['jappix_mini_autologon'] ? 1 : 0;
-      $rcmail->output->set_env('jabber_mini',  $args['prefs']['jappix_mini'] ? true : false);
-      $rcmail->output->set_env('jabber_autologon', $args['prefs']['jappix_mini_autologon'] ? true : false);
+      $this->rc->output->set_env('jabber_mini',  $args['prefs']['jappix_mini'] ? true : false);
+      $this->rc->output->set_env('jabber_autologon', $args['prefs']['jappix_mini_autologon'] ? true : false);
     }
     return $args;
   }
   
   function password_change($args){
     libgpl::include_php('plugins/libgpl/gibberish/GibberishAES.php');
-    $rcmail = rcmail::get_instance();
-    $key = md5($rcmail->user->data['username'] . ':' . $args['old_pass']);
-    $dec = GibberishAES::dec($rcmail->config->get('jabber_enc'), $key);
-    $key = md5($rcmail->user->data['username'] . ':' . $args['new_pass']);
+    $key = md5($this->rc->user->data['username'] . ':' . $args['old_pass']);
+    $dec = GibberishAES::dec($this->rc->config->get('jabber_enc'), $key);
+    $key = md5($this->rc->user->data['username'] . ':' . $args['new_pass']);
     $enc = GibberishAES::enc($args['new_pass'], $key);
-    $rcmail->user->save_prefs(array('jabber_enc' => $enc));
+    $this->rc->user->save_prefs(array('jabber_enc' => $enc));
     return $args;
   }
   
   function loginkey(){
-    $rcmail = rcmail::get_instance();
-    $key = md5($rcmail->user->data['username'] . ':' . $rcmail->decrypt($_SESSION['password']));
-    $rcmail->output->command('jappix_loginkey', $key);
-    $rcmail->output->send('mail');
+    $key = md5($this->rc->user->data['username'] . ':' . $this->rc->decrypt($_SESSION['password']));
+    $this->rc->output->command('jappix_loginkey', $key);
+    $this->rc->output->send('mail');
   }
   
   function return_loginkey(){
-    $rcmail = rcmail::get_instance();
-    $key = md5($rcmail->user->data['username'] . ':' . $rcmail->decrypt($_SESSION['password']));
+    $key = md5($this->rc->user->data['username'] . ':' . $this->rc->decrypt($_SESSION['password']));
     echo $key;
     exit;
   }
   
   function cache(){
-    $rcmail = rcmail::get_instance();
-    if(!$rcmail->config->get('jappix_cache')){
+    if(!$this->rc->config->get('jappix_cache')){
       $_SESSION['jappixmini'] = true;   
       return;
     }
@@ -463,15 +445,15 @@ class jappix4roundcube extends rcube_plugin {
     $lg = $lg[0];
     $sql = 'SELECT * FROM ' . get_table_name('jappix') . ' WHERE file=? AND lang=? AND ts > ?';
     $ts = date('Y-m-d H:i:s', time() - $this->ttl);
-    $res = $rcmail->db->limitquery($sql, 0, 1, 'mini.js', $lg, $ts);
-    $props = $rcmail->db->fetch_assoc($res);
+    $res = $this->rc->db->limitquery($sql, 0, 1, 'mini.js', $lg, $ts);
+    $props = $this->rc->db->fetch_assoc($res);
     if(is_array($props)){
       $_SESSION['jappixmini'] = true;
     }
     else{
       $sql = 'DELETE FROM ' . get_table_name('jappix') . ' WHERE lang=?';
-      $rcmail->db->query($sql, $lg);
-      $domain = slashify($rcmail->config->get('jappix_url', 'https://jappix.com'));
+      $this->rc->db->query($sql, $lg);
+      $domain = slashify($this->rc->config->get('jappix_url', 'https://jappix.com'));
       $url = $domain . 'php/get.php?l=' . $lg . '&t=js&g=mini.xml';
       $http = new MyRCHttp;
       $httpConfig['method'] = 'GET';
@@ -490,7 +472,7 @@ class jappix4roundcube extends rcube_plugin {
         $minijs = str_replace('type="text/css" media="all" />\');', 'type="text/css" media="all" />\');' . "\r\n", $minijs);
         $minijs = trim($minijs);
         $sql = 'INSERT INTO ' . get_table_name('jappix') . ' (lang, ts, file, contenttype, content) VALUES (?, ?, ?, ?, ?)';
-        $rcmail->db->query($sql, $lg, date('Y-m-d H:i:s', time()), 'mini.js', 'application/javascript', $minijs);
+        $this->rc->db->query($sql, $lg, date('Y-m-d H:i:s', time()), 'mini.js', 'application/javascript', $minijs);
         $url = $domain . 'php/get.php?t=css&f=mini.css';
         $httpConfig['target'] = $url;
         $http->initialize($httpConfig);
@@ -498,7 +480,7 @@ class jappix4roundcube extends rcube_plugin {
         if($minicss = $http->result){
           $minicss = str_replace('./get.php?', 'plugins/jappix4roundcube/get.php?', $minicss);
           $sql = 'INSERT INTO ' . get_table_name('jappix') . ' (lang, ts, file, contenttype, content) VALUES (?, ?, ?, ?, ?)';
-          $rcmail->db->query($sql, $lg, date('Y-m-d H:i:s', time()), 'mini.css', 'text/css', $minicss);
+          $this->rc->db->query($sql, $lg, date('Y-m-d H:i:s', time()), 'mini.css', 'text/css', $minicss);
           $url = $domain . 'php/get.php?t=css&f=mini-ie.css';
           $httpConfig['target'] = $url;
           $http->initialize($httpConfig);
@@ -506,17 +488,17 @@ class jappix4roundcube extends rcube_plugin {
           if($minicss = $http->result){
             $minicss = str_replace('./get.php?', 'https://jappix.myroundcube.com/php/get.php?', $minicss);
             $sql = 'INSERT INTO ' . get_table_name('jappix') . ' (lang, ts, file, contenttype, content) VALUES (?, ?, ?, ?, ?)';
-            $rcmail->db->query($sql, $lg, date('Y-m-d H:i:s', time()), 'mini-ie.css', 'text/css', $minicss);
-            $res = $rcmail->db->affected_rows();
+            $this->rc->db->query($sql, $lg, date('Y-m-d H:i:s', time()), 'mini-ie.css', 'text/css', $minicss);
+            $res = $this->rc->db->affected_rows();
             $sql = 'SELECT * FROM ' . get_table_name('jappix') . ' WHERE lang=?';
-            $res = $rcmail->db->query($sql, $lg);
+            $res = $this->rc->db->query($sql, $lg);
             $i = 0;
-            while($res && $prop = $rcmail->db->fetch_assoc($res)){
+            while($res && $prop = $this->rc->db->fetch_assoc($res)){
               $i++;
             }
             if($i < 3){
               $sql = 'DELETE FROM ' . get_table_name('jappix') . ' WHERE lang=?';
-              $rcmail->db->query($sql, $lg);
+              $this->rc->db->query($sql, $lg);
             }
             else{
               $_SESSION['jappixmini'] = true;

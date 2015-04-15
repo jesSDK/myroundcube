@@ -36,13 +36,13 @@ class tasklist_database_driver extends tasklist_driver
 
   private $rc;
   private $plugin;
-  protected $lists = array(); // Mod by Rosali (declare protected)
-  protected $list_ids = '';    // Mod by Rosali (declare protected)
+  protected $lists = array();
+  protected $list_ids = '';
 
   private $db_tasks = 'vtodo';
-  private $db_lists = 'calendars'; // Mod by Rosali
+  private $db_lists = 'calendars';
   private $db_attachments = 'vtodo_attachments';
-  private $task_uid;
+  private $last_clone;
 
   /**
    * Default constructor
@@ -212,77 +212,76 @@ class tasklist_database_driver extends tasklist_driver
         return false;
     }
 
-    /**
-     * Get number of tasks matching the given filter
-     *
-     * @param array List of lists to count tasks of
-     * @return array Hash array with counts grouped by status (all|flagged|today|tomorrow|overdue|nodate)
-     * @see tasklist_driver::count_tasks()
-     */
-    function count_tasks($lists = null)
-    {
-        if (empty($lists))
-            $lists = array_keys($this->lists);
-        else if (is_string($lists))
-            $lists = explode(',', $lists);
+  /**
+   * Get number of tasks matching the given filter
+   *
+   * @param array List of lists to count tasks of
+   * @return array Hash array with counts grouped by status (all|flagged|today|tomorrow|overdue|nodate)
+   * @see tasklist_driver::count_tasks()
+   */
+  function count_tasks($lists = null)
+  {
+    if (empty($lists))
+      $lists = array_keys($this->lists);
+    else if (is_string($lists))
+      $lists = explode(',', $lists);
+    $counts = array('all' => 0, 'flagged' => 0, 'today' => 0, 'tomorrow' => 0, 'overdue' => 0, 'nodate' => 0);
+    if (!empty($lists)) {
+      // only allow to select from lists of this user
+      $list_ids = array_map(array($this->rc->db, 'quote'), array_intersect($lists, array_keys($this->lists)));
 
-        // only allow to select from lists of this user
-        $list_ids = array_map(array($this->rc->db, 'quote'), array_intersect($lists, array_keys($this->lists)));
-
-        $result = $this->rc->db->query(sprintf(
-            "SELECT * FROM " . $this->db_tasks . "
-             WHERE tasklist_id IN (%s)
-             AND del=0 AND exdate IS NULL AND NOT " . self::IS_COMPLETE_SQL,
-            join(',', $list_ids)
-        ));
-
-        $counts = array('all' => 0, 'flagged' => 0, 'today' => 0, 'tomorrow' => 0, 'overdue' => 0, 'nodate' => 0);
-        while ($result && ($rec = $this->rc->db->fetch_assoc($result))) {
-            if (!$this->_is_exception($rec)) {
-                $counts = $this->_counts($rec, $counts);
-            }
-            if ($rec['startdate'] && $rec['recurrence']) {
-                $clones = (array) $this->_get_recurrences($rec, false);
-                foreach ($clones as $clone) {
-                    $counts = $this->_counts($clone, $counts);
-                }
-            }
+      $result = $this->rc->db->query(sprintf(
+        "SELECT * FROM " . $this->db_tasks . "
+        WHERE tasklist_id IN (%s)
+        AND del=0 AND exdate IS NULL AND NOT " . self::IS_COMPLETE_SQL,
+        join(',', $list_ids)
+      ));
+      while ($result && ($rec = $this->rc->db->fetch_assoc($result))) {
+        if (!$this->_is_exception($rec)) {
+          $counts = $this->_counts($rec, $counts);
         }
-
-        return $counts;
+        if ($rec['startdate'] && $rec['recurrence']) {
+          $clones = (array) $this->_get_recurrences($rec, false, 'tasks');
+          foreach ($clones as $clone) {
+            $counts = $this->_counts($clone, $counts);
+          }
+        }
+      }
     }
+
+    return $counts;
+  }
     
-    /*
-     * Count
-     */
-    private function _counts($rec, $counts)
-    {
-        $today_date = new DateTime('now', $this->plugin->timezone);
-        $today = $today_date->format('Y-m-d');
-        $tomorrow_date = new DateTime('now + 1 day', $this->plugin->timezone);
-        $tomorrow = $tomorrow_date->format('Y-m-d');
-        $counts['all']++;
-        if ($rec['flagged'])
-            $counts['flagged']++;
-        if (empty($rec['date']))
-            $counts['nodate']++;
-        if ($rec['startdate'] <= $today) {
-            $counts['today']++;
-        }
-        else if ($rec['date'] <= $today) {
-            $counts['today']++;
-        }
-        if (empty($rec['date']))
-            $counts['nodate']++;
-        if ($rec['startdate'] <= $tomorrow)
-            $counts['tomorrow']++;
-        else if ($rec['date'] <= $tomorrow)
-            $counts['tomorrow']++;
-        if (!empty($rec['date']) && $rec['date'] < $today)
-            $counts['overdue']++;
-
-        return $counts;
+  /*
+   * Count
+   */
+  private function _counts($rec, $counts)
+  {
+    $today_date = new DateTime('now', $this->plugin->timezone);
+    $today = $today_date->format('Y-m-d');
+    $tomorrow_date = new DateTime('now + 1 day', $this->plugin->timezone);
+    $tomorrow = $tomorrow_date->format('Y-m-d');
+    $counts['all']++;
+    if ($rec['flagged'])
+      $counts['flagged']++;
+    if (empty($rec['date']))
+      $counts['nodate']++;
+    if ($rec['startdate'] <= $today) {
+      $counts['today']++;
     }
+    else if ($rec['date'] <= $today) {
+      $counts['today']++;
+    }
+    if (empty($rec['date']))
+      $counts['nodate']++;
+    if ($rec['startdate'] <= $tomorrow)
+      $counts['tomorrow']++;
+    else if ($rec['date'] <= $tomorrow)
+      $counts['tomorrow']++;
+    if (!empty($rec['date']) && $rec['date'] < $today)
+      $counts['overdue']++;
+    return $counts;
+  }
 
     /**
      * Get all taks records matching the given filter
@@ -405,19 +404,22 @@ class tasklist_database_driver extends tasklist_driver
             $query_col = 'task_id';
             $search = $prop['id'];
         }
-        $result = $this->rc->db->query(sprintf(
-             "SELECT * FROM " . $this->db_tasks . "
-              WHERE tasklist_id IN (%s)
-              AND %s=?
-              AND del=0",
-              $this->list_ids,
-              $query_col
-             ),
-             $search
-        );
+        
+        if (!empty($this->list_ids)) {
+            $result = $this->rc->db->query(sprintf(
+                  "SELECT * FROM " . $this->db_tasks . "
+                  WHERE tasklist_id IN (%s)
+                  AND %s=?
+                  AND del=0",
+                  $this->list_ids,
+                  $query_col
+                ),
+                $search
+            );
 
-        if ($result && ($rec = $this->rc->db->fetch_assoc($result))) {
-             return $this->_read_postprocess($rec);
+            if ($result && ($rec = $this->rc->db->fetch_assoc($result))) {
+                return $this->_read_postprocess($rec);
+            }
         }
 
         return false;
@@ -445,34 +447,37 @@ class tasklist_database_driver extends tasklist_driver
         $lists = $this->list_ids;
       }
 
-      $result = $this->rc->db->query(sprintf(
-        "SELECT e.*, (SELECT COUNT(attachment_id) FROM " . $this->db_attachments . " 
-          WHERE task_id = e.task_id OR task_id = e.recurrence_id) AS _attachments
-        FROM " . $this->db_tasks . " AS e
-        WHERE e.tasklist_id IN (%s)
-        AND e.$col=?",
-        $lists
-        ),
-      $id);
-      if ($result && ($task = $this->rc->db->fetch_assoc($result)) && $task['task_id']) {
-        $task = $this->_read_postprocess($task);
-        if ($task['recurrence_id'] || $task['recurrence']) {
-          $exceptions = $this->_get_master($task['recurrence_id'] ? $task['recurrence_id'] : $task['id'], $lists);
-          if (is_array($exceptions)) {
-            $curr_task = $task;
-            $task = $exceptions['parent'];
-            if (is_array($exceptions['exceptions'])) {
-              $task['recurrence']['EXCEPTIONS'] = $exceptions['exceptions'];
+      if (!empty($lists)) {
+        $result = $this->rc->db->query(sprintf(
+          "SELECT e.*, (SELECT COUNT(attachment_id) FROM " . $this->db_attachments . " 
+            WHERE task_id = e.task_id OR task_id = e.recurrence_id) AS _attachments
+          FROM " . $this->db_tasks . " AS e
+          WHERE e.tasklist_id IN (%s)
+          AND e.$col=?",
+          $lists
+          ),
+          $id
+        );
+        if ($result && ($task = $this->rc->db->fetch_assoc($result)) && $task['task_id']) {
+          $task = $this->_read_postprocess($task);
+          if ($task['recurrence_id'] || $task['recurrence']) {
+            $exceptions = $this->_get_master($task['recurrence_id'] ? $task['recurrence_id'] : $task['id'], $lists);
+            if (is_array($exceptions)) {
+              $curr_task = $task;
+              $task = $exceptions['parent'];
+              if (is_array($exceptions['exceptions'])) {
+                $task['recurrence']['EXCEPTIONS'] = $exceptions['exceptions'];
+              }
+              if (is_array($exceptions['exdates'])) {
+                $task['recurrence']['EXDATE'] = $exceptions['exdates'];
+              }
+              $task['current'] = $curr_task;
             }
-            if (is_array($exceptions['exdates'])) {
-              $task['recurrence']['EXDATE'] = $exceptions['exdates'];
-            }
-            $task['current'] = $curr_task;
           }
-        }
-        unset($task['exception'], $task['exdate']);
+          unset($task['exception'], $task['exdate']);
 
-        return $task;
+          return $task;
+        }
       }
 
       return false;
@@ -488,7 +493,7 @@ class tasklist_database_driver extends tasklist_driver
     public function get_childs($prop, $recursive = false)
     {
         // resolve UID first
-        if (is_string($prop)) {
+        if (is_string($prop) && !empty($this->list_ids)) {
             $result = $this->rc->db->query(sprintf(
                 "SELECT task_id AS id, tasklist_id AS list FROM " . $this->db_tasks . "
                  WHERE tasklist_id IN (%s)
@@ -503,7 +508,7 @@ class tasklist_database_driver extends tasklist_driver
         $task_ids = array($prop['id']);
 
         // query for childs (recursively)
-        while (!empty($task_ids)) {
+        while (!empty($task_ids) && !empty($this->list_ids)) {
             $ids = '(';
             foreach($task_ids as $id) {
               $ids .= 'parent_id LIKE ' . $this->rc->db->quote($id  . '%') . ' OR ';
@@ -572,52 +577,65 @@ class tasklist_database_driver extends tasklist_driver
         return $alarms;
     }
 
-    /**
-     * Feedback after showing/sending an alarm notification
-     *
-     * @see tasklist_driver::dismiss_alarm()
-     */
-    public function dismiss_alarm($task_id, $snooze = 0)
-    {
-        $notify_at = null; //default 
+  /**
+   * Feedback after showing/sending an alarm notification
+   *
+   * @see tasklist_driver::dismiss_alarm()
+   */
     
-        $task = $this->get_master(array('id' => $task_id));
+  public function dismiss_alarm($task_id, $snooze = 0)
+  {
+    $notify_at = null; //default 
     
-        if ($snooze > 0) {
-            $notify_at = date(self::DB_DATE_FORMAT, time() + $snooze);
-        }
-        else if ($task['recurrence'] && $task['id'] == $task_id) {
-            $start = $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime']) : '');
-            $task['start'] = new DateTime($start, $this->plugin->timezone);
-            $engine = libcalendaring::get_recurrence();
-            $rrule = $this->unserialize_recurrence($task['recurrence']);
-            $engine->init($rrule, $task['start']->format('Y-m-d H:i:s'));
-            while ($next_start = $engine->next()) {
-                $next_start->setTimezone($this->plugin->timezone);
-                if ($next_start > new DateTime(date(self::DB_DATE_FORMAT, strtotime('+1 day')))) {
-                    $task['start'] = $next_start;
-                    $alarm = libcalendaring::get_next_alarm($task);
-                    if ($alarm['time']) {
-                        $notify_at = date(self::DB_DATE_FORMAT, $alarm['time']);
-                    }
-                    break;
-                }
-            }
-        }
+    $task = $this->get_master(array('id' => $task_id));
+    $task = $this->_read_postprocess($task);
+    $start = $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime']) : '');
+    $task['start'] = new DateTime($start, $this->plugin->timezone);
     
-        $query = $this->rc->db->query(sprintf(
-            "UPDATE " . $this->db_tasks . "
-            SET   changed=%s, notify=?
-            WHERE task_id=?
-            AND tasklist_id IN (" . $this->list_ids . ")",
-            $this->rc->db->now()),
-            $notify_at,
-            $task_id
-        );
-    
-        return $this->rc->db->affected_rows($query);
+    $dismissed_alarm = $task['notify'];
+
+    if ($snooze > 0) {
+      $notify_at = date(self::DB_DATE_FORMAT, time() + $snooze);
     }
-    
+    else if ($task['recurrence'] && $task['id'] == $task_id) {
+      if ($task['recurrence']) {
+        $this->_get_recurrences($task, false, 'alarms');
+        if ($this->last_clone) {
+          $notify_at = $this->last_clone['notify'];
+        }
+      }
+    }
+
+    $now = date(self::DB_DATE_FORMAT);
+    if ($dismissed_alarm) {
+      $query = $this->rc->db->query(
+        "UPDATE " . $this->db_tasks . "
+        SET changed=?, alarms=?, notify=?, dismissed=?
+        WHERE task_id=?
+        AND tasklist_id IN (" . $this->list_ids . ")",
+        $now,
+        $task['alarms'],
+        $notify_at,
+        $dismissed_alarm,
+        $task_id
+      );
+    }
+    else {
+      $query = $this->rc->db->query(
+        "UPDATE " . $this->db_tasks . "
+        SET changed=?, alarms=?, notify=?
+        WHERE task_id=?
+        AND tasklist_id IN (" . $this->list_ids . ")",
+        $now,
+        $task['alarms'],
+        $notify_at,
+        $task_id
+      );
+    }
+
+    return $this->rc->db->affected_rows($query);
+  }
+
     /**
      * Remove alarm dismissal or snooze state
      *
@@ -654,7 +672,7 @@ class tasklist_database_driver extends tasklist_driver
           $tasks['exceptions'][$task['exception']] = $this->_read_postprocess($task);
         }
         else if ($task['exdate']) {
-          $tasks['exdates'][$task['exdate']] = new DateTime($task['exdate']);
+          $tasks['exdates'][$task['exdate']] = new DateTime($task['exdate'], $this->plugin->timezone);
         }
       }
       return $tasks;
@@ -666,25 +684,34 @@ class tasklist_database_driver extends tasklist_driver
      */
     private function _read_postprocess($rec)
     {
-        $rec['id'] = $rec['task_id'];
-        $rec['list'] = $rec['tasklist_id'];
-        $rec['changed'] = new DateTime($rec['changed']);
-        $rec['tags'] = array_filter(explode(',', $rec['tags']));
+      $rec['id'] = $rec['id'] ? $rec['id'] : $rec['task_id'];
+      $rec['list'] = $rec['tasklist_id'];
+      $rec['changed'] = is_numeric($rec['changed']) ? date(self::DB_DATE_FORMAT, $rec['changed']) : $rec['changed'];
+      $rec['changed'] = is_a($rec['changed'], 'DateTime') ? $rec['changed'] : new DateTime($rec['changed'], $this->plugin->timezone);
+      $rec['tags'] = is_string($rec['tags']) ? array_filter(explode(',', $rec['tags'])) : $rec['tags'];
 
-        if (!$rec['parent_id'])
-            unset($rec['parent_id']);
+      if (!$rec['parent_id'])
+        unset($rec['parent_id']);
 
-        // decode serialze recurrence rules
-        if ($rec['recurrence']) {
-            $rec['recurrence'] = $this->unserialize_recurrence($rec['recurrence']);
-        }
+      // decode serialze recurrence rules
+      if ($rec['recurrence'] && is_string($rec['recurrence'])) {
+        $rec['recurrence'] = $this->unserialize_recurrence($rec['recurrence']);
+      }
     
-        if ($rec['exception']) {
-            $rec['recurrence_date'] = new DateTime($rec['exception'], $this->plugin->timezone);
-        }
+      if ($rec['exception'] && !is_a($rec['exception'], 'DateTime')) {
+        $rec['recurrence_date'] = new DateTime($rec['exception'], $this->plugin->timezone);
+      }
         
-        unset($rec['task_id'], $rec['tasklist_id'], $rec['created']);
-        return $rec;
+      if ($rec['recurrence'] && $rec['recurrence']['RDATE']) {
+        foreach ($rec['recurrence']['RDATE'] as $idx => $rdate) {
+          if (is_array($rdate)) {
+            $rec['recurrence']['RDATE'][$idx] = new DateTime($rdate['date'], new DateTimezone($rdate['timezone'] ? $rdate['timezone'] : $this->plugin->timezone));
+          }
+        }
+      }
+        
+      unset($rec['task_id'], $rec['tasklist_id'], $rec['created']);
+      return $rec;
     }
 
     /**
@@ -701,13 +728,24 @@ class tasklist_database_driver extends tasklist_driver
 
         if (!$this->lists[$list_id] || $this->lists[$list_id]['readonly'])
             return false;
+        
+        if (isset($prop['start']) && is_a($prop['start'], 'DateTime')) {
+            $prop['start']->setTimezone($this->plugin->timezone);
+            $prop['startdate'] = $prop['start']->format('Y-m-d');
+            $prop['starttime'] = $prop['start']->format('H:i');
+        }
+        
+        if (isset($prop['due']) && is_a($prop['due'], 'DateTime')) {
+            $prop['due']->setTimezone($this->plugin->timezone);
+            $prop['date'] = $prop['due']->format('Y-m-d');
+            $prop['time'] = $prop['due']->format('H:i');
+        }
 
         foreach (array('parent_id', 'date', 'time', 'startdate', 'starttime', 'alarms', 'recurrence', 'status') as $col) {
             if (empty($prop[$col]))
                 $prop[$col] = null;
         }
 
-        // Begin mod by Rosali (use DateTime objects if present)
         if (isset($prop['changed']) && is_a($prop['changed'], 'DateTime')) {
             $ts_changed = date(self::DB_DATE_FORMAT, $prop['changed']->format('U'));
         }
@@ -720,11 +758,34 @@ class tasklist_database_driver extends tasklist_driver
         else {
             $ts_created = date(self::DB_DATE_FORMAT);
         }
-        
+        if (!is_null($prop['parent_id'])) {
+          if (!is_numeric($prop['parent_id'])) {
+            $result = $this->rc->db->limitquery(
+              "SELECT task_id FROM " . $this->db_tasks . "
+              WHERE uid = ?",
+              0,
+              1,
+              $prop['parent_id']
+            );
+            if ($parent = $this->rc->db->fetch_assoc($result)) {
+              $prop['parent_id'] = $parent['task_id'];
+            }
+            else {
+              unset($prop['parent_id']);
+            }
+          }
+        }
         $prop['recurrence'] = is_array($prop['recurrence']) ? $this->serialize_recurrence($prop['recurrence']) : null;
-        
-        if($this->task_uid != $prop['uid']) { // Mod by Rosali
-          $this->task_uid = $prop['uid'];
+        $result = $this->rc->db->limitquery(
+          "SELECT task_id FROM " . $this->db_tasks . "
+          WHERE uid = ? AND recurrence_id = ? AND tasklist_id IN (" . $this->list_ids . ")",
+          0,
+          1,
+          $prop['uid'],
+          0
+        );
+        $exists = $this->rc->db->fetch_assoc($result);
+        if (!is_array($exists)) { // Mod by Rosali
           $notify_at = $this->_get_notification($prop);
           $result = $this->rc->db->query(sprintf(
             "INSERT INTO " . $this->db_tasks . "
@@ -742,7 +803,7 @@ class tasklist_database_driver extends tasklist_driver
             $prop['startdate'],
             $prop['starttime'],
             $prop['complete'] ? $prop['complete'] : 0,
-            $prop['status'] ? $prop['status'] : 0,
+            $prop['status'] ? $prop['status'] : '',
             $prop['flagged'] ? $prop['flagged'] : 0,
             strval($prop['description']),
             join(',', (array)$prop['tags']),
@@ -788,7 +849,19 @@ class tasklist_database_driver extends tasklist_driver
     $prop['flagged'] = $priority;
     $old = $this->get_master($prop);
     $prop = $this->_increase_sequence($prop, $old);
-
+    
+    if (isset($prop['start']) && is_a($prop['start'], 'DateTime')) {
+      $prop['start']->setTimezone($this->plugin->timezone);
+      $prop['startdate'] = $prop['start']->format('Y-m-d');
+      $prop['starttime'] = $prop['start']->format('H:i');
+    }
+        
+    if (isset($prop['due']) && is_a($prop['due'], 'DateTime')) {
+      $prop['due']->setTimezone($this->plugin->timezone);
+      $prop['date'] = $prop['due']->format('Y-m-d');
+      $prop['time'] = $prop['due']->format('H:i');
+    }
+    
     if (is_array($prop['recurrence'])) {
       $recurrence = $prop['recurrence'];
       $prop['recurrence'] = $this->serialize_recurrence($prop['recurrence']);
@@ -886,26 +959,30 @@ class tasklist_database_driver extends tasklist_driver
     if (isset($prop['children_detach']) && $prop['children_detach'] == 1) { // detach children from parent
       $prop['parent_id'] = false;
     }
-
     $prop['complete'] = $prop['complete'] ? $prop['complete'] : 0;
     if ($prop['complete'] > 1) {
       $prop['complete'] = round($prop['complete'] / 100);
     }
 
     $sql_set = array();
+    
+    $sql_set[] = $this->rc->db->quote_identifier('status') . '=' . ($prop['status'] ? $this->rc->db->quote($prop['status']) : $this->rc->db->quote(''));
+    
     foreach (array('recurrence_id', 'title', 'description', 'flagged', 'complete') as $col) {
       if (isset($prop[$col]))
         $sql_set[] = $this->rc->db->quote_identifier($col) . '=' . $this->rc->db->quote($prop[$col]);
     }
-    foreach (array('parent_id', 'uid', 'date', 'time', 'startdate', 'starttime', 'alarms', 'recurrence', 'status', 'exception', 'exdate') as $col) {
-      if (isset($prop[$col]))
+    
+    foreach (array('parent_id', 'uid', 'date', 'time', 'startdate', 'starttime', 'alarms', 'recurrence', 'exception', 'exdate') as $col) {
+      if (isset($prop[$col])) {
         $sql_set[] = $this->rc->db->quote_identifier($col) . '=' . (empty($prop[$col]) ? 'NULL' : $this->rc->db->quote($prop[$col]));
+      }
     }
     if (isset($prop['tags']))
       $sql_set[] = $this->rc->db->quote_identifier('tags') . '=' . $this->rc->db->quote(join(',', (array)$prop['tags']));
 
-   if (isset($prop['date']) || isset($prop['time']) || isset($prop['alarms'])) {
-      $notify_at = $this->_get_notification($prop);
+    if (isset($prop['date']) || isset($prop['time']) || isset($prop['alarms'])) {
+      $notify_at = $this->_get_notification($prop, 'update');
       $sql_set[] = $this->rc->db->quote_identifier('notify') . '=' . (empty($notify_at) ? 'NULL' : $this->rc->db->quote($notify_at));
     }
 
@@ -923,13 +1000,14 @@ class tasklist_database_driver extends tasklist_driver
 
     $result = $this->rc->db->query(sprintf(
         "UPDATE " . $this->db_tasks . "
-        SET changed = ? %s
+        SET changed = ? %s, dismissed = ?
         WHERE task_id = ?
         AND tasklist_id IN (%s)",
         ($sql_set ? ', ' . join(', ', $sql_set) : ''),
         $this->list_ids
       ),
       $ts,
+      null,
       $prop['id']
     );
 
@@ -959,9 +1037,18 @@ class tasklist_database_driver extends tasklist_driver
   public function delete_task($prop, $force = true)
   {
     $prop = $this->_get_id($prop);
-
-    if ($prop['mode'] == 2) {
-      $master = $this->get_master(array('id' => $prop['parent_id'] ? $prop['parent_id'] : $prop['id']));
+    $master = $this->get_master(array('id' => $prop['parent_id'] ? $prop['parent_id'] : $prop['id']));
+    $success = false;
+    if (($master['id'] != $prop['id']) && $prop['recurrence_id'] != 0) {
+      $prop['mode'] = 5;
+    }
+    if ($prop['mode'] == 0) {
+      $success = $this->_delete_task($prop, $force, false);
+    }
+    else if ($prop['mode'] == 1) {
+      $success = $this->_delete_task($prop, $force, true);
+    }
+    else if ($prop['mode'] == 2) {
       $start = $prop['startdate'] . ' ' . ($prop['starttime'] ? ($prop['starttime'] . ':00') : '00:00:00');
       $master['recurrence']['EXDATE'][$start] = new DateTime($start, $this->plugin->timezone);
       $recurrence = $master['recurrence'];
@@ -971,21 +1058,23 @@ class tasklist_database_driver extends tasklist_driver
       $this->_update_recurrences($master);
     }
     else if ($prop['mode'] == 3) {
-      $master = $this->get_master(array('id' => $prop['parent_id'] ? $prop['parent_id'] : $prop['id']));
       $success = $this->_delete_task($master, $force, false);
     }
     else if ($prop['mode'] == 4) {
-      $master = $this->get_master(array('id' => $prop['parent_id'] ? $prop['parent_id'] : $prop['id']));
       $success = $this->_delete_task($master, $force, true);
     }
-    else if ($prop['mode'] == 1) {
-      $success = $this->_delete_task($prop, $force, true);
+    else if ($prop['mode'] == 5) {
+      if (is_array($master['recurrence']) && is_array($master['recurrence']['EXCEPTIONS'])) {
+        foreach($master['recurrence']['EXCEPTIONS'] as $idx => $exception) {
+          if ($exception['id'] == $prop['id']) {
+            unset($master['recurrence']['EXCEPTIONS'][$idx]);
+          }
+        }
+        $master['recurrence'] = $this->serialize_recurrence($master['recurrence']);
+        $success = $this->_update_task($master);
+        $this->_update_recurrences($master);
+      }
     }
-    else if ($prop['mode'] == 0) {
-      $success = $this->_delete_task($prop, $force, false);
-    }
-
-    
     return $success;
   }
   
@@ -1055,20 +1144,20 @@ class tasklist_database_driver extends tasklist_driver
             $task_id
           );
         }
+        $now = date(self::DB_DATE_FORMAT);
         $query = $this->rc->db->query(sprintf(
             "UPDATE " . $this->db_tasks . "
-            SET changed = %s, del = 1
+            SET changed = ?, del = 1
             WHERE (task_id = ? OR recurrence_id = ?)
             AND tasklist_id IN (%s)",
-            $this->rc->db->now(),
             $this->list_ids
           ),
+          $now,
           $task_id,
           $task_id
         );
       }
     }
-
     return $this->rc->db->affected_rows($query);
   }
 
@@ -1081,14 +1170,15 @@ class tasklist_database_driver extends tasklist_driver
    */
   public function undelete_task($prop)
   {
+    $now = date(self::DB_DATE_FORMAT);
     $query = $this->rc->db->query(sprintf(
         "UPDATE " . $this->db_tasks . "
-        SET changed=%s, del=0
+        SET changed=?, del=0
         WHERE task_id=?
         AND   tasklist_id IN (%s)",
-        $this->rc->db->now(),
         $this->list_ids
       ),
+      $now,
       $prop['id']
     );
 
@@ -1103,9 +1193,9 @@ class tasklist_database_driver extends tasklist_driver
       if (empty($this->lists)) {
         return;
       }
-      
-      $task['recurrence'] = is_string($task['recurrence']) ? $this->unserialize_recurrence($task['recurrence']) : array();
-      
+
+      $task['recurrence'] = is_string($task['recurrence']) ? $this->unserialize_recurrence($task['recurrence']) : (is_array($task['recurrence']) ? $task['recurrence'] : array());
+
       // mark existing recurrence exceptions for deletion
       $this->rc->db->query(
         "UPDATE " . $this->db_tasks . "
@@ -1118,33 +1208,31 @@ class tasklist_database_driver extends tasklist_driver
       $ts_changed = date(self::DB_DATE_FORMAT);
       $ts_created = $ts_changed;
 
-      if ($task['recurrence']) {
+      if (is_array($task['recurrence'])) {
         if (is_array($task['recurrence']['EXCEPTIONS'])) {
           $exceptions = $task['recurrence']['EXCEPTIONS'];
           foreach ($exceptions as $exception) {
             if (is_a($exception['start'], 'DateTime')) {
+              $exception['start']->setTimezone($this->plugin->timezone);
               $startdate = $exception['start']->format('Y-m-d');
               $starttime = $exception['start']->format('H:i');
-              $timezone = $exception['start']->getTimezone();
             }
             else if($exception['startdate']) {
               $startdate = $exception['startdate'];
               $starttime = $exception['starttime'];
-              $timezone = $this->plugin->timezone;
             }
             else {
               $startdate = null;
               $starttime = null;
             }
             if (is_a($exception['due'], 'DateTime')) {
+              $exception['due']->setTimezone($this->plugin->timezone);
               $date = $exception['due']->format('Y-m-d');
               $time = $exception['due']->format('H:i');
-              $timezone = $exception['start']->getTimezone();
             }
             else if($exception['date']) {
               $date = $exception['date'];
               $time = $exception['time'];
-              $timezone = $this->plugin->timezone;
             }
             else {
               $date = null;
@@ -1158,7 +1246,7 @@ class tasklist_database_driver extends tasklist_driver
             }
             $notify_at = $this->_get_notification($exception);
             if (is_array($exception['recurrence_date'])) {
-              $exception['recurrence_date'] = new DateTime($exception['recurrence_date']['date'], new DateTimezone($exception['recurrence_date']['timezone'] ? $exception['recurrence_date']['timezone'] : 'GMT'));
+              $exception['recurrence_date'] = new DateTime($exception['recurrence_date']['date'], new DateTimezone($exception['recurrence_date']['timezone'] ? $exception['recurrence_date']['timezone'] : 'UTC'));
             }
             $complete = $exception['complete'] ? $exception['complete'] : 0;
             if ($complete > 1) {
@@ -1171,60 +1259,63 @@ class tasklist_database_driver extends tasklist_driver
               $exception_date
             );
             $existing = $this->rc->db->fetch_assoc($result);
-            if (is_array($existing)) {
-              $this->rc->db->query(
-                "UPDATE " . $this->db_tasks ."
-                SET uid = ?, parent_id = ?, changed = ?, title = ?, date = ?, time = ?, startdate = ?, starttime = ?, complete = ?, status = ?, flagged = ?, description = ?, tags = ?, alarms = ?, recurrence = ?, exception = ?, notify = ?, del = ?
-                WHERE task_id = ? and tasklist_id = ?",
-                $exception['uid'],
-                $task['parent_id'] ? $task['parent_id'] : $task['id'],
-                $ts_changed,
-                $exception['title'],
-                $date,
-                $time,
-                $startdate,
-                $starttime,
-                $complete,
-                $exception['status'] ? $exception['status'] : '',
-                $exception['priority'] ? $exception['priority'] : ($exception['flagged'] ? $exception['flagged'] : 0),
-                strval($exception['description']),
-                join(',', (array)$exception['categories']),
-                $exception['alarms'],
-                null,
-                date(self::DB_DATE_FORMAT, $exception['recurrence_date']->format('U')),
-                $notify_at,
-                0,
-                $existing['task_id'],
-                $task['list']
-              );
-            }
-            else {
-              $this->rc->db->query(
-                "INSERT INTO " . $this->db_tasks . "
-                (tasklist_id, uid, parent_id, recurrence_id, created, changed, title, date, time, startdate, starttime, complete, status, flagged, description, tags, alarms, recurrence, exception, notify, del)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                $task['list'],
-                $exception['uid'],
-                $task['parent_id'] ? $task['parent_id'] : $task['id'],
-                $task['id'],
-                $ts_created,
-                $ts_changed,
-                $exception['title'],
-                $date,
-                $time,
-                $startdate,
-                $starttime,
-                $complete,
-                $exception['status'] ? $exception['status'] : '',
-                $exception['priority'] ? $exception['priority'] : ($exception['flagged'] ? $exception['flagged'] : 0),
-                strval($exception['description']),
-                join(',', (array)$exception['categories']),
-                $exception['alarms'],
-                null,
-                date(self::DB_DATE_FORMAT, $exception['recurrence_date']->format('U')),
-                $notify_at,
-                0
-              );
+            $parent_id = $task['parent_id'] ? $task['parent_id'] : $task['id'];
+            if ($startdate) {
+              if (is_array($existing)) {
+                $this->rc->db->query(
+                  "UPDATE " . $this->db_tasks ."
+                  SET uid = ?, parent_id = ?, changed = ?, title = ?, date = ?, time = ?, startdate = ?, starttime = ?, complete = ?, status = ?, flagged = ?, description = ?, tags = ?, alarms = ?, recurrence = ?, exception = ?, notify = ?, del = ?
+                  WHERE task_id = ? and tasklist_id = ?",
+                  $exception['uid'],
+                  $parent_id,
+                  $ts_changed,
+                  $exception['title'],
+                  $date,
+                  $time,
+                  $startdate,
+                  $starttime,
+                  $complete,
+                  $exception['status'] ? $exception['status'] : '',
+                  $exception['priority'] ? $exception['priority'] : ($exception['flagged'] ? $exception['flagged'] : 0),
+                  strval($exception['description']),
+                  join(',', (array)$exception['categories']),
+                  $exception['alarms'],
+                  null,
+                  date(self::DB_DATE_FORMAT, $exception['recurrence_date']->format('U')),
+                  $notify_at,
+                  0,
+                  $existing['task_id'],
+                  $task['list']
+                );
+              }
+              else {
+                $this->rc->db->query(
+                  "INSERT INTO " . $this->db_tasks . "
+                  (tasklist_id, uid, parent_id, recurrence_id, created, changed, title, date, time, startdate, starttime, complete, status, flagged, description, tags, alarms, recurrence, exception, notify, del)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                  $task['list'],
+                  $exception['uid'],
+                  $parent_id,
+                  $task['id'],
+                  $ts_created,
+                  $ts_changed,
+                  $exception['title'],
+                  $date,
+                  $time,
+                  $startdate,
+                  $starttime,
+                  $complete,
+                  $exception['status'] ? $exception['status'] : '',
+                  $exception['priority'] ? $exception['priority'] : ($exception['flagged'] ? $exception['flagged'] : 0),
+                  strval($exception['description']),
+                  join(',', (array)$exception['categories']),
+                  $exception['alarms'],
+                  null,
+                  date(self::DB_DATE_FORMAT, $exception['recurrence_date']->format('U')),
+                  $notify_at,
+                  0
+                );
+              }
             }
           }
         }
@@ -1232,12 +1323,9 @@ class tasklist_database_driver extends tasklist_driver
           $exdates = $task['recurrence']['EXDATE'];
           foreach ($exdates as $exdate) {
             if (is_array($exdate)) {
-              $exdate = strtotime($exdate['date']);
+              $exdate = new DateTime($exdate['date'], new DateTimezone($exdate['timezone'] ? $exdate['timezone'] : $this->plugin->timezone));
             }
-            else {
-              $exdate = $exdate->format('U');
-            }
-            $exdate = new DateTime(date('Y-m-d H:i:s', $exdate), $timezone);
+            $exdate->setTimezone($this->plugin->timezone);
             $result = $this->rc->db->query(
               "SELECT task_id FROM " . $this->db_tasks . "
               WHERE recurrence_id = ? AND exdate = ? AND tasklist_id = ?",
@@ -1310,85 +1398,90 @@ class tasklist_database_driver extends tasklist_driver
     /**
      * Calculate recurrences and return clones
      */
-    private function _get_recurrences($task, $has_parent)
+    private function _get_recurrences($task, $has_parent, $type = 'tasks', $action = 'new')
     {
       if (!$task['startdate']) {
         return $task;
       }
-      
       if(serialize(func_get_args()) == $_SESSION['tasks_recurrences_request']){
-        unset($_SESSION['tasks_recurrences_request']);
-        return $_SESSION['tasks_recurrences_cache'];
+        //unset($_SESSION['tasks_recurrences_request']);
+        //return $_SESSION['tasks_recurrences_cache'];
       }
       
-      $recurrences = array();
+      $task = $this->_read_postprocess($task);
       
-      $start = $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime']) : '');
-      $task['start'] = new DateTime($start, $this->plugin->timezone);
+      $base_tasks = array();
+      $clones = array();
 
-      if ($task['date']) {
-        $due = $task['date'] . ($task['time'] ? (' ' . $task['time'] . ':00') : '');
-        $due = new DateTime($due);
-        $delta = $task['start']->diff($due);
-      }
-
-      $engine = libcalendaring::get_recurrence();
-      $rrule = $this->unserialize_recurrence($task['recurrence']);
-
-      // compute the next occurrence of date/time attributes
-
-      if (!empty($rrule['EXDATE']) && is_array($rrule['EXDATE'])) {
-        /*
-        foreach ($rrule['EXDATE'] as $idx => $exdate) {
-          if (is_array($exdate)) {
-            $rrule['EXDATE'][$idx] = new DateTime($exdate['date'], new DateTimezone($exdate['timezone']));
+      $start = new DateTime($task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime']) : ''), $this->plugin->timezone);
+      $task['start'] = $start;
+      
+      if (is_array($task['recurrence']) && $task['recurrence']['BYMONTHDAY']) {
+        $days = explode(',', $task['recurrence']['BYMONTHDAY']);
+        $year = $task['start']->format('Y') - 1;
+        foreach ($days as $day) {
+          $base_date = $task['start']->format($year . '-07-' . $day . ' ' . $task['start']->format('H') . ':' . $task['start']->format('i') . ':' . $task['start']->format('s'));
+          if ($base_date = strtotime($base_date)) {
+            $task['start'] = new DateTime(date('Y-m-d H:i:s', $base_date), $this->plugin->timezone);
+            $base_tasks[] = $task;
           }
         }
-        */
-        unset($rrule['EXDATE']); // we have our own exdate records
-                                  // Horde seems not to work properly if start and exdate have different timezones;
+      }
+      else if (is_array($task['recurrence']) && $task['recurrence']['BYMONTH']) {
+        $months = explode(',', $task['recurrence']['BYMONTH']);
+        $year = $task['start']->format('Y') - 1;
+        foreach ($months as $month) {
+          $base_date = $year. '-' . $month . '-' . $task['start']->format('d') . ' ' . $task['start']->format('H') . ':' . $task['start']->format('i') . ':' . $task['start']->format('s');
+          if ($base_date = strtotime($base_date)) {
+            $task['start'] = new DateTime(date('Y-m-d H:i:s', $base_date), $this->plugin->timezone);
+            $base_tasks[] = $task;
+          }
+        }
+      }
+      else{
+        $base_tasks[] = $task;
       }
 
-      $engine->init($rrule, $task['start']->format('Y-m-d H:i:s'));
-      $clones = array();
-      while ($next = $engine->next()) {
-        $next_formatted = $next->format('Y-m-d H:i');
-        unset($task['recurrence'], $task['start']);
-        $clone = $task;
-        $clone['start'] = new DateTime($next_formatted);
-        if ($task['date']) {
-          $clone['due'] = $clone['start']->add($delta);
-          $due = explode(' ', $clone['due']->format('Y-m-d H:i'));
-          $clone['date'] = $due[0];
-          $clone['time'] = $due[1];
+      $delta = false;
+      if ($task['date']) {
+        $due = $task['date'] . ($task['time'] ? (' ' . $task['time'] . ':00') : '');
+        $due = new DateTime($due, $this->plugin->timezone);
+        $delta = $task['start']->diff($due);
+      }
+      
+      $engine = libcalendaring::get_recurrence();
+
+      foreach ($base_tasks as $task) {
+        // Horde recurrence engine is buggy:
+        // - does not return RDATE in past (Thunderbird/Lightning does).
+        // - skips entire moths
+        // So, do it yourself and don't trust Horde
+        if (is_array($task['recurrence']['RDATE'])) {
+          foreach ($task['recurrence']['RDATE'] as $idx => $next) {
+            $clone = $this->_get_clone($task, $next, $delta, $type, $action, $has_parent);
+            if ($clone === false) {
+              break;
+            }
+            else if (is_array($clone) && !empty($clone)) {
+              $clones[] = $clone;
+            }
+          }
+          unset($task['recurrence']['RDATE']);
         }
-        $clone_start = explode(' ', $next_formatted);
-        if ($task['startdate']) {
-          $clone['startdate'] = $clone_start[0];
-          $clone['starttime'] = $clone_start[1];
-        }
-        $clone['task_id'] .= '-' . md5($next_formatted);
-        if ($has_parent) {
-          $clone['parent_id'] = $task['task_id'];
-        }
-        if ($clone['startdate'] > date('Y-m-d')) {
-          break;
-        }
-        // Check RECURRENCE-ID (internal exception) and EXDATE (internal exdate)
-        $result = $this->rc->db->limitquery(
-          'SELECT task_id FROM ' . $this->db_tasks . ' WHERE (exception = ? OR exdate = ?) AND tasklist_id = ? AND recurrence_id = ?',
-          0,
-          1,
-          $clone['start']->format(self::DB_DATE_FORMAT),
-          $clone['start']->format(self::DB_DATE_FORMAT),
-          $task['tasklist_id'],
-          $task['task_id']
-        );
-        $exception = $this->rc->db->fetch_assoc($result);
-        if (!is_array($exception)) {
-          unset($clone['due'], $clone['start']);
-          $clone['isclone'] = true;
-          $clones[] = $this->_read_postprocess($clone);
+
+        // compute the next occurrence of date/time attributes
+        $engine->init($task['recurrence'], $task['start']->format('Y-m-d H:i:s'));
+        while ($next = $engine->next()) {
+          if ($next->format(self::DB_DATE_FORMAT) <= $start->format(self::DB_DATE_FORMAT)) {
+            continue;
+          }
+          $clone = $this->_get_clone($task, $next, $delta, $type, $action, $has_parent);
+          if ($clone === false) {
+            break;
+          }
+          else if (is_array($clone) && !empty($clone)) {
+            $clones[] = $clone;
+          }
         }
       }
 
@@ -1399,36 +1492,99 @@ class tasklist_database_driver extends tasklist_driver
     }
     
     /**
-     * Check if an exception (RECURRENCE-ID) or exdate (EXDATE) for a given task exists
+     * Create a clone of a task for a given date
      *
-     * @param array Hash array with task properties
-     * @return boolean success (true or false)
+     * @param array   Hash array with task properties
+     * @param object  DateTime
+     * @param mixed   boolean false or integer difference between start and due
+     * @param boolean abort on first alarm in future
+     * @param string  'new' or 'update'
+     * @param boolean clone has parent task
+     * @return mixed  boolean false or array task
      */
-    public function _is_exception($task)
+    private function _get_clone($task, $next, $delta, $type, $action, $has_parent)
     {
-      if (!$task['startdate']) {
+      $next_formatted = $next->format('Y-m-d H:i');
+      unset($task['recurrence'], $task['start']);
+      $clone = $task;
+      if ($action == 'update') {
+        unset($clone['notify']);
+      }
+      $clone['start'] = new DateTime($next_formatted, $this->plugin->timezone);
+      $clone_start = explode(' ', $next_formatted);
+      if ($task['startdate']) {
+        $clone['startdate'] = $clone_start[0];
+        $clone['starttime'] = $clone_start[1];
+      }
+      if ($delta) {
+        $clone['due'] = $clone['start']->add($delta);
+        $due = explode(' ', $clone['due']->format('Y-m-d H:i'));
+        $clone['date'] = $due[0];
+        $clone['time'] = $due[1];
+      }
+      $clone['id'] .= '-' . md5($next_formatted);
+      if ($has_parent) {
+        $clone['parent_id'] = $task['id'];
+      }
+      if ($type == 'alarms') {
+        $next_alarm = $clone;
+        $next_alarm['start'] = new DateTime($next_alarm['startdate'] . ($next_alarm['starttime'] ? (' ' . $next_alarm['starttime'] . ':00') : ' 00:00:00'), $this->plugin->timezone);
+        $alarm = libcalendaring::get_next_alarm($next_alarm);
+        if ($alarm['time']) {
+          if ($alarm['time'] > ($clone['notify'] ? strtotime($clone['notify']) : time()) || substr($clone['alarms'], 0, 1) == '@') {
+            $clone['notify'] = date(self::DB_DATE_FORMAT, $alarm['time']);
+            $this->last_clone = $clone;
+            return false;
+          }
+        }
+        else {
+          return false;
+        }
+      }
+      else if ($clone['startdate'] . ($clone['starttime'] ? (' ' . $clone['starttime'] . ':00') : ' 00:00:00') > date('Y-m-d H:i:s', time())) {
+        $this->last_clone = $clone;
         return false;
       }
-      
-      $task_id = $task['id'] ? $task['id'] : $task['task_id'];
-      $list_id = $task['list'] ? $task['list'] : $task['tasklist_id'];
-      
-      $result = $this->rc->db->limitquery(
-        'SELECT task_id FROM ' . $this->db_tasks . ' WHERE (exception = ? OR exdate = ?) AND tasklist_id = ? AND recurrence_id = ?',
-        0,
-        1,
-        $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime'] . ':00') : ' 00:00:00'),
-        $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime'] . ':00') : ' 00:00:00'),
-        $list_id,
-        $task_id
-      );
-      if ($this->rc->db->fetch_assoc($result)) {
-        return true;
+      $exception = $this->rc->db->fetch_assoc($result);
+      if (!$this->_is_exception($clone)) {
+        unset($clone['due'], $clone['start']);
+        $clone['isclone'] = true;
+        return $clone;
       }
-      else {
-        return false;
-      }
+      return array();
     }
+    
+  /**
+   * Check if an exception (RECURRENCE-ID) or exdate (EXDATE) for a given task exists
+   *
+   * @param array Hash array with task properties
+   * @return boolean success (true or false)
+   */
+  private function _is_exception($task)
+  {
+    if (!$task['startdate']) {
+      return false;
+    }
+    
+    $task_id = $task['id'] ? $task['id'] : $task['task_id'];
+    $list_id = $task['list'] ? $task['list'] : $task['tasklist_id'];
+    
+    $result = $this->rc->db->limitquery(
+      'SELECT task_id FROM ' . $this->db_tasks . ' WHERE (exception = ? OR exdate = ?) AND tasklist_id = ? AND recurrence_id = ?',
+      0,
+      1,
+      $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime'] . ':00') : ' 00:00:00'),
+      $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime'] . ':00') : ' 00:00:00'),
+      $list_id,
+      $task_id
+    );
+    if ($this->rc->db->fetch_assoc($result)) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
     
   /**
    * Shift exceptions
@@ -1484,104 +1640,98 @@ class tasklist_database_driver extends tasklist_driver
       );
     }
   
-    /**
-     * Compute absolute time to notify the user
-     */
-    private function _get_notification($task)
-    {
-        if ($task['alarms']) {
-            $start = $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime']) : '');
-            $task['start'] = new DateTime($start, $this->plugin->timezone);
-            if ($task['recurrence']) {
-                $engine = libcalendaring::get_recurrence();
-                $rrule = $this->unserialize_recurrence($task['recurrence']);
-                $engine->init($rrule, $task['start']->format('Y-m-d H:i:s'));
-                while ($next_start = $engine->next()) {
-                    $next_start->setTimezone($this->plugin->timezone);
-                    if ($next_start > new DateTime()) {
-                        $task['start'] = $next_start;
-                        $alarm = libcalendaring::get_next_alarm($task);
-                        break;
-                    }
-                }
-            }
-            else if($task['start'] > new DateTime()) {
-                $alarm = libcalendaring::get_next_alarm($task);
-            }
-            if ($alarm['time']) {
-                return date('Y-m-d H:i:s', $alarm['time']);
-            }
+  /**
+   * Compute absolute time to notify the user
+   */
+  private function _get_notification($task, $action = 'new')
+  {
+    if ($task['alarms']) {
+      $task = $this->_read_postprocess($task);
+      $start = $task['startdate'] . ($task['starttime'] ? (' ' . $task['starttime']) : '');
+      $task['start'] = new DateTime($start, $this->plugin->timezone);
+      if ($task['recurrence']) {
+        $this->_get_recurrences($task, false, 'alarms', $action);
+        if ($this->last_clone) {
+          return $this->last_clone['notify'];
         }
-
-        return null;
+      }
+      else if($task['start'] > new DateTime()) {
+        $alarm = libcalendaring::get_next_alarm($task);
+      }
+      if ($alarm['time']) {
+        return date('Y-m-d H:i:s', $alarm['time']);
+      }
     }
 
+    return null;
+  }
 
-    /**
-     * Helper method to serialize task recurrence properties
-     */
-    private function serialize_recurrence($recurrence)
-    {
-        foreach ((array)$recurrence as $k => $val) {
-            if ($val instanceof DateTime) {
-                $recurrence[$k] = '@' . $val->format('c');
-            }
-        }
 
-        return $recurrence ? json_encode($recurrence) : null;
+  /**
+   * Helper method to serialize task recurrence properties
+   */
+  private function serialize_recurrence($recurrence)
+  {
+    foreach ((array)$recurrence as $k => $val) {
+      if ($val instanceof DateTime) {
+        $recurrence[$k] = '@' . $val->format('c');
+      }
     }
 
-    /**
-     * Helper method to decode a serialized task recurrence struct
-     */
-    private function unserialize_recurrence($ser)
-    {
-        if (strlen($ser)) {
-            $recurrence = json_decode($ser, true);
-            foreach ((array)$recurrence as $k => $val) {
-                if ($val[0] == '@') {
-                    try {
-                        $recurrence[$k] = new DateTime(substr($val, 1));
-                    }
-                    catch (Exception $e) {
-                        unset($recurrence[$k]);
-                    }
-                }
-            }
-        }
-        else {
-            $recurrence = '';
-        }
+    return $recurrence ? json_encode($recurrence) : null;
+  }
 
-        return $recurrence;
-    }
-    
-    /**
-     * Increase SEQUENCE (RFC5545 3.8.7.4)
-     * @param array Hash array with task properties
-     * @return array Hash array with task properties
-     */
-    private function _increase_sequence($task)
-    {
-      return $task;
-    }
-    
-    /**
-     * Get real database identifier
-     * @param array Hash array with task properties
-     * @return array Hash array with task properties
-     */
-    private function _get_id($task)
-    {
-      if (isset($task['id'])) {
-        if ($id = $task['id']) {
-          $id = current(explode('-', $id));
-          if (is_numeric($id)) {
-            $task['id'] = $id;
+  /**
+   * Helper method to decode a serialized task recurrence struct
+   */
+  private function unserialize_recurrence($ser)
+  {
+    if (strlen($ser)) {
+      $recurrence = json_decode($ser, true);
+      foreach ((array)$recurrence as $k => $val) {
+        if ($val[0] == '@') {
+          try {
+            $recurrence[$k] = new DateTime(substr($val, 1), $this->plugin->timezone);
+          }
+          catch (Exception $e) {
+            unset($recurrence[$k]);
           }
         }
       }
-    
-      return $task;
     }
+    else {
+      $recurrence = '';
+    }
+
+    return $recurrence;
+  }
+    
+  /**
+   * Increase SEQUENCE (RFC5545 3.8.7.4)
+   * @param array Hash array with task properties
+   * @return array Hash array with task properties
+   */
+  private function _increase_sequence($task)
+  {
+    return $task;
+  }
+    
+  /**
+   * Get real database identifier
+   * @param array Hash array with task properties
+   * @return array Hash array with task properties
+   */
+  private function _get_id($task)
+  {
+    if (isset($task['id'])) {
+      if ($id = $task['id']) {
+        $id = current(explode('-', $id));
+        if (is_numeric($id)) {
+          $task['id'] = $id;
+        }
+      }
+    }
+    
+    return $task;
+  }
 }

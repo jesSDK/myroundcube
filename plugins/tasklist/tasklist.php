@@ -6,7 +6,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # 
-# Copyright (c) 2014 Roland 'Rosali' Liebl
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
 # dev-team [at] myroundcube [dot] com
 # http://myroundcube.com
 # 
@@ -18,12 +18,15 @@ class tasklist extends tasklist_core
   static private $plugin = 'tasklist';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = 'This plugin is a fork of <a href="https://git.kolab.org/roundcubemail-plugins-kolab/tree/plugins/tasklist" target="_new">Kolab tasklist (core)</a>.<br /><a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?tasklist" target="_blank">Documentation</a>';
-  static private $version = '1.0.11';
-  static private $date = '13-12-2014';
+  static private $version = '1.1.5';
+  static private $date = '26-03-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3 + cURL',
+    'required_plugins' => array(
+      'libcalendaring' => 'require_plugin',
+    )
   );
   
   public function init(){

@@ -52,8 +52,8 @@
 }
 
 .context-menu-item {
-  opacity: 0.2;
-  filter: alpha(opacity=20);
+  opacity: 0.9;
+  filter: alpha(opacity=90);
 }
 
 .context-menu-item:hover {
@@ -107,7 +107,9 @@
 .context-menu-item.icon-event { background-position: 5px -2124px; }
 .context-menu-item.icon-edit { background-image: url(../../../../skins/larry/images/listicons.png?v=017c.29530); background-repeat: no-repeat; background-position: 5px -1388px; }
 .context-menu-item.icon-delete { background-image: url(../../../contextmenu/skins/larry/images/contexticons.png); background-repeat: no-repeat; background-position: 5px -96px; }
-
+.context-menu-item.icon-sametab { background-image: url(../../../myrc_sprites/skins/larry/images/myrc_sprites.png); background-repeat: no-repeat; background-position: -8px -2152px; }
+.context-menu-item.icon-newtab { background-image: url(../../../myrc_sprites/skins/larry/images/myrc_sprites.png); background-repeat: no-repeat; background-position: -8px -2112px; }
+.context-menu-item.icon-extwin { background-position: 5px -1482px; }
 
 /* vertically align inside labels */
 .context-menu-input > label > * { vertical-align: top; }

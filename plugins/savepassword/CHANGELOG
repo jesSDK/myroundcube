@@ -6,3 +6,4 @@ VERSION                COMMENT
                                   (old releases) but system table was not updated
 3.0 - 3.0.1            - Roundcube 1.0 compatibility
 3.0.2                  - MSSQL support
+3.0.3                  - Roundcube 1.1 compatibility

@@ -1,13 +1,15 @@
 <?php
-/**
- * jscolor
- *
- * @version 1.4 - 30.12.2012
- * @author Roland 'rosali' Liebl
- * @website http://myroundcube.com
- * 
- **/
- 
+# 
+# This file is part of MyRoundcube "jscolor" plugin.
+# 
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Copyright (c) 2012 - 2015 Roland 'Rosali' Liebl
+# dev-team [at] myroundcube [dot] com
+# http://myroundcube.com
+#
 class jscolor extends rcube_plugin
 {
   public $noajax = true;
@@ -16,11 +18,11 @@ class jscolor extends rcube_plugin
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?jscolor" target="_blank">Documentation</a>';
   static private $download = 'http://myroundcube.googlecode.com';
-  static private $version = '1.4';
-  static private $date = '30-12-2012';
+  static private $version = '1.5';
+  static private $date = '26-02-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
-    'Roundcube' => '1.0',
+    'Roundcube' => '1.1',
     'PHP' => '5.3'
   );
   static private $prefs = null;

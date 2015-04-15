@@ -83,12 +83,30 @@ class ical_sync
         {
             $context = stream_context_create(array(
                 'http' => array(
-                    'header'  => "Authorization: Basic " . base64_encode("$this->user:$this->pass")
+                    'header' => "Authorization: Basic " . base64_encode("$this->user:$this->pass") . "\r\n" .
+                                "User-Agent: PHP/" . PHP_VERSION
                 )
             ));
         }
 
         $vcal = file_get_contents($this->url, false, $context);
+        $charset = 'UTF-8';
+        foreach($http_response_header as $c => $h)
+        {
+            if(stristr($h, 'content-type') && stristr($h, 'charset'))
+            {
+                preg_match('@Content-Type:\s+([\w/+]+)(;\s+charset=(\S+))?@i', $h, $matches);
+                if(isset($matches[3]))
+                {
+                    $charset = strtoupper(trim($matches[3]));
+                }
+            }
+            if(stristr($h, 'content-encoding') && stristr($h, 'gzip'))
+            {
+                $vcal = gzinflate(substr($vcal, 10, -8));
+            }
+        }
+
         $updates = array();
         $synced = array();
         if($vcal !== false)
@@ -98,9 +116,7 @@ class ical_sync
             foreach($events as $event) {
                 $events_hash[$event['uid']] = $event;
             }
-
-            foreach ($this->ical->import($vcal) as $remote_event) {
-
+            foreach ($this->ical->import($vcal, $charset, false, false) as $remote_event) {
                 // Attach remote event to current calendar
                 $remote_event["calendar"] = $this->cal_id;
 

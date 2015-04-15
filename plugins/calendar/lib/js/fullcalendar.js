@@ -4020,6 +4020,10 @@ function AgendaEventRenderer() {
 		}
 
 		var cur_time = new Date();
+		var offset_rc = rcmail.env.libcal_settings.timezone;
+		var offset_client = - cur_time.getTimezoneOffset() / 60;
+		var offset_adjust = - (offset_client - offset_rc);
+		
 		if (t.visStart < cur_time && t.visEnd > cur_time) {
 			timeline.show();
 		}
@@ -4028,7 +4032,7 @@ function AgendaEventRenderer() {
 			return;
 		}
 
-		var secs = (cur_time.getHours() * 60 * 60) + (cur_time.getMinutes() * 60) + cur_time.getSeconds();
+		var secs = ((cur_time.getHours() + offset_adjust) * 60 * 60) + (cur_time.getMinutes() * 60) + cur_time.getSeconds();
 		var percents = secs / 86400; // 24 * 60 * 60 = 86400, # of seconds in a day
 
 		timeline.css('top', Math.floor(container.height() * percents - 1) + 'px');
