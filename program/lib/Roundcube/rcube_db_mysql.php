@@ -150,44 +150,30 @@ class rcube_db_mysql extends rcube_db
     }
 
     /**
-     * Get database runtime variables
-     *
-     * @param string $varname Variable name
-     * @param mixed  $default Default value if variable is not set
-     *
-     * @return mixed Variable value or default
-     */
-    public function get_variable($varname, $default = null)
-    {
-        if (!isset($this->variables)) {
-            $this->variables = array();
-        }
+     * Returns list of tables in a database 
+     * 
+     * @return array List of all tables of the current database 
+     */ 
+    public function list_tables() 
+    { 
+        // get tables if not cached 
+        if ($this->tables === null) { 
+            // first fetch current database name 
+            $d = $this->query("SELECT database()"); 
+            $d = $this->fetch_array($d); 
 
-        if (array_key_exists($varname, $this->variables)) {
-            return $this->variables[$varname];
-        }
-
-        // configured value has higher prio
-        $conf_value = rcube::get_instance()->config->get('db_' . $varname);
-        if ($conf_value !== null) {
-            return $this->variables[$varname] = $conf_value;
-        }
-
-        $result = $this->query('SHOW VARIABLES LIKE ?', $varname);
-
-        while ($row = $this->fetch_array($result)) {
-            $this->variables[$row[0]] = $row[1];
-        }
-
-        // not found, use default
-        if (!isset($this->variables[$varname])) {
-            $this->variables[$varname] = $default;
-        }
-
-        return $this->variables[$varname];
-    }
-
-    /**
+            // get list of tables in current database 
+            $q = $this->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES" 
+                . " WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'" 
+                . " ORDER BY TABLE_NAME", $d ? $d[0] : ''); 
+ 
+            $this->tables = $q ? $q->fetchAll(PDO::FETCH_COLUMN, 0) : array(); 
+        } 
+ 
+        return $this->tables; 
+    } 
+ 
+    /** 
      * Handle DB errors, re-issue the query on deadlock errors from InnoDB row-level locking
      *
      * @param string Query that triggered the error

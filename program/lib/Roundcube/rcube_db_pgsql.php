@@ -158,42 +158,27 @@ class rcube_db_pgsql extends rcube_db
     }
 
     /**
-     * Returns PDO DSN string from DSN array
-     *
-     * @param array $dsn DSN parameters
-     *
-     * @return string DSN string
-     */
-    protected function dsn_string($dsn)
-    {
-        $params = array();
-        $result = 'pgsql:';
+     * Returns list of tables in a database 
+     * 
+     * @return array List of all tables of the current database 
+     */ 
+    public function list_tables() 
+    { 
+        // get tables if not cached 
+        if ($this->tables === null) { 
+            $q = $this->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES" 
+                . " WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ('pg_catalog', 'information_schema')" 
+                . " ORDER BY TABLE_NAME"); 
+ 
+            $this->tables = $q ? $q->fetchAll(PDO::FETCH_COLUMN, 0) : array(); 
+        } 
 
-        if ($dsn['hostspec']) {
-            $params[] = 'host=' . $dsn['hostspec'];
-        }
-        else if ($dsn['socket']) {
-            $params[] = 'host=' . $dsn['socket'];
-        }
-
-        if ($dsn['port']) {
-            $params[] = 'port=' . $dsn['port'];
-        }
-
-        if ($dsn['database']) {
-            $params[] = 'dbname=' . $dsn['database'];
-        }
-
-        if (!empty($params)) {
-            $result .= implode(';', $params);
-        }
-
-        return $result;
-    }
-
+        return $this->tables; 
+    } 
+ 
     /**
-     * Parse SQL file and fix table names according to table prefix
-     */
+      * Parse SQL file and fix table names according to table prefix
+      */
     protected function fix_table_names($sql)
     {
         if (!$this->options['table_prefix']) {

@@ -135,7 +135,10 @@ class rcube_vcard
         $this->firstname    = $this->raw['N'][0][1];
         $this->middlename   = $this->raw['N'][0][2];
         $this->nickname     = $this->raw['NICKNAME'][0][0];
-        $this->organization = $this->raw['ORG'][0][0];
+        for ($i = 0; $i < 3; $i++) {
+          $this->organization = $this->raw['ORG'][0][$i];
+          if ($this->organization) break;
+        }
         $this->business     = ($this->raw['X-ABSHOWAS'][0][0] == 'COMPANY') || (join('', (array)$this->raw['N'][0]) == '' && !empty($this->organization));
 
         foreach ((array)$this->raw['EMAIL'] as $i => $raw_email) {
@@ -530,7 +533,7 @@ class rcube_vcard
     {
         // convert Apple X-ABRELATEDNAMES into X-* fields for better compatibility
         $vcard = preg_replace_callback(
-            '/item(\d+)\.(X-ABRELATEDNAMES)([^:]*?):(.*?)item\1.X-ABLabel:(?:_\$!<)?([\w-() ]*)(?:>!\$_)?./s',
+            '/item(\d+)\.(X-ABRELATEDNAMES)([^:]*?):(.*?)item\1.X-ABLabel:(?:_\$!<)?([\w-() ]*)(?:>!\$_)?./si',
             array('self', 'x_abrelatednames_callback'),
             $vcard);
 

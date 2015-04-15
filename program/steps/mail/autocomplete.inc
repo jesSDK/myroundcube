@@ -175,5 +175,9 @@ if (!empty($book_types) && strlen($search)) {
     }
 }
 
-$OUTPUT->command('ksearch_query_results', $contacts, $search, $reqid);
+$filtered = array();
+foreach ($contacts as $idx => $contact) {
+  $filtered[strtolower($contact['name'])] = $contact;
+}
+$OUTPUT->command('ksearch_query_results', array_values($filtered), $search, $reqid);
 $OUTPUT->send();

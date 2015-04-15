@@ -92,6 +92,12 @@ class rcmail extends rcube
         if (($basename = basename($_SERVER['SCRIPT_FILENAME'])) && $basename != 'index.php') {
             $this->filename = $basename;
         }
+        
+        if (empty($GLOBALS['NOSESSION'])) {
+            if (!isset($_GET['_nosession'])) {
+                $this->session_init();
+            }
+        }
 
         // start session
         $this->session_init();
@@ -731,7 +737,12 @@ class rcmail extends rcube
         $this->plugins->exec_hook('session_destroy');
 
         $this->session->kill();
-        $_SESSION = array('language' => $this->user->language, 'temp' => true, 'skin' => $this->config->get('skin'));
+
+        if ($this->session) {
+            $this->session->kill();
+            $_SESSION = array('language' => $this->user->language, 'temp' => true, 'skin' => $this->config->get('skin'));
+        }
+
         $this->user->reset();
     }
 
