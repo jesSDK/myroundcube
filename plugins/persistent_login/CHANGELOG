@@ -1,7 +1,0 @@
-VERSION                COMMENT
--------------------------------------------------------------------------------
-1.0 - 1.2.2            - It's time for a CHANGELOG
-1.2.3 - 1.2.5          - Implemented database versioning
-1.2.6                  - Roundcube 1.0 compatibility
-1.2.7                  - Roundcube 1.1 compatibility
-1.2.8                  - Remove unnecessary div in HTML injection
