@@ -1,0 +1,15 @@
+VERSION                COMMENT
+---------------------------------------------------------------------------------------------------
+1.0                    - Initial release
+1.0.1                  - Add 'showmore' label to GUI
+1.0.2                  - Move SabreDAV vObject to SabreDAV/lib
+                       - Include SabreDAV DAV component
+1.0.3                  - Several recurring events fixes
+1.0.4                  - Disable cURL FOLLOWLOCATION on open_basedir and safe_mode
+                         PHP installations
+1.0.5                  - Make cURL verify host configurable
+1.0.6                  - Remove debug code
+1.0.7                  - Roundcube 1.1 compatibility
+1.0.8                  - Add showmore label in render_page hook
+1.0.9                  - Use UTC instead of GMT as default timezone
+1.0.10                 - Remove debug code
