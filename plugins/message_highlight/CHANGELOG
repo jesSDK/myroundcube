@@ -1,6 +1,0 @@
-VERSION                COMMENT
----------------------------------------------------------------------------------
-1.1.3                  - It's time for a Changelog
-1.1.4                  - Roundcube 1.1 compatibility
-1.1.5                  - Fix sections list icon position
-1.1.6                  - Move GPL parts of plugin to libgpl
