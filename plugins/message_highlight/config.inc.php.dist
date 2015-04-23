@@ -1,0 +1,6 @@
+<?php
+
+/* Remove hex string in colorpicker input field */
+$config['message_highlight_remove_hex_string'] = false;
+
+?>

@@ -261,7 +261,7 @@ class carddav_backend
 	
 	public function get_ctag($raw = false)
 	{
-	  $this->headers = array('depth' => 'Depth: 0');
+	  $this->headers = array('depth' => 'Depth: 1');
 	  $content_type = 'text/xml';
 	  $content = '<d:propfind xmlns:d="DAV:" xmlns:cs="http://calendarserver.org/ns/"><d:prop><d:displayname /><cs:getctag /></d:prop></d:propfind>';
 	  $temp = explode('<?xml', $this->query($this->url, 'PROPFIND', $content, $content_type), 2);
@@ -331,6 +331,7 @@ class carddav_backend
   */
   public function autodiscover_principal()
   {
+    $this->headers = array('depth' => 'Depth: 1');
     $content = '<?xml version="1.0" encoding="utf-8" ?><A:propfind xmlns:A="DAV:"><A:prop><A:current-user-principal/></A:prop></A:propfind>';
     $content_type = 'application/xml';
     $response = $this->query($this->url, 'PROPFIND', $content, $content_type);
@@ -362,6 +363,7 @@ class carddav_backend
   */
   public function autodiscover_addressbooks_home()
   {
+    $this->headers = array('depth' => 'Depth: 1');
     $content = '<?xml version="1.0" encoding="utf-8" ?><A:propfind xmlns:A="DAV:"><A:prop><A:current-user-principal/></A:prop></A:propfind>';
     $content_type = 'application/xml';
     $response = $this->query($this->url, 'PROPFIND', $content, $content_type); 
@@ -409,6 +411,7 @@ class carddav_backend
   */
   public function autodiscover_addressbooks()
   {
+    $this->headers = array('depth' => 'Depth: 1');
     $addressbooks = array();
     $content = '<?xml version="1.0" encoding="utf-8" ?><A:propfind xmlns:A="DAV:"><A:prop><A:current-user-principal/></A:prop></A:propfind>';
     $content_type = 'application/xml';
@@ -471,6 +474,7 @@ class carddav_backend
 	*/
 	public function check_connection()
 	{
+    $this->headers = array('depth' => 'Depth: 1');
     return $this->query($this->url, 'PROPFIND', null, null, true);
 	}
 

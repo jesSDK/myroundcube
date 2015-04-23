@@ -20,9 +20,9 @@ class webmail_notifier extends rcube_plugin
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/webmail_notifier-plugin" target=_new>Documentation</a>';
   static private $download = 'http://myroundcube.googlecode.com';
-  static private $version = '3.1.6';
-  static private $date = '26-02-2015';
-  static private $licence = 'GPL';
+  static private $version = '3.1.7';
+  static private $date = '19-04-2015';
+  static private $licence = 'All Rights reserved';
   static private $requirements = array(
     'Roundcube' => '1.1',
     'PHP' => '5.3',

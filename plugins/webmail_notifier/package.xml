@@ -9,14 +9,14 @@
 		<user>rosali</user>
 		<email>dev-team@myroundcube.com</email>
 		<active>yes</active>
-	</lead><date>2015-02-26</date>
+	</lead><date>2015-04-19</date>
 	<version>
-		<release>3.1.6</release>
-		<api>3.1.6</api>
+		<release>3.1.7</release>
+		<api>3.1.7</api>
 	</version>
 	<stability>
 		<release>stable</release>
 		<api>stable</api>
 	</stability>
-	<license uri="http://www.gnu.org/licenses/gpl.html">GNU GPLv3+</license>
+	<license uri="http://dev.myroundcube.com/index.php?_action=plugin.plugin_server_license&amp;_plugin=webmail_notifier">All Rights reserved</license>
 </package>

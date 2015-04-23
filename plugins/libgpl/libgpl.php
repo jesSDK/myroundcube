@@ -18,8 +18,8 @@ class libgpl extends rcube_plugin
   static private $plugin = 'libgpl';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?libgpl" target="_blank">Documentation</a>';
-  static private $version = '1.1.15';
-  static private $date = '15-04-2014';
+  static private $version = '1.1.34';
+  static private $date = '21-04-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
     'Roundcube' => '1.1',
@@ -39,7 +39,6 @@ class libgpl extends rcube_plugin
     $this->include_script('timepicker2/jquery.timepicker.js');
     $this->include_stylesheet($this->local_skin_path() .  '/timepicker2.css');
     $this->include_script('dialogextend/jquery.dialogextend.js');
-    $this->include_script('libcalendaring/libcalendaring.js');
     $this->include_script('jquery_migrate/jquery.migrate.js');
     $this->include_script('qtip/qtip.js');
     $this->add_hook('render_page', array($this, 'render_page'));
@@ -51,6 +50,8 @@ class libgpl extends rcube_plugin
       $this->labels_merged = true;
       $this->_merge_labels(
         array(
+          'calendarusername' => 'calendar',
+          'attendeeplaceholder' => 'calendar',
           'events' => 'calendar',
           'tasks' => 'calendar',
           'calendar_kolab' => 'calendar',
@@ -90,22 +91,6 @@ class libgpl extends rcube_plugin
     }
   }
   
-  static public function load_localization($folder, $env){
-    $id = self::$f->ID;
-    self::$f->ID = $env;
-    self::$f->add_texts($folder);
-    self::$f->ID = $id;
-    write_log('texts', self::$f->ID);
-  }
-
-  static public function include_js($js){
-    self::$f->include_script($js);
-  }
-  
-  static public function include_php($php){
-    require_once INSTALL_PATH . $php;
-  }
-
   static public function about($keys = false){
     $requirements = self::$requirements;
     foreach(array('required_', 'recommended_') as $prefix){
@@ -139,6 +124,110 @@ class libgpl extends rcube_plugin
     );
   }
   
+  static public function load_localization($folder, $env, $add_client = false){
+    $id = self::$f->ID;
+    self::$f->ID = $env;
+    self::$f->add_texts($folder, $add_client);
+    self::$f->ID = $id;
+  }
+
+  static public function include_js($js){
+    self::$f->include_script($js);
+  }
+  
+  static public function include_php($php){
+    require_once INSTALL_PATH . $php;
+  }
+  
+  static public function codemirror_ui(){
+    switch($GLOBALS['codemirror']['mode']){
+      case 'PHP':
+        rcube::get_instance()->output->add_header('<style type="text/css">.CodeMirror {height: 90%} .CodeMirror-scroll {height: 100%} </style>');
+        break;
+      case 'SQL':
+        rcube::get_instance()->output->add_header('<style type="text/css">.CodeMirror {height: auto} .CodeMirror-scroll {overflow-y: hidden; overflow-x: auto;} </style>');
+    }
+    self::$f->include_stylesheet('codemirror_ui/lib/CodeMirror-2.3/lib/codemirror.css');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/lib/codemirror.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/lib/util/searchcursor.js');
+    switch($GLOBALS['codemirror']['mode']){
+      case 'PHP':
+        self::PHP($GLOBALS['codemirror']['elem']);
+        break;
+      case 'SQL':
+        self::SQL($GLOBALS['codemirror']['elem']);
+    }
+    self::$f->include_stylesheet('codemirror_ui/css/codemirror-ui.css');
+    self::$f->include_script('codemirror_ui/js/codemirror-ui.js');
+  }
+  
+  static public function PHP($elem){
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/htmlmixed/htmlmixed.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/xml/xml.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/javascript/javascript.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/css/css.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/clike/clike.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/php/php.js');
+    rcube::get_instance()->output->add_script('
+      var textarea = document.getElementById("' . $elem . '");
+      var uiOptions = {
+        path : "js/",
+        searchMode : "popup",
+        mode: "php",
+        imagePath : "plugins/libgpl/codemirror_ui/images/silk",
+        buttons : ' . $GLOBALS['codemirror']['buttons'] . ',
+        saveCallback : ' . $GLOBALS['codemirror']['save'] . '
+      }
+      var codeMirrorOptions = {
+        readOnly: ' . ($GLOBALS['codemirror']['readonly'] ? 'true' : 'false') . ',
+        lineNumbers: true,
+        matchBrackets: true,
+        mode: "application/x-httpd-php",
+        indentUnit: 2,
+        indentWithTabs: true,
+        enterMode: "keep",
+        tabMode: "shift",
+        tabSize: 2
+      }
+      var editor = new CodeMirrorUI(textarea, uiOptions, codeMirrorOptions);
+    ', 'docready'
+    );
+  }
+  
+  static public function SQL($elem){
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/htmlmixed/htmlmixed.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/xml/xml.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/javascript/javascript.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/css/css.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/clike/clike.js');
+    self::$f->include_script('codemirror_ui/lib/CodeMirror-2.3/mode/mysql/mysql.js');
+    rcube::get_instance()->output->add_script('
+      var textarea = document.getElementById("' . $elem . '");
+      var uiOptions = {
+        path : "js/",
+        searchMode : "popup",
+        mode: "mysql",
+        imagePath : "plugins/libgpl/codemirror_ui/images/silk",
+        buttons : ' . $GLOBALS['codemirror']['buttons'] . ',
+        saveCallback : ' . $GLOBALS['codemirror']['save'] . '
+      }
+      var codeMirrorOptions = {
+        readOnly: ' . ($GLOBALS['codemirror']['readonly'] ? 'true' : 'false') . ',
+        lineNumbers: true,
+        matchBrackets: true,
+        mode: "text/x-mysql",
+        indentUnit: 2,
+        indentWithTabs: true,
+        enterMode: "keep",
+        tabMode: "shift",
+        fixedGutter: true,
+        tabSize: 2
+      }
+      var editor = new CodeMirrorUI(textarea, uiOptions, codeMirrorOptions);
+    ', 'docready'
+    );
+  }
+
   public function render_page($p){
     if($this->rc->user->data['username']){
       $this->rc->output->set_env('username', $this->rc->user->data['username']);
@@ -169,8 +258,6 @@ class libgpl extends rcube_plugin
   
   public function send_page($args)
   {
-    $args['content'] = preg_replace('/<script type=\"text\/javascript\" src=\"plugins\/libcalendaring\/libcalendaring.js\?s\=[0-9]*\"><\/script>([\r\n\t])/', '', $args['content']);
-    $args['content'] = preg_replace('/<script type=\"text\/javascript\" src=\"plugins\/libcalendaring\/libcalendaring.min.js\?s\=[0-9]*\"><\/script>([\r\n\t])/', '', $args['content']);
     if(class_exists('password_plus')){
       $args['content'] = preg_replace('/<script type=\"text\/javascript\" src=\"plugins\/password\/password.js\?s\=[0-9]*\"><\/script>([\r\n\t])/', '', $args['content']);
       $args['content'] = preg_replace('/<script type=\"text\/javascript\" src=\"plugins\/password\/password.min.js\?s\=[0-9]*\"><\/script>([\r\n\t])/', '', $args['content']);

@@ -59,11 +59,18 @@ class Client {
     protected $authType;
 
     /**
-     * Indicates if SSL verification is enabled or not.
+     * Indicates if SSL verification of certificate is enabled or not.
      *
      * @var boolean
      */
     protected $verifyPeer;
+    
+    /**
+     * Indicates if SSL verification of host name is enabled or not.
+     *
+     * @var boolean
+     */
+    protected $verifyHost;
 
     /**
      * Constructor
@@ -126,6 +133,15 @@ class Client {
      */
     public function setVerifyPeer($value) {
         $this->verifyPeer = $value;
+    }
+    
+    /**
+     * Enables/disables SSL host verification
+     *
+     * @param boolean $value
+     */
+    public function setVerifyHost($value) {
+        $this->verifyHost = $value;
     }
 
     /**
@@ -307,12 +323,15 @@ class Client {
      * @return array
      */
     public function request($method, $url = '', $body = null, $headers = array()) {
+        $url = $this->getAbsoluteUrl($url);
         // Begin mod by Rosali (google_oauth2)
-        if (strpos($this->baseUri . $url, 'https://apidata.googleusercontent.com/caldav/v2/') === 0 && isset($_SESSION['access_token'])) {
+        if (strpos($url, 'https://apidata.googleusercontent.com/caldav/v2/') === 0 && isset($_SESSION['access_token'])) {
           $headers = array_merge($headers, array('Authorization' => 'Bearer ' . $_SESSION['access_token']));
         }
+        if (!isset($headers['User-Agent'])) {
+          $headers['User-Agent'] = 'MyRoundcube-SabreDAV/Client.php'; // iCloud requires User-Agent header
+        }
         // End mod by Rosali
-        $url = $this->getAbsoluteUrl($url);
 
         $curlSettings = array(
             CURLOPT_RETURNTRANSFER => true,
@@ -320,14 +339,14 @@ class Client {
             CURLOPT_HEADER => true,
             CURLOPT_POSTFIELDS => $body,
             // Automatically follow redirects
-            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_FOLLOWLOCATION => ini_get('open_basedir') ? false : (ini_get('safe_mode') ? false : true), // Mod by Rosali
             CURLOPT_MAXREDIRS => 5,
         );
 
         if($this->verifyPeer !== null) {
             $curlSettings[CURLOPT_SSL_VERIFYPEER] = $this->verifyPeer;
+            $curlSettings[CURLOPT_SSL_VERIFYHOST] = $this->verifyHost; // Mod by Rosali
         }
-
         if($this->trustedCertificates) {
             $curlSettings[CURLOPT_CAINFO] = $this->trustedCertificates;
         }
@@ -374,7 +393,6 @@ class Client {
             $curlSettings[CURLOPT_HTTPAUTH] = $curlType;
             $curlSettings[CURLOPT_USERPWD] = $this->userName . ':' . $this->password;
         }
-        		
         list(
             $response,
             $curlInfo,
@@ -477,7 +495,7 @@ class Client {
 
         $curl = curl_init($url);
         curl_setopt_array($curl, $settings);
-              
+
         //echo "--------------------------------------------------------------------------------------------\n";                
         //print_r($url);
         //print_r($settings);

@@ -19,7 +19,7 @@ class archivefolder_core extends rcube_plugin
   
   function init()
   {
-    libgpl::load_localization('archivefolder/localization/', 'archivefolder');
+    $this->add_texts('localization/');
     
     $this->register_action('plugin.archive', array($this, 'request_action'));
     
@@ -46,7 +46,7 @@ class archivefolder_core extends rcube_plugin
       
       $rcmail->output->set_env('archive_folder', $archive_folder);
       if($rcmail->config->get('skin', 'larry') == 'classic'){
-        $rcmail->output->add_header(html::tag('link', array('rel' => 'stylesheet', 'type' => 'text/css', 'href' => 'plugins/libgpl/archivefolder/skins/classic/archivefolder.css')));;
+        $this->include_stylesheet('skins/classic/archivefolder.css');
       }
     }
     else if ($rcmail->task == 'settings') {

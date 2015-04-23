@@ -22,7 +22,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once (dirname(__FILE__).'/../../libcalendaring/SabreDAV/vendor/autoload.php');
+require_once (dirname(__FILE__).'/../../libgpl/SabreDAV/vendor/autoload.php');
 require_once (dirname(__FILE__).'/vobject_sanitize.php');
 
 
@@ -52,7 +52,7 @@ class caldav_client extends Sabre\DAV\Client
 
         // Include libvcalendar on demand ...
         if(!class_exists("libvcalendar"))
-            require_once (dirname(__FILE__).'/../../libcalendaring/libvcalendar.php');
+            require_once (INSTALL_PATH . 'plugins/libgpl/libcalendaring/libvcalendar.php');
 
         $this->libvcal = new libvcalendar();
         $this->rc = rcube::get_instance();

@@ -16,9 +16,9 @@ class myrc_branch extends rcube_plugin
   static private $plugin = 'myrc_branch';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?myrc_branch" target="_blank">Documentation</a>';
-  static private $version = '4.0.4';
-  static private $date = '30-03-2015';
-  static private $licence = 'GPL';
+  static private $version = '5.0';
+  static private $date = '18-04-2015';
+  static private $licence = 'All Rights reserved';
   static private $requirements = array(
     'Roundcube' => '1.1',
     'PHP' => '5.3'

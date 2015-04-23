@@ -52,3 +52,20 @@ VERSION                COMMENT
 1.1.13                 - CardDAV: Use PROPFIND for check_connection
 1.1.14                 - Move GPL parts of archivefolder plugin to libgpl
 1.1.15                 - Move vkeyboard GPL parts to libgpl
+1.1.16                 - CardDAV: Added depth header to PROPFIND requests
+1.1.17                 - Move GPL parts of persistent_login plugin to libgpl
+1.1.18                 - Move GPL parts of pwstrength plugin to libgpl
+1.1.19 - 1.1.20        - Add more labels
+1.1.21                 - Move codemirror_ui to libgpl
+1.1.22                 - Move GPL parts of tasklist plugin to libgpl
+1.1.23                 - Move GPL parts of calednar plugin to libgpl
+1.1.24                 - MOve GPL parts of contextmenu plugin to libgpl
+1.1.25                 - Move GPL parts of jappix4roundcube to libgpl
+1.1.26                 - Move jscolor javascript library to libgpl
+1.1.27                 - Move GPL parts of message_highlight plugin to libgpl
+1.1.28                 - Move GPL parts of keyboard_shortcuts plugin to libgpl
+1.1.29                 - Move GPL parts of markbuttons plugin to libgpl
+1.1.30                 - Move GPL parts of libcalendaring to libgpl
+1.1.31 - 1.1.32        - Move localization of calendar_plus to libgpl
+1.1.33                 - Deprecate calendar_plus
+1.1.34                 - Fix type in zipdownload/zipdownload.php
