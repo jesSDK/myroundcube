@@ -18,7 +18,7 @@ class libgpl extends rcube_plugin
   static private $plugin = 'libgpl';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/helper-plugin?libgpl" target="_blank">Documentation</a>';
-  static private $version = '1.1.35';
+  static private $version = '1.1.36';
   static private $date = '24-04-2014';
   static private $licence = 'GPL';
   static private $requirements = array(
