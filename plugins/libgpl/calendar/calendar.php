@@ -37,9 +37,6 @@ class calendar_core extends rcube_plugin // Mod by Rosali
   public $task = '?(?!logout).*';
   public $rc;
   public $lib;
-  protected $_drivers = null; // Mod by Rosali (declare protected to make it possible to overwrite in subsequent classes)
-  private $_cals = null;
-  private $_cal_driver_map = null;
   public $home;  // declare public to be used in other classes
   public $urlbase;
   public $timezone;
@@ -62,7 +59,11 @@ class calendar_core extends rcube_plugin // Mod by Rosali
     'calendar_events_default_background_color' => 'c0c0c0', // Mod by Rosali
     'calendar_readonly_events_default_background_color' => 'ff0000', // Mod by Rosali
   );
-
+  
+  protected $_drivers = null; // Mod by Rosali (declare protected to make it possible to overwrite in subsequent classes)
+  
+  private $_cals = null;
+  private $_cal_driver_map = null;
   private $ics_parts = array();
   private $ics_parts_filtered = array(); // Mod by Rosali
 
@@ -117,8 +118,8 @@ class calendar_core extends rcube_plugin // Mod by Rosali
       return;
 
     // load Calendar user interface
-    if (!$this->rc->output->ajax_call && !$this->rc->output->env['framed']) {
-      if ($this->rc->user->ID && method_exists($this->rc->output, 'add_script') && !get_input_value('_minical', RCUBE_INPUT_GPC) && !isset($_SESSION['preinstalled_calendars'])) {
+    if ($this->rc->task != 'logout' && !$this->rc->output->ajax_call && !$this->rc->output->env['framed']) {
+      if (!isset($_SESSION['preinstalled_calendars']) && !empty($this->rc->user->ID) && $this->rc->output->type == 'html' && !get_input_value('_minical', RCUBE_INPUT_GPC)) {
         $this->rc->output->add_script('var lock = rcmail.set_busy(true, "loading"); rcmail.http_post("calendar/preinstalled", "", lock);', 'docready');
       }
       
@@ -227,7 +228,7 @@ class calendar_core extends rcube_plugin // Mod by Rosali
             else {
               if ($cal['is_default']) {
                 if (is_numeric($success) && !$this->rc->config->get('calendar_default_calendar')) {
-                  $this->rc->user->save_prefs(array('calendar_default_calendar', $success));
+                  $this->rc->user->save_prefs(array('calendar_default_calendar' => $success));
                 }
               }
             }
@@ -905,9 +906,21 @@ class calendar_core extends rcube_plugin // Mod by Rosali
         $reload = true;
         break;
       case "remove":
+        $delete = true;
         $driver = $this->get_driver_by_cal($cal['id']);
-        if ($success = $driver->remove_calendar($cal))
-          $this->rc->output->command('plugin.destroy_source', array('id' => $cal['id']));
+        $calendars = $driver->list_calendars(true, true);
+        foreach($calendars as $idx => $calendar){
+          if($calendar['calendar_id'] == $cal['id']){
+            if($this->rc->config->get('calendar_default_calendar') == $cal['id']){
+              $delete = false;
+              $this->rc->output->show_message($this->gettext('libgpl.cantdeletedefaultcalendar'), 'error');
+            }
+          }
+        }
+        if ($delete) {
+          if($success = $driver->remove_calendar($cal))
+            $this->rc->output->command('plugin.destroy_source', array('id' => $cal['id']));
+        }
         break;
       case "subscribe":
         $driver = $this->get_driver_by_cal($cal['id']);
@@ -1126,7 +1139,6 @@ class calendar_core extends rcube_plugin // Mod by Rosali
         $default_calendar = $calendar_select ? $this->get_default_calendar(true) : null;
         $calendar_saveto = new html_hiddenfield(array('class' => 'calendar-saveto', 'value' => $existing['calendar'])); // Mod by Rosali (always pass calendar to GUI)
                                                                                                                          // Mod by Rosali (calendar selector can exist multiple times - can't be referenced by ID)
-
         $this->rc->output->command('plugin.update_event_rsvp_status', array(
           'uid' => $event['uid'],
           'id' => asciiwords($event['uid'], true),
@@ -1309,7 +1321,7 @@ class calendar_core extends rcube_plugin // Mod by Rosali
   }
 
   /**
-   * Handler for check-recent requests which are accidentally sent to calendar taks
+   * Handler for check-recent requests which are accidentally sent to calendar task
    */
   function check_recent()
   {
@@ -2533,7 +2545,7 @@ class calendar_core extends rcube_plugin // Mod by Rosali
             'class' => 'button',
             'onclick' => "rcube_calendar.add_event_from_mail('" . JQ($mime_id.':'.$idx) . "', this)", // Mod by Rosali (calendar selector can exist multiple times - can't be referenced by ID)
             'value' => $this->gettext('importtocalendar'),
-          )) . $calendar_select->show($calendar_select);
+          )) . $calendar_select->show($this->rc->config->get('calendar_default_calendar'));
         }
         // show event details with buttons
         if ($buttons) {

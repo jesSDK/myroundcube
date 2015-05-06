@@ -381,7 +381,6 @@ class Client {
         if ($this->proxy) {
             $curlSettings[CURLOPT_PROXY] = $this->proxy;
         }
-
         if ($this->userName && $this->authType) {
             $curlType = 0;
             if ($this->authType & self::AUTH_BASIC) {

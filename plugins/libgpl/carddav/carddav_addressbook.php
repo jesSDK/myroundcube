@@ -292,7 +292,9 @@ class carddav_addressbook extends rcube_addressbook
     if(!is_array($required) && !empty($required))
       $required = array($required);
     if($mode == 0 && rcube::get_instance()->config->get('carddav_words_col_autocomplete', rcube::get_instance()->config->get('words_col_autocomplete', false))){
-      $fields = array_merge($fields, array('words'));
+      if($fields[0] != 'ID' && $fields[0] != $this->primary_key){
+        $fields = array_merge($fields, array('words'));
+      }
     }
     $where = $and_where = array();
     $mode = intval($mode);
@@ -972,7 +974,7 @@ class carddav_addressbook extends rcube_addressbook
     if($this->rc->decrypt($server['password']) == '%p'){
       $server['password'] = $this->rcpassword;
     }
-    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']));
+    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']), $server['authtype']);
     return $carddav_backend->get_ctag(false);
   }
   /**
@@ -990,7 +992,7 @@ class carddav_addressbook extends rcube_addressbook
     if($this->rc->decrypt($server['password']) == '%p'){
       $server['password'] = $this->rcpassword;
     }
-    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']));
+    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']), $server['authtype']);
     if($carddav_backend->check_connection()){
       $this->write_log('Connected to the CardDAV-Server ' . $server['url']);
       if($vcard_id !== null){
@@ -1367,7 +1369,7 @@ class carddav_addressbook extends rcube_addressbook
     if($this->rc->decrypt($server['password']) == '%p'){
       $server['password'] = $this->rcpassword;
     }
-    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']));
+    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']), $server['authtype']);
     if($carddav_backend->check_connection()){
       $vcard_id = $carddav_backend->add($vcard);
       if($sync && $this->rc->action != 'import'){
@@ -1407,7 +1409,7 @@ class carddav_addressbook extends rcube_addressbook
     if($this->rc->decrypt($server['password']) == '%p'){
       $server['password'] = $this->rcpassword;
     }
-    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']));
+    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']), $server['authtype']);
 
     if($carddav_backend->check_connection()){
       $carddav_backend->update($vcard, $contact['vcard_id']);
@@ -1431,7 +1433,7 @@ class carddav_addressbook extends rcube_addressbook
     if($this->rc->decrypt($server['password']) == '%p'){
       $server['password'] = $this->rcpassword;
     }
-    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']));
+    $carddav_backend->set_auth($server['username'], $this->rc->decrypt($server['password']), $server['authtype']);
 
     if($carddav_backend->check_connection()){
       foreach($carddav_contact_ids as $carddav_contact_id){

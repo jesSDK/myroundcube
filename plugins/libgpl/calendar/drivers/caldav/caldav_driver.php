@@ -141,8 +141,8 @@ class caldav_driver extends database_driver
         if ($obj_type == 'vcal')
         {
             $db_table = $this->_get_table($this->db_calendars_caldav_props);
-            $fields = " (obj_id, obj_type, url, tag, " . $this->rc->db->quote_identifier('user') . ", pass, sync, last_change) ";
-            $values = "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            $fields = " (obj_id, obj_type, url, tag, " . $this->rc->db->quote_identifier('user') . ", pass, sync, authtype, last_change) ";
+            $values = "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         }
         else
         {
@@ -173,6 +173,7 @@ class caldav_driver extends database_driver
             isset($props["user"]) ? $props["user"] : null,
             $password,
             $props['sync'] ? $props['sync'] : 5,
+            $props['authtype'] ? $props['authtype'] : 'detect',
             $now
         );
         
@@ -377,7 +378,7 @@ class caldav_driver extends database_driver
 
         require_once (INSTALL_PATH . 'plugins/libgpl/caldav/caldav-client.php');
 
-        $caldav = new caldav_client($props['url'], $props['user'], $props['pass'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_host', true)));
+        $caldav = new caldav_client($props['url'], $props['user'], $props['pass'], $props['authtype'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_host', true)));
 
         $tokens = parse_url($props['url']);
         $base_uri = $tokens['scheme'].'://'.$tokens['host'].($tokens['port'] ? ':'.$tokens['port'] : null);
@@ -410,7 +411,7 @@ class caldav_driver extends database_driver
 
         require_once (INSTALL_PATH . 'plugins/libgpl/caldav/caldav-client.php');
 
-        $caldav = new caldav_client($props['url'], $props['user'], $props['pass'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_host', true)));
+        $caldav = new caldav_client($props['url'], $props['user'], $props['pass'], $props['authtype'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_host', true)));
 
         $tokens = parse_url($props['url']);
         $base_uri = $tokens['scheme'].'://'.$tokens['host'].($tokens['port'] ? ':'.$tokens['port'] : null);
@@ -453,7 +454,7 @@ class caldav_driver extends database_driver
 
         require_once (INSTALL_PATH . 'plugins/libgpl/caldav/caldav-client.php');
 
-        $caldav = new caldav_client($props['url'], $props['user'], $props['pass'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_host', true)));
+        $caldav = new caldav_client($props['url'], $props['user'], $props['pass'], $props['authtype'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_host', true)));
 
         $tokens = parse_url($props['url']);
         $base_uri = $tokens['scheme'].'://'.$tokens['host'].($tokens['port'] ? ':'.$tokens['port'] : null);
@@ -547,7 +548,7 @@ class caldav_driver extends database_driver
             $found = false;
             foreach ($this->list_calendars() as $cal) {
                 $vcal_info = $this->_get_caldav_props($cal['id'], self::OBJ_TYPE_VCAL);
-                if (stripos($vcal_info['url'], self::_encode_url($props['caldav_url'])) === 0) {
+                if (stripos(self::_encode_url($vcal_info['url']), self::_encode_url($props['caldav_url'])) === 0) {
                     $found = true;
                     break;
                 }
@@ -666,12 +667,10 @@ class caldav_driver extends database_driver
         
         if(!isset($formfields['caldav_url']))
         {
+            $readonly = array();
             if(stripos($props['url'], 'https://apidata.googleusercontent.com/caldav/v2/') === 0 || $protected['caldav_url'])
             {
                 $readonly = array('readonly' => 'readonly');
-            }
-            else{
-                $readonly = array();
             }
             $input_caldav_url = new html_inputfield(array_merge(array(
                 "name" => "caldav_url",
@@ -728,7 +727,25 @@ class caldav_driver extends database_driver
                 "id" => "caldav_pass",
             );
         }
-
+        if(!isset($formfields['authtype']))
+        {
+            $readonly = array();
+            if(stripos($props['url'], 'https://apidata.googleusercontent.com/caldav/v2/') === 0 || $protected['authtype'])
+            {
+                $readonly = array('disabled' => 'disabled');
+            }
+            $field_id = 'authtype_select';
+            $select = new html_select(array_merge(array('name' => 'authtype', 'id' => $field_id), $readonly));
+            $types = array('detect' => 'detect', 'basic' => 'basic', 'digest' => 'digest');
+            foreach($types as $type => $text){
+                $select->add($this->cal->gettext('libgpl.' . $text), $type);
+            }
+            $formfields['authtype'] = array(
+                'label' => $this->cal->gettext('libgpl.authtype'),
+                'value' => $select->show($props['authtype'] ? $props['authtype'] : 'detect'),
+                'id' => 'sync_interval',
+            );
+        }
         if(!isset($formfields['sync_interval']))
         {
             $readonly = array();
@@ -742,10 +759,10 @@ class caldav_driver extends database_driver
             foreach($intervals as $interval => $text){
                 $select->add($text, $interval);
             }
-            $formfields["sync_interval"] = array(
-                "label" => $this->cal->gettext("sync_interval"),
-                "value" => $select->show((int) ($props["sync"] ? $props['sync'] : 5)) . '&nbsp;' . $this->cal->gettext('minute_s'),
-                "id" => "sync_interval",
+            $formfields['sync_interval'] = array(
+                'label' => $this->cal->gettext('sync_interval'),
+                'value' => $select->show((int) ($props['sync'] ? $props['sync'] : 5)) . '&nbsp;' . $this->cal->gettext('minute_s'),
+                'id' => 'sync_interval',
             );
         }
         
@@ -778,7 +795,6 @@ class caldav_driver extends database_driver
         $props['user'] = $prop['caldav_user'];
         $props['pass'] = $prop['caldav_pass'];
         $pwd_expanded_props = $props;
-        $props['sync'] = $prop['sync'];
         $this->_expand_pass($pwd_expanded_props);
 
         if($redirect = $this->_check_redirection($pwd_expanded_props)) {
@@ -858,7 +874,9 @@ class caldav_driver extends database_driver
                 $props['url'] = self::_encode_url($calendar['href']);
                 $props['name'] = $calendar['name'];
                 $props['color'] = $calendar['color'];
-                $props['sync'] = $calendar['sync'];
+                $props['sync'] = $calendar['sync'] ? $calendar['sync'] : $props['sync'];
+                $props['authtype'] = $calendar['authtype'] ? $calendar['authtype'] : $props['authtype'];
+
                 if (($obj_id = parent::create_calendar($props)) !== false) {
                     $result = $result && $this->_set_caldav_props($obj_id, self::OBJ_TYPE_VCAL, $props, 'create_calendar');
                     array_push($cal_ids, $obj_id);
@@ -927,9 +945,10 @@ class caldav_driver extends database_driver
         }
         
         $prev_prop = $this->_get_caldav_props($prop['id'], self::OBJ_TYPE_VCAL);
-        $props['user'] = $prop['caldav_user'];
-        $props['pass'] = $prop['caldav_pass'] ? $prop['caldav_pass'] : $prev_prop['pass'];
-        $props['url']  = $prop['caldav_url'];
+        $props['user']     = $prop['caldav_user'];
+        $props['pass']     = $prop['caldav_pass'] ? $prop['caldav_pass'] : $prev_prop['pass'];
+        $props['url']      = $prop['caldav_url'];
+        $props['authtype'] = $prop['authtype'];
         $pwd_expanded_props = $props;
         $this->_expand_pass($pwd_expanded_props);
 
@@ -943,7 +962,7 @@ class caldav_driver extends database_driver
             return false;
         }
 
-        if(!$this->_check_connection($pwd_expanded_props))
+        if(stripos($props['url'], 'https://apidata.googleusercontent.com/caldav/v2/') === false && !$this->_check_connection($pwd_expanded_props))
         {
             return false;
         }
@@ -957,10 +976,11 @@ class caldav_driver extends database_driver
             }
             
             return $this->_set_caldav_props($prop['id'], self::OBJ_TYPE_VCAL, array(
-                'url'  => self::_encode_url($prop['caldav_url']),
-                'user' => $prop['caldav_user'],
-                'pass' => $prop['caldav_pass'],
-                'sync' => $prop['sync'],
+                'url'      => self::_encode_url($prop['caldav_url']),
+                'user'     => $prop['caldav_user'],
+                'pass'     => $prop['caldav_pass'],
+                'sync'     => $prop['sync'],
+                'authtype' => $prop['authtype'],
                 'edit_calendar'
             ));
         }
@@ -1063,7 +1083,7 @@ class caldav_driver extends database_driver
     {
         require_once (INSTALL_PATH . 'plugins/libgpl/caldav/caldav-client.php');
         $prop['url'] = self::_encode_url($prop['url']);
-        $caldav = new caldav_client($prop['url'], $prop['user'], $prop['pass'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_peer', true)));
+        $caldav = new caldav_client($prop['url'], $prop['user'], $prop['pass'], $prop['authtype'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_peer', true)));
         $caldav_url = $prop['url'];
         $current_user_principal = array('{DAV:}current-user-principal');
         $response = $caldav->prop_find($caldav_url, $current_user_principal, 0, false);
@@ -1096,7 +1116,7 @@ class caldav_driver extends database_driver
     {
         require_once (INSTALL_PATH . 'plugins/libgpl/caldav/caldav-client.php');
         $prop['url'] = self::_encode_url($prop['url']);
-        $caldav = new caldav_client($prop['url'], $prop['user'], $prop['pass'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_peer', true)));
+        $caldav = new caldav_client($prop['url'], $prop['user'], $prop['pass'], $prop['authtype'], array($this->rc->config->get('calendar_curl_verify_peer', true), $this->rc->config->get('calendar_curl_verify_peer', true)));
         return $caldav->add_collection($prop['url'], $prop['name'], 'calendar', 'caldav');
     }
 

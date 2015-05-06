@@ -1,0 +1,44 @@
+div.soundselector {
+  display: inline-block;
+  position: relative;
+  top: -4px;
+}
+
+img.play {
+  background: url(images/sprite.png) -16px -42px no-repeat;
+  width: 16px;
+  height: 16px;
+}
+
+img.zclip {
+  background: url(images/sprite.png) -36px -72px no-repeat;
+  width: 20px;
+  height: 16px;
+}
+
+#caldavaccessheadline {
+  padding-left: 5px;
+}
+
+#formfooter {
+  position: relative;
+  top: 10px;
+  left: -5px;
+}
+
+#defaultbackgroundtitle,
+#defaultreadonlybackgroundtitle,
+#fontcolortitle {
+  display: inline-block;
+  width: 168px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#defaultbackground,
+#defaultreadonlybackground,
+#fontcolor {
+  margin-left: 10px;
+  display: inline;
+}

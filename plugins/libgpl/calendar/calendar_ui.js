@@ -2534,7 +2534,15 @@ function rcube_calendar_ui(settings)
           var id = $(this).data('id');
           rcmail.select_folder(id, 'rcmlical');
           rcmail.enable_command('calendar-edit', true);
-          rcmail.enable_command('calendar-remove', 'calendar-showurl', true);
+          // Begin mod by Rosali (disallow deletion of default calendar)
+          rcmail.enable_command('calendar-showurl', true);
+          if(me.calendars[id].isdefault != true){
+            rcmail.enable_command('calendar-remove', true);
+          }
+          else{
+            rcmail.enable_command('calendar-remove', false);
+          }
+          // End mod by Rosali
           me.selected_calendar = id;
         })
         .dblclick(function(){ me.calendar_edit_dialog(me.calendars[me.selected_calendar]); })

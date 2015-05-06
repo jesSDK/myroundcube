@@ -22,3 +22,4 @@ VERSION                COMMENT
 3.0.26                 - Remove jqueryui from required plugins (loaded over libgpl)
 3.0.27                 - Remove qtip plugin from required plugins
 3.0.28                 - Roundcube 1.1 compatibility
+3.0.29                 - Truncate text preview

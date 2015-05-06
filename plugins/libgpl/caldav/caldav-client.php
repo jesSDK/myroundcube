@@ -46,7 +46,7 @@ class caldav_client extends Sabre\DAV\Client
      * @param string Password for HTTP basic auth.
      * @param boolean Verify SSL cert. // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
      */
-    public function __construct($uri, $user = null, $pass = null, $verifySSL = array(true, true)) // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
+    public function __construct($uri, $user = null, $pass = null, $authtype = 'detect', $verifySSL = array(true, true)) // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
     {
         $this->user_agent = 'MyRoundcube-SabreDAV/' . Sabre\DAV\Version::VERSION;
 
@@ -60,9 +60,21 @@ class caldav_client extends Sabre\DAV\Client
         $tokens = parse_url($uri);
         $this->base_uri = $tokens['scheme']."://".$tokens['host'].($tokens['port'] ? ":".$tokens['port'] : null);
         $this->path = $tokens['path'].($tokens['query'] ? "?".$tokens['query'] : null);
+
+        switch($authtype){
+          case 'digest':
+            $auth = Sabre\DAV\Client::AUTH_DIGEST;
+            break;
+          case 'basic':
+            $auth = Sabre\DAV\Client::AUTH_BASIC;
+            break;
+          default:
+            $auth = Sabre\DAV\Client::AUTH_BASIC | Sabre\DAV\Client::AUTH_DIGEST;
+        }
+
         $settings = array(
             'baseUri' => $this->base_uri,
-            'authType' => Sabre\DAV\Client::AUTH_BASIC
+            'authType' => $auth
         );
 
         if ($user) $settings['userName'] = $user;
@@ -72,7 +84,7 @@ class caldav_client extends Sabre\DAV\Client
 
         $this->verifyPeer = $verifySSL[0];
         $this->verifyHost = $verifySSL[1];
-        $this->authType = CURLAUTH_BASIC | CURLAUTH_ANY;
+        
     }
 
     /**

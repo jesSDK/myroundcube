@@ -1,0 +1,56 @@
+div.soundselector {
+  display: inline-block;
+  position: relative;
+  top: -5px;
+}
+
+img.play {
+  background-position: -16px -368px;
+  width: 21px;
+  height: 21px;
+}
+
+img.zclip {
+  background-position: -16px -432px;
+  width: 20px;
+  height: 16px;
+}
+
+img.datepicker {
+  background-position: -16px -400px;
+  width: 24px;
+  height: 19px;
+}
+
+#taskstoolbar a.refresh,
+#calendartoolbar a.refresh {
+  background: -8px -463px;
+  min-width: 45px; max-width: 50px;
+}
+
+#caldavaccessheadline {
+  padding-left: 5px;
+}
+
+#defaultbackgroundtitle,
+#defaultreadonlybackgroundtitle,
+#fontcolortitle {
+  display: inline-block;
+  width: 242px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#defaultbackground,
+#defaultreadonlybackground,
+#fontcolor {
+  margin-left: 10px;
+  display: inline;
+}
+
+.propform fieldset.calendar_shares legend,
+.propform fieldset.calendar_shares_readonly legend {
+  font-size: 11px;
+  padding-left: 10px;
+}

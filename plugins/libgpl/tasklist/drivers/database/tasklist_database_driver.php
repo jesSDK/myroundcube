@@ -284,7 +284,7 @@ class tasklist_database_driver extends tasklist_driver
   }
 
     /**
-     * Get all taks records matching the given filter
+     * Get all tasks records matching the given filter
      *
      * @param array Hash array wiht filter criterias
      * @param array List of lists to get tasks from
@@ -570,7 +570,7 @@ class tasklist_database_driver extends tasklist_driver
             ));
 
             while ($result && ($rec = $this->rc->db->fetch_assoc($result)))
-                if (stripos($rec['alarms'], ':DISPLAY') !== false) // Mod by Rosali
+                if (stripos($rec['alarms'], ':DISPLAY') !== false && $rec['dismissed'] != $rec['notify']) // Mod by Rosali
                     $alarms[] = $this->_read_postprocess($rec);
         }
 
@@ -600,12 +600,11 @@ class tasklist_database_driver extends tasklist_driver
     else if ($task['recurrence'] && $task['id'] == $task_id) {
       if ($task['recurrence']) {
         $this->_get_recurrences($task, false, 'alarms');
-        if ($this->last_clone) {
+        if ($this->last_clone && substr($task['alarms'], 0, 1) != '@') {
           $notify_at = $this->last_clone['notify'];
         }
       }
     }
-
     $now = date(self::DB_DATE_FORMAT);
     if ($dismissed_alarm) {
       $query = $this->rc->db->query(

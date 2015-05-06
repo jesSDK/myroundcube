@@ -103,6 +103,20 @@ class carddav_backend
 	 * @constant string
 	 */
 	const USERAGENT = 'MyRoundcube PHP/';
+	
+	/**
+	 * Basic authentication
+	 *
+	 * @constant string
+	 */
+	const AUTH_BASIC = 1;
+	
+	/**
+	 * Basic authentication
+	 *
+	 * @constant string
+	 */
+	const AUTH_DIGEST = 2;
 
 	/**
 	 * CardDAV server url
@@ -135,9 +149,9 @@ class carddav_backend
 	/**
 	 * Authentication Method string
 	 *
-	 * @var array
+	 * @var string
 	 */
-	private $auth_method = array();
+	private $authtype = 'detect';
 
 	/**
 	* Authentication: username
@@ -215,15 +229,17 @@ class carddav_backend
 	/**
 	 * Sets authentication string
 	 *
-	 * @param	string	$username	CardDAV server username
-	 * @param	string	$password	CardDAV server password
+	 * @param string  $username CardDAV server username
+	 * @param string  $password CardDAV server password
+	 * @param string  $authtype CardDAV server authentication method
 	 * @return	void
 	 */
-	public function set_auth($username, $password)
+	public function set_auth($username, $password, $authtype = 'detect')
 	{
 		$this->username = $username;
 		$this->password = $password;
-		$this->auth = $username . ':' . $password;
+		$this->auth     = $username . ':' . $password;
+		$this->authtype = $authtype;
 	}
 
 	/**
@@ -716,7 +732,18 @@ class carddav_backend
           $this->headers = array_merge($this->headers, array('authorization' => 'Authorization: Bearer ' . $_SESSION['access_token']));
         }
         else{
-          curl_setopt($this->curl, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
+          $auth = 0;
+          switch($this->authtype){
+            case 'basic':
+              $auth = self::AUTH_BASIC;
+              break;
+            case 'digest':
+              $auth = self::AUTH_DIGEST;
+              break;
+            default:
+              $auth = self::AUTH_BASIC | self::AUTH_DIGEST;
+          }
+          curl_setopt($this->curl, CURLOPT_HTTPAUTH, $auth);
           curl_setopt($this->curl, CURLOPT_USERPWD, $this->auth);
         }
         curl_setopt($this->curl, CURLOPT_HEADER, true);
@@ -802,17 +829,7 @@ class carddav_backend
       write_log('CardDAV-timeline', time() - $start);
       write_log('CardDAV-timeline', $return);
     }
-    $this->headers = array();
-    if($header){
-      $header = explode("\r\n\r\n", $return);
-      $authline = $this->extractCustomHeader('WWW-Authenticate: ', '\n', $header[0]);
-     if($authline && strtolower(substr($authline, 0, strlen('Digest'))) == 'digest'){
-        $this->auth_method[$protocol . $host . $port] = 'Digest';
-      }
-      else{
-        $this->auth_method[$protocol . $host . $port] = 'Basic';
-      }
-    }
+
 		$http_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if (in_array($http_code, array(200, 207)))
 		{

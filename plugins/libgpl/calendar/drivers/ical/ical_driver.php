@@ -101,14 +101,14 @@ class ical_driver extends database_driver
         if ($obj_type == 'ical')
         {
             $db_table = $this->_get_table($this->db_calendars_ical_props);
-            $fields = " (obj_id, obj_type, url, " . $this->rc->db->quote_identifier('user') . ", pass, sync, last_change) ";
-            $values = "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $fields = " (obj_id, obj_type, url, tag," . $this->rc->db->quote_identifier('user') . ", pass, sync, last_change) ";
+            $values = "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         }
         else
         {
             $db_table = $this->_get_table($this->db_events_ical_props);
-            $fields = " (obj_id, obj_type, url, " . $this->rc->db->quote_identifier('user') . ", pass, last_change) ";
-            $values = "VALUES (?, ?, ?, ?, ?, ?)";
+            $fields = " (obj_id, obj_type, url, tag," . $this->rc->db->quote_identifier('user') . ", pass, last_change) ";
+            $values = "VALUES (?, ?, ?, ?, ?, ?, ?)";
         }
         
         $this->_remove_ical_props($obj_id, $obj_type);
@@ -126,6 +126,7 @@ class ical_driver extends database_driver
             $obj_id,
             $obj_type,
             $props['url'],
+            isset($props['tag']) ? $props['tag'] : null,
             isset($props['user']) ? $props['user'] : null,
             $password,
             $props['sync'] ? $props['sync'] : 60,
@@ -155,15 +156,15 @@ class ical_driver extends database_driver
         }
         
         $result = $this->rc->db->query(
-            "SELECT * FROM " . $db_table . " p " .
-            "WHERE p.obj_type = ? AND p.obj_id = ? ", $obj_type, $obj_id);
+            'SELECT * FROM ' . $db_table . ' p ' .
+            'WHERE p.obj_type = ? AND p.obj_id = ? ', $obj_type, $obj_id);
 
         if ($result && ($prop = $this->rc->db->fetch_assoc($result)) !== false) {
-            $password = isset($prop["pass"]) ? $prop["pass"] : null;
+            $password = isset($prop['pass']) ? $prop['pass'] : null;
             if ($password) {
                 $p = base64_decode($password);
                 $e = new Encryption(MCRYPT_BlOWFISH, MCRYPT_MODE_CBC);
-                $prop["pass"] = $e->decrypt($p, $this->crypt_key);
+                $prop['pass'] = $e->decrypt($p, $this->crypt_key);
             }
 
             return $prop;
@@ -536,10 +537,10 @@ class ical_driver extends database_driver
      */
     public function create_calendar($prop)
     {
-        $props['user'] = $prop['ical_user'];
-        $props['pass'] = $prop['ical_pass'];
-        $props['url']  = str_ireplace('webcal://', 'http://', self::_encode_url($prop['ical_url']));
-        $props['sync'] = $prop['sync'];
+        $props['user']     = $prop['ical_user'];
+        $props['pass']     = $prop['ical_pass'];
+        $props['url']      = str_ireplace('webcal://', 'http://', self::_encode_url($prop['ical_url']));
+        $props['sync']     = $prop['sync'];
         
         // Check connection and handle redirects
         $props['url'] = $prop['url'] = $this->_check_connection($props);
@@ -599,9 +600,9 @@ class ical_driver extends database_driver
         
         $prev_prop = $this->_get_ical_props($prop['id'], self::OBJ_TYPE_ICAL);
         
-        $props['user'] = $prop['ical_user'];
-        $props['pass'] = $prop['ical_pass'] ? $prop['ical_pass'] : $prev_prop['pass'];
-        $props['url']  = str_ireplace('webcal://', 'http://', self::_encode_url($prop['ical_url']));
+        $props['user']     = $prop['ical_user'];
+        $props['pass']     = $prop['ical_pass'] ? $prop['ical_pass'] : $prev_prop['pass'];
+        $props['url']      = str_ireplace('webcal://', 'http://', self::_encode_url($prop['ical_url']));
         
         $props['url'] = $prop['ical_url'] = $this->_check_connection($props);
         
@@ -617,10 +618,10 @@ class ical_driver extends database_driver
             }
 
             return $this->_set_ical_props($prop['id'], self::OBJ_TYPE_ICAL, array(
-                'url' => self::_encode_url($prop['ical_url']),
-                'user' => $prop['ical_user'],
-                'pass' => $prop['ical_pass'],
-                'sync' => $prop['sync'],
+                'url'      => self::_encode_url($prop['ical_url']),
+                'user'     => $prop['ical_user'],
+                'pass'     => $prop['ical_pass'],
+                'sync'     => $prop['sync'],
             ));
         }
 
@@ -770,6 +771,9 @@ class ical_driver extends database_driver
                     self::debug_log("Remove event \"" . $event["id"] . "\".");
                 }
             }
+            $cal_props = $this->_get_ical_props($cal_id, self::OBJ_TYPE_ICAL);
+            $cal_props["tag"] = $cal_sync->get_etag();
+            $this->_set_ical_props($cal_id, self::OBJ_TYPE_ICAL, $cal_props);
         }
 
         self::debug_log("Successfully synced calendar id \"$cal_id\".");

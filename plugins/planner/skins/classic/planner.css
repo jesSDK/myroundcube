@@ -32,6 +32,13 @@ a {
 #taskbar{
   z-index: 4999;
 }
+#planner_preview_text{
+  display: inline-block;
+  width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 #planner_drag_container{
   z-index: 4998;
   position: absolute;

@@ -67,7 +67,7 @@ class zipdownload_core extends rcube_plugin
             ));
 
             $link = html::a(array('href' => $href, 'class' => 'button zipdownload'),
-                rcube::Q($this->gettext('downloadall'))
+                rcube::Q($this->gettext('zipdownload.downloadall'))
             );
 
             // append link to attachments list, slightly different in some skins

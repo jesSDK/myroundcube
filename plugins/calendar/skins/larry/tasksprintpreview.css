@@ -1,0 +1,170 @@
+/* Stylesheet is included on the bottom of print.html */
+
+body, td, th, div, p, h3, select, input, textarea {
+  font-family: "Lucida Grande", Verdana, Arial, Helvetica, sans-serif;
+  font-size: 8pt;
+}
+
+h2 {
+  padding-left: 12px;
+}
+
+.taskswidth {
+  width: 700px;
+  margin: 0 auto;
+}
+
+.rightalign {
+  float: right;
+  padding-top: 0.3em;
+}
+
+.popupmenu {
+  display: none;
+  position: absolute;
+  top: 32px;
+  left: 90px;
+  width: auto;
+  max-height: 70%;
+  overflow: -moz-scrollbars-vertical;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid gray;
+  border-radius: 5px;
+}
+
+.description {
+  text-align: justify;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin-left: 50px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  white-space: normal;
+  border: 1px solid gray;
+  border-radius: 5px;
+}
+
+ul.toolbarmenu {
+  list-style-type: none;
+  margin-left: -30px;
+  margin-right: 10px;
+}
+
+ul.toolbarmenu li span.add {
+  background-image: none;
+}
+
+.listbox {
+  margin-left: 10px;
+  border: 1px solid gray;
+  border-radius: 5px;
+}
+
+.taskhead {
+  text-overflow: clip;
+  white-space: normal;
+  min-height: 15px;
+}
+
+.taskhead.nodate .date {
+  color: black;
+}
+
+.taskhead.nodate:hover .date {
+  color: black;
+}
+
+.taskhead .date {
+  right: 35px;
+}
+
+.taskhead .actions {
+  right: 20px;
+}
+
+.tasktitle {
+  display: block;
+  margin-left: 50px;
+  margin-top: -20px;
+}
+
+.hidetask {
+  text-decoration: none;
+  position: absolute;
+  right: 3px;
+  top: 2px;
+  border: 1px solid gray;
+  border-radius: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-bottom: 4px;
+}
+
+.history {
+  display: none;
+}
+
+#printconfig {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  padding: 0.5em;
+  background: #ebebeb;
+  border-bottom: 1px solid #999;
+  box-shadow: 0 3px 4px #ccc;
+  -moz-box-shadow: 0 3px 4px #ccc;
+  -webkit-box-shadow: 0 3px 4px #ccc;
+}
+
+#buttonbar {
+  padding-top: 20px;
+  text-align: center;
+}
+
+#tasklistbox {
+  padding-top: 50px;
+}
+
+#tagslist li .count,
+.taskhead .tags .tag {
+  background: none;
+  border: 1px solid gray;
+  color: black;
+  -webkit-box-shadow: 0;
+  -webkit-box-shadow: inset 0 0 0 0 gray;
+}
+
+.taskstatus {
+  background: none;
+  border: 1px solid gray;
+}
+
+#tasklists li {
+  margin-left: -50px;
+  padding: 0;
+}
+
+#tasklists li span.handle {
+  background: none;
+  cursor: auto;
+}
+
+#tasksview .scroller {
+  bottom: 0;
+  overflow-y: scroll;
+}
+
+#taskstoolbar {
+  display: none;
+}
+
+#message.statusbar {
+  border: none;
+  position: fixed;
+  z-index: 11;
+  top: 10px;
+  left: 15px;
+}

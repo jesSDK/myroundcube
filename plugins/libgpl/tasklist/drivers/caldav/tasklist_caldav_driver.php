@@ -608,7 +608,7 @@ class tasklist_caldav_driver extends tasklist_database_driver
     }
 
     /**
-     * Get all taks records matching the given filter
+     * Get all tasks records matching the given filter
      *
      * @param array Hash array wiht filter criterias
      * @param array List of lists to get tasks from

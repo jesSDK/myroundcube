@@ -105,6 +105,7 @@ class database_driver extends calendar_driver
         $arr['name']       = html::quote($arr['name']);
         $arr['listname']   = html::quote($arr['name']);
         $arr['readonly']   = $arr['readonly'] ? true : false;
+        $arr['isdefault']  = $arr['id'] == $this->rc->config->get('calendar_default_calendar') ? true : false;
         unset($arr['events']);
         $this->calendars[$arr['calendar_id']] = $arr;
         $calendar_ids[] = $this->rc->db->quote($arr['calendar_id']);
@@ -319,7 +320,6 @@ class database_driver extends calendar_driver
         }
       }
     }
-    write_log('e', $prop);
     $query = $this->rc->db->query(
       "UPDATE " . $this->_get_table($this->db_calendars) . "
        SET   name = ?, color = ?, showalarms = ?, events=?, tasks = ?, freebusy = ?, unsubscribe = ?
@@ -437,8 +437,8 @@ class database_driver extends calendar_driver
       $now = gmdate(self::DB_DATE_FORMAT);
       $this->rc->db->query(sprintf(
         "INSERT INTO " . $this->_get_table($this->db_events) . "
-         (calendar_id, created, changed, uid, %s, %s, tzname, all_day, recurrence, title, description, location, categories, url, free_busy, priority, sensitivity, attendees, alarms, notifyat)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+         (calendar_id, created, changed, uid, %s, %s, duration, tzname, all_day, recurrence, title, description, location, categories, url, free_busy, priority, sensitivity, attendees, alarms, notifyat)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
           $this->rc->db->quote_identifier('start'),
           $this->rc->db->quote_identifier('end')
         ),
@@ -448,6 +448,7 @@ class database_driver extends calendar_driver
         strval($event['uid']),
         $event['allday'] ? $event['start']->format(self::DB_DATE_FORMAT_ALLDAY) : $event['start']->format(self::DB_DATE_FORMAT),
         $event['allday'] ? $event['end']->format(self::DB_DATE_FORMAT_ALLDAY) : $event['end']->format(self::DB_DATE_FORMAT),
+        $event['duration'],
         $event['allday'] ? 'UTC' : $this->cal->timezone->getName(),
         intval($event['all_day']),
         $event['_recurrence'],
@@ -604,11 +605,14 @@ class database_driver extends calendar_driver
       return $event;
     }
     
-    if ($event['allday']){
+    if (!$event['end']) {
+      $event['end'] = $event['start'];
+    }
+    
+    $event['duration'] = $event['end']->format('U') - $event['start']->format('U');
+
+    if ($event['allday']) {
       $event['start']->_dateonly = true;
-      if (!$event['end']) {
-        $event['end'] = $event['start'];
-      }
       $event['end']->_dateonly = true;
       if ($event['recurrence_date']) {
         $event['recurrence_date']->_dateonly = true;
@@ -624,7 +628,7 @@ class database_driver extends calendar_driver
         }
       }
     }
-
+    
     // compose vcalendar-style recurrencue rule from structured data
     $rrule = $event['recurrence'] ? libcalendaring::to_rrule($event['recurrence']) : '';
     $event['_recurrence'] = rtrim($rrule, ';');
@@ -696,7 +700,7 @@ class database_driver extends calendar_driver
   {
     $event = $this->_save_preprocess($event, 'update');
     $sql_set = array();
-    $set_cols = array('start', 'end', 'all_day', 'recurrence_id', 'sequence', 'title', 'description', 'location', 'categories', 'url', 'free_busy', 'priority', 'sensitivity', 'attendees', 'alarms', 'notifyat');
+    $set_cols = array('start', 'end', 'duration', 'all_day', 'recurrence_id', 'sequence', 'title', 'description', 'location', 'categories', 'url', 'free_busy', 'priority', 'sensitivity', 'attendees', 'alarms', 'notifyat');
     foreach ($set_cols as $col) {
       if (is_object($event[$col]) && is_a($event[$col], 'DateTime')) {
         if ($event['allday']) {
@@ -1380,7 +1384,7 @@ class database_driver extends calendar_driver
            WHERE event_id = e.event_id) AS _attachments
          FROM " . $this->_get_table($this->db_events) . " AS e
          WHERE e.calendar_id IN (%s)
-         AND ((e.start >= %s AND e.end <= %s) OR recurrence <> ? OR exdate IS NOT NULL) AND del <> ?
+         AND (e.start >= %s OR e.end <= %s OR duration > ? OR recurrence <> ? OR exdate IS NOT NULL) AND del <> ?
          %s
          GROUP BY e.event_id, e.calendar_id
          ORDER BY uid, exception, exdate ASC",
@@ -1388,8 +1392,7 @@ class database_driver extends calendar_driver
          $this->rc->db->fromunixtime($start),
          $this->rc->db->fromunixtime($end),
          $sql_add
-       ), '', 1);
-
+      ), '', $end - $start, 1);
       while ($result && ($event = $this->rc->db->fetch_assoc($result))) {
         $event = $this->_read_postprocess($event);
         if ($virtual && $event['recurrence']) {
@@ -1755,7 +1758,7 @@ class database_driver extends calendar_driver
          $this->rc->db->quote($client_time)
        ), '');
       while ($result && ($event = $this->rc->db->fetch_assoc($result))) {
-        if (stripos($event['alarms'], ':DISPLAY') !== false)
+        if (stripos($event['alarms'], ':DISPLAY') !== false && $event['dismissed'] != $event['notifyat'])
           $alarms[] = $this->_read_postprocess($event);
       }
     }
@@ -1785,7 +1788,12 @@ class database_driver extends calendar_driver
         $this->_get_recurrences($event, time() + $before, false, 'alarms');
         if ($this->last_clone) {
           $dismissed = $event['notifyat'];
-          $notify_at = $this->last_clone['notifyat'];
+          if (substr($event['alarms'], 0, 1) == '@') {
+            $notify_at = null;
+          }
+          else {
+            $notify_at = $this->last_clone['notifyat'];
+          }
         }
       }
     }

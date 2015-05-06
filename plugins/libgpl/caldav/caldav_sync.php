@@ -34,6 +34,7 @@ class caldav_sync
     private $user = null;
     private $pass = null;
     private $url = null;
+    private $authtype = 'detect';
     private $env;
     
     public $sync = 0;
@@ -54,13 +55,14 @@ class caldav_sync
         $this->env = $env;
         $this->cal_id = $cal_id;
         
-        $this->url = $props["url"];
-        $this->ctag = isset($props["tag"]) ? $props["tag"] : null;
-        $this->user = isset($props["user"]) ? $props["user"] : null;
-        $this->pass = isset($props["pass"]) ? $props["pass"] : null;
-        $this->sync = isset($props["sync"]) ? $props["sync"] : 0;
+        $this->url      = $props["url"];
+        $this->ctag     = isset($props["tag"]) ? $props["tag"] : null;
+        $this->user     = isset($props["user"]) ? $props["user"] : null;
+        $this->pass     = isset($props["pass"]) ? $props["pass"] : null;
+        $this->sync     = isset($props["sync"]) ? $props["sync"] : 0;
+        $this->authtype = isset($props["authtype"]) ? $props["authtype"] : 'detect';
         
-        $this->caldav = new caldav_client($this->url, $this->user, $this->pass, $verifySSL); // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
+        $this->caldav = new caldav_client($this->url, $this->user, $this->pass, $this->authtype, $verifySSL); // Mod by Rosali (https://gitlab.awesome-it.de/kolab/roundcube-plugins/issues/1)
     }
 
     /**

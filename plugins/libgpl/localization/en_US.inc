@@ -113,4 +113,9 @@ $labels['blackwhite'] = 'black/white';
 $labels['black'] = 'black';
 $labels['white'] = 'white';
 $labels['complementary'] = 'complementary';
+$labels['authtype'] = 'Authentication';
+$labels['detect'] = 'detect';
+$labels['basic']  = 'basic';
+$labels['digest'] = 'digest';
+$labels['cantdeletedefaultcalendar'] = 'You can\'t delete the default calendar.';
 ?>

@@ -28,8 +28,8 @@ class planner extends rcube_plugin
   static private $plugin = 'planner';
   static private $author = 'myroundcube@mail4us.net';
   static private $authors_comments = '<a href="http://myroundcube.com/myroundcube-plugins/planner-plugin" target="_blank">Documentation</a>';
-  static private $version = '3.0.28';
-  static private $date = '26-02-2015';
+  static private $version = '3.0.29';
+  static private $date = '05-05-2015';
   static private $licence = 'GPL';
   static private $requirements = array(
     'Roundcube' => '1.1',

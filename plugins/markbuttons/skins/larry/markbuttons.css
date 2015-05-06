@@ -1,0 +1,19 @@
+a.markbutton.enabled {
+  background-color: #f7f7f7;
+}
+
+a.markbutton.unread {
+  background-position: -9px -1134px;
+}
+
+a.markbutton.read {
+  background-position: -9px -1158px;
+}
+
+a.markbutton.unflagged {
+  background-position: -9px -1182px;
+}
+
+a.markbutton.flagged {
+  background-position: -9px -1206px;
+}

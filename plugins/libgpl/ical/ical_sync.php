@@ -31,6 +31,7 @@ class ical_sync
     private $url = null;
     private $user = null;
     private $pass = null;
+    private $etag = null;
     private $ical = null;
 
     public $sync = 0;
@@ -51,6 +52,7 @@ class ical_sync
         $this->user = isset($props["user"]) ? $props["user"] : null;
         $this->pass = isset($props["pass"]) ? $props["pass"] : null;
         $this->sync = isset($props["sync"]) ? $props["sync"] : 0;
+        $this->etag = isset($props["tag"]) ? $props["tag"] : null;
     }
 
     /**
@@ -60,7 +62,43 @@ class ical_sync
      */
     public function is_synced()
     {
-        // No change to check that so far.
+        if($this->etag)
+        {
+            if($this->etag === $this->get_etag())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Fetch ETag.
+     *
+     * @return string ETag or false.
+     */
+    public function get_etag()
+    {
+        if($this->user != null && $this->pass != null)
+        {
+            stream_context_set_default(
+                array(
+                    'http' => array(
+                        'header' => "Authorization: Basic " . base64_encode("$this->user:$this->pass") . "\r\n" .
+                                    "User-Agent: PHP/" . PHP_VERSION
+                    )
+                )
+            );
+        }
+        $headers = get_headers($this->url, 1);
+        foreach($headers as $key => $val)
+        {
+            $headers[strtolower($key)] = $val;
+        }
+        if(isset($headers['etag']))
+        {
+            return str_replace(array("'", '"'), '', $headers['etag']);
+        }
         return false;
     }
 
@@ -91,7 +129,7 @@ class ical_sync
 
         $vcal = file_get_contents($this->url, false, $context);
         $charset = 'UTF-8';
-        foreach($http_response_header as $c => $h)
+        foreach((array) $http_response_header as $c => $h)
         {
             if(stristr($h, 'content-type') && stristr($h, 'charset'))
             {
